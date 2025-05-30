@@ -55,7 +55,7 @@ export default function DashboardPage() {
                 size="lg"
                 className="mt-6 sm:mt-0 shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-xl 
                            bg-[#BAE1DB] text-primary hover:bg-[#a7ccc6] 
-                           dark:bg-[#1db954] dark:text-white dark:hover:bg-[#1aa34a]"
+                           dark:bg-[#0B2C39] dark:text-white dark:hover:bg-[#1D3F4E]"
               >
                 <Icons.NewBlog className="mr-2 h-5 w-5 animate-pulse" />
                 Generate a New Blog
@@ -108,3 +108,4 @@ export default function DashboardPage() {
     </>
   );
 }
+
