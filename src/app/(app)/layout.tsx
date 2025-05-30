@@ -1,9 +1,9 @@
 
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarRail } from "@/components/ui/sidebar";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
-// import { Button } from "@/components/ui/button"; // Not used in this diff
 import { Icons } from "@/components/icons";
 import { Suspense } from "react";
+import { ThemeToggle } from "@/components/layout/theme-toggle"; // Import ThemeToggle
 
 export default function AppLayout({
   children,
@@ -36,7 +36,8 @@ export default function AppLayout({
           <div className="flex-1">
             {/* App specific header content can go here */}
           </div>
-          {/* <Button variant="ghost" size="icon" className="rounded-full"> // Not used in this diff
+          <ThemeToggle /> {/* Add ThemeToggle here */}
+          {/* <Button variant="ghost" size="icon" className="rounded-full">
              <Icons.User className="h-5 w-5" />
              <span className="sr-only">User Profile</span>
           </Button> */}

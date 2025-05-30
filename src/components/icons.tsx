@@ -36,6 +36,7 @@ import {
   Image as LucideImage,
   Save,
   Check, // Added Check icon
+  HelpCircle, // Added HelpCircle icon
   type LucideProps,
 } from 'lucide-react';
 
@@ -89,7 +90,8 @@ export const Icons = {
   Spinner: Loader2,
   Image: LucideImage,
   Save: Save,
-  Check: Check, // Added Check icon
+  Check: Check,
+  HelpCircle: HelpCircle, // Added HelpCircle
 };
 
 export type IconName = keyof typeof Icons;

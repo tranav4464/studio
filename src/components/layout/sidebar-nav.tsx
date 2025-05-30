@@ -16,28 +16,23 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import * as React from "react"; // Ensure React is imported for useState
+import * as React from "react"; 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast"; // Import useToast
 
 interface NavItem {
-  href: string;
+  href?: string;
   label: string;
   icon: IconName;
   badge?: string;
   disabled?: boolean;
+  action?: () => void; // For items that trigger an action instead of navigation
 }
-
-const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: "Dashboard" },
-  { href: "/new-blog", label: "New Blog", icon: "NewBlog" },
-  { href: "/my-blogs", label: "My Blogs", icon: "MyBlogs" },
-  { href: "/settings", label: "Settings", icon: "Settings" },
-];
 
 // Mock user data (replace with actual data source if available)
 const mockUser = {
@@ -50,8 +45,22 @@ const mockUser = {
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { toast } = useToast(); // Initialize useToast
   const [isProfilePopoverOpen, setIsProfilePopoverOpen] = React.useState(false);
   const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const navItems: NavItem[] = [
+    { href: "/dashboard", label: "Dashboard", icon: "Dashboard" },
+    { href: "/new-blog", label: "New Blog", icon: "NewBlog" },
+    { href: "/my-blogs", label: "My Blogs", icon: "MyBlogs" },
+    { href: "/settings", label: "Settings", icon: "Settings" },
+    { 
+      label: "Help & Guides", 
+      icon: "HelpCircle", 
+      action: () => toast({ title: "Help & Guides", description: "In-app guides and tips are coming soon!" }) 
+    },
+  ];
+  
 
   const handleMouseEnterProfile = () => {
     if (hoverTimeoutRef.current) {
@@ -79,18 +88,31 @@ export function SidebarNav() {
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.label}>
-              <Link href={item.href} passHref legacyBehavior>
-                <SidebarMenuButton
-                  isActive={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))}
-                  tooltip={item.label}
-                  disabled={item.disabled}
-                  className="w-full justify-start"
-                >
-                  <IconComponent name={item.icon} />
-                  <span>{item.label}</span>
-                  {item.badge && <Badge variant="secondary" className="ml-auto">{item.badge}</Badge>}
-                </SidebarMenuButton>
-              </Link>
+              {item.href ? (
+                <Link href={item.href} passHref legacyBehavior>
+                  <SidebarMenuButton
+                    isActive={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))}
+                    tooltip={item.label}
+                    disabled={item.disabled}
+                    className="w-full justify-start hover:scale-[1.03] transition-transform duration-150"
+                  >
+                    <IconComponent name={item.icon} />
+                    <span>{item.label}</span>
+                    {item.badge && <Badge variant="secondary" className="ml-auto">{item.badge}</Badge>}
+                  </SidebarMenuButton>
+                </Link>
+              ) : (
+                 <SidebarMenuButton
+                    onClick={item.action}
+                    tooltip={item.label}
+                    disabled={item.disabled}
+                    className="w-full justify-start hover:scale-[1.03] transition-transform duration-150"
+                  >
+                    <IconComponent name={item.icon} />
+                    <span>{item.label}</span>
+                    {item.badge && <Badge variant="secondary" className="ml-auto">{item.badge}</Badge>}
+                  </SidebarMenuButton>
+              )}
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
@@ -101,7 +123,7 @@ export function SidebarNav() {
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-2"
+              className="w-full justify-start gap-2 hover:scale-[1.03] transition-transform duration-150"
               onMouseEnter={handleMouseEnterProfile}
               onMouseLeave={handleMouseLeaveProfile}
             >
@@ -126,16 +148,6 @@ export function SidebarNav() {
                 <p className="text-xs text-muted-foreground">{mockUser.email}</p>
               </div>
             </div>
-            {/* You can add more actions like "Manage Account" or "Logout" here later */}
-            {/* Example:
-            <Separator className="my-2" />
-            <Button variant="ghost" size="sm" className="w-full justify-start text-sm">
-              Manage Account
-            </Button>
-            <Button variant="ghost" size="sm" className="w-full justify-start text-sm text-destructive hover:text-destructive-foreground hover:bg-destructive">
-              Logout
-            </Button>
-            */}
           </PopoverContent>
         </Popover>
       </SidebarFooter>
@@ -153,5 +165,3 @@ function IconComponent({ name, className }: IconComponentProps) {
   if (!Icon) return null;
   return <Icon className={cn("h-4 w-4", className)} />;
 }
-
-    
