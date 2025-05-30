@@ -28,7 +28,7 @@ export default function NewBlogPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [topic, setTopic] = useState('');
-  const [title, setTitle] = useState('');
+  // const [title, setTitle] = useState(''); // Title removed from this page
   const [tone, setTone] = useState<BlogTone>('informative');
   const [style, setStyle] = useState<BlogStyle>('journalistic');
   const [length, setLength] = useState<BlogLength>('medium');
@@ -72,17 +72,17 @@ export default function NewBlogPage() {
       toast({ title: "Topic and Outline Required", description: "Please generate and define an outline first.", variant: "destructive" });
       return;
     }
-    if (!title) {
-      toast({ title: "Title is required", description: "Please enter a blog title.", variant: "destructive" });
-      return;
-    }
+    // if (!title) { // Title check removed
+    //   toast({ title: "Title is required", description: "Please enter a blog title.", variant: "destructive" });
+    //   return;
+    // }
     setIsLoadingPost(true);
     await new Promise(resolve => setTimeout(resolve, 1500)); // Mock creating post
     
     const outlineStrings = generatedOutline.map(item => item.value);
 
     const newPost = blogStore.addPost({
-        title,
+        title: topic, // Use topic as the initial title
         topic,
         tone,
         style,
@@ -109,10 +109,7 @@ export default function NewBlogPage() {
             <CardDescription>Fill in the specifics for your new blog post.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="title">Blog Title <span className="text-destructive">*</span></Label>
-              <Input id="title" placeholder="e.g., My Awesome Blog Post" value={title} onChange={(e) => setTitle(e.target.value)} />
-            </div>
+            {/* Blog Title input removed */}
             <div className="space-y-2">
               <Label htmlFor="topic">Blog Topic <span className="text-destructive">*</span></Label>
               <Input id="topic" placeholder="e.g., The Future of Renewable Energy" value={topic} onChange={(e) => setTopic(e.target.value)} />
