@@ -143,7 +143,6 @@ export default function BlogEditPage() {
     try {
       const link = document.createElement('a');
       link.href = selectedHeroImageUrl;
-      // Use post title for filename, fallback if needed
       const filename = post?.title ? post.title.replace(/\s+/g, '-').toLowerCase() : 'hero-image';
       link.download = `${filename}.png`;
       document.body.appendChild(link);
@@ -348,12 +347,8 @@ export default function BlogEditPage() {
                           {scoreType === 'Readability' ? post.seoScore?.readability || 70 : scoreType === 'Keyword Density' ? post.seoScore?.keywordDensity || 55 : post.seoScore?.quality || 78}%
                         </span>
                       </div>
-                      <Progress 
-                        value={
-                          scoreType === 'Readability' ? (post.seoScore?.readability || 70) :
-                          scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity || 55) :
-                          (post.seoScore?.quality || 78) 
-                        } 
+                      <Progress
+                        value={50} // Simplified for testing
                         aria-label={`${scoreType} score`} />
                     </div>
                   ))}
@@ -382,3 +377,4 @@ export default function BlogEditPage() {
     </div>
   );
 }
+
