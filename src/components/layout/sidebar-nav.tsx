@@ -138,7 +138,7 @@ export function SidebarNav() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-4">
-        <Separator className="my-2"/>
+        {/* <Separator className="my-2"/>  Removed this separator */}
         <Popover open={isProfilePopoverOpen} onOpenChange={setIsProfilePopoverOpen}>
           <PopoverTrigger asChild>
             <Button
