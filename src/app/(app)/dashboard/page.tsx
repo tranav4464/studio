@@ -14,7 +14,7 @@ import { BlogCardSkeleton } from '@/components/dashboard/blog-card-skeleton';
 export default function DashboardPage() {
   const [recentPosts, setRecentPosts] = useState<BlogPost[]>([]);
   const [postsToShow, setPostsToShow] = useState(5); 
-  const [isLoading, setIsLoading] = useState(true); // Added loading state
+  const [isLoading, setIsLoading] = useState(true); 
   const userName = "Creator";
 
   const loadMorePosts = () => {
@@ -22,13 +22,13 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    setIsLoading(true); // Set loading true when postsToShow changes or on initial load
+    setIsLoading(true); 
     const fetchPosts = () => {
       setRecentPosts(blogStore.getPosts().slice(0, postsToShow));
-      setIsLoading(false); // Set loading false after posts are fetched
+      setIsLoading(false); 
     };
 
-    // Simulate a short delay for loading effect, remove if blogStore is async in future
+    
     const timer = setTimeout(fetchPosts, 500); 
 
     const unsubscribe = blogStore.subscribe(fetchPosts);
@@ -43,7 +43,7 @@ export default function DashboardPage() {
     <>
       <div className="flex h-full">
         <main className="flex-1 p-6 overflow-y-auto">
-          <div className="bg-[#4a90e2] dark:bg-[#1db954] text-primary-foreground p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between animate-gradient-shift transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-2xl">
+          <div className="bg-[#4a90e2] dark:bg-[#1db954] p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between animate-gradient-shift transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-2xl">
             <div>
               <h1 className="text-4xl font-extrabold tracking-tight">Hi {userName}, ready to create?</h1>
               <p className="text-lg opacity-90 mt-2">Turn your ideas into full content in minutes with AI.</p>
@@ -66,7 +66,7 @@ export default function DashboardPage() {
 
           {isLoading ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-              {Array.from({ length: postsToShow > 0 ? Math.min(postsToShow, 3) : 3 }).map((_, index) => ( // Show 3 or postsToShow (min of 3) skeletons
+              {Array.from({ length: postsToShow > 0 ? Math.min(postsToShow, 3) : 3 }).map((_, index) => ( 
                 <BlogCardSkeleton key={index} />
               ))}
             </div>
