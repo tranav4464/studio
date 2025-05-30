@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -20,6 +21,7 @@ export type RepurposeContentInput = z.infer<typeof RepurposeContentInputSchema>;
 const RepurposeContentOutputSchema = z.object({
   tweetThread: z.string().describe('A tweet thread generated from the article.'),
   linkedInPost: z.string().describe('A LinkedIn post generated from the article, adapted to the specified tone.'),
+  instagramPost: z.string().describe('An Instagram post caption generated from the article, optimized for engagement and including relevant hashtags.'),
   emailNewsletterSummary: z
     .string()
     .describe('An email newsletter summary generated from the article.'),
@@ -34,7 +36,7 @@ const prompt = ai.definePrompt({
   name: 'repurposeContentPrompt',
   input: {schema: RepurposeContentInputSchema},
   output: {schema: RepurposeContentOutputSchema},
-  prompt: `You are an expert content repurposer. Given the following article and tone, generate a tweet thread, a LinkedIn post, and an email newsletter summary.
+  prompt: `You are an expert content repurposer. Given the following article and tone, generate a tweet thread, a LinkedIn post, an Instagram post caption (including relevant hashtags), and an email newsletter summary.
 
 Article: {{{article}}}
 Tone: {{{tone}}}
@@ -45,8 +47,11 @@ Tweet Thread:
 LinkedIn Post:
 {{{linkedInPost}}}
 
+Instagram Post:
+{{{instagramPost}}}
+
 Email Newsletter Summary:
-{{{emailNewsletterSummary}}}`, 
+{{{emailNewsletterSummary}}}`,
 });
 
 const repurposeContentFlow = ai.defineFlow(

@@ -33,7 +33,7 @@ export default function BlogEditPage() {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [editableTitle, setEditableTitle] = useState('');
   const [content, setContent] = useState('');
-  const [currentStatus, setCurrentStatus] = useState<BlogStatus>('draft'); // New state for status
+  const [currentStatus, setCurrentStatus] = useState<BlogStatus>('draft');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -67,7 +67,7 @@ export default function BlogEditPage() {
         setPost(fetchedPost);
         setEditableTitle(fetchedPost.title);
         setContent(fetchedPost.content);
-        setCurrentStatus(fetchedPost.status); // Initialize status
+        setCurrentStatus(fetchedPost.status); 
         setHeroImagePrompt(fetchedPost.heroImagePrompt || fetchedPost.title);
         setHeroImageTone(fetchedPost.tone || 'cinematic'); 
         setHeroImageTheme(fetchedPost.heroImageTheme || 'General');
@@ -91,7 +91,7 @@ export default function BlogEditPage() {
     blogStore.updatePost(post.id, {
       title: editableTitle,
       content,
-      status: currentStatus, // Save status
+      status: currentStatus, 
       heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
@@ -105,7 +105,7 @@ export default function BlogEditPage() {
       ...prev,
       title: editableTitle,
       content,
-      status: currentStatus, // Update local post state with status
+      status: currentStatus, 
       heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
@@ -350,18 +350,19 @@ export default function BlogEditPage() {
               {isRepurposing && <div className="text-center p-4"><Icons.Spinner className="h-6 w-6 animate-spin text-primary" /> <p className="text-sm text-muted-foreground">Generating snippets...</p></div>}
               {repurposedContent && (
                 <Tabs defaultValue="tweet" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4"> {/* Updated grid-cols-3 to grid-cols-4 */}
                     <TabsTrigger value="tweet"><Icons.Tweet className="mr-1 h-4 w-4"/>Tweet</TabsTrigger>
                     <TabsTrigger value="linkedin"><Icons.LinkedIn className="mr-1 h-4 w-4"/>LinkedIn</TabsTrigger>
+                    <TabsTrigger value="instagram"><Icons.Instagram className="mr-1 h-4 w-4"/>Instagram</TabsTrigger> {/* Added Instagram tab */}
                     <TabsTrigger value="email"><Icons.Email className="mr-1 h-4 w-4"/>Email</TabsTrigger>
                   </TabsList>
-                  {(['tweet', 'linkedin', 'email'] as const).map(type => (
+                  {(['tweet', 'linkedin', 'instagram', 'email'] as const).map(type => (
                     <TabsContent key={type} value={type} forceMount className="mt-4">
-                      <Textarea value={repurposedContent[type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : 'emailNewsletterSummary']}
-                                onChange={(e) => setRepurposedContent(prev => prev ? {...prev, [type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : 'emailNewsletterSummary']: e.target.value} : null)}
+                      <Textarea value={repurposedContent[type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : type === 'instagram' ? 'instagramPost' : 'emailNewsletterSummary']}
+                                onChange={(e) => setRepurposedContent(prev => prev ? {...prev, [type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : type === 'instagram' ? 'instagramPost' : 'emailNewsletterSummary']: e.target.value} : null)}
                                 rows={8}
                                 className="text-sm" />
-                      <Button variant="outline" size="sm" className="mt-2" onClick={() => copyToClipboard(repurposedContent[type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : 'emailNewsletterSummary'], type)}><Icons.Copy className="mr-2 h-3 w-3"/>Copy</Button>
+                      <Button variant="outline" size="sm" className="mt-2" onClick={() => copyToClipboard(repurposedContent[type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : type === 'instagram' ? 'instagramPost' : 'emailNewsletterSummary'], type)}><Icons.Copy className="mr-2 h-3 w-3"/>Copy</Button>
                     </TabsContent>
                   ))}
                 </Tabs>
@@ -492,6 +493,9 @@ export default function BlogEditPage() {
                 <Button variant="outline" className="w-full" onClick={() => toast({ title: "Export Markdown", description:"Coming soon!"})}>Export as Markdown</Button>
                 <Button variant="outline" className="w-full" onClick={() => toast({ title: "Export HTML", description:"Coming soon!"})}>Export as HTML</Button>
                 <Button variant="outline" className="w-full" onClick={() => toast({ title: "Export PDF", description:"Coming soon!"})}>Export as PDF</Button>
+                <Separator className="my-2" />
+                <Button variant="outline" className="w-full" onClick={() => toast({ title: "Copy All Content", description:"Feature to copy all kit elements coming soon!"})}>Copy All Kit Content</Button>
+                <Button variant="outline" className="w-full" onClick={() => toast({ title: "Download as ZIP", description:"Feature to download kit as ZIP coming soon!"})}>Download Kit as ZIP</Button>
             </CardFooter>
           </Card>
         </div>
@@ -499,5 +503,3 @@ export default function BlogEditPage() {
     </div>
   );
 }
-
-    

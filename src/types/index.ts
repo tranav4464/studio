@@ -10,7 +10,7 @@ export interface BlogPost {
   outline: string[];
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
-  status: "draft" | "published" | "archived";
+  status: BlogStatus;
   heroImageUrl?: string;
   heroImagePrompt?: string;
   heroImageCaption?: string;
@@ -21,8 +21,8 @@ export interface BlogPost {
     keywordDensity: number; // 0-100
     quality: number; // 0-100
   };
-  metaTitle?: string; // Added for SEO
-  metaDescription?: string; // Added for SEO
+  metaTitle?: string; 
+  metaDescription?: string; 
 }
 
 export type BlogStatus = "draft" | "published" | "archived";
@@ -33,6 +33,7 @@ export type BlogLength = "short" | "medium" | "long";
 export interface RepurposedContent {
   tweetThread: string;
   linkedInPost: string;
+  instagramPost: string; // Added for Instagram
   emailNewsletterSummary: string;
 }
 
@@ -45,9 +46,8 @@ export interface Settings {
     useDiagramsInHowTo: boolean;
   };
   stylePresets: Array<{ name: string; tone: BlogTone; style: BlogStyle }>;
-  userProfile?: { // Added for account settings
+  userProfile?: { 
     name: string;
     email: string;
   };
 }
-

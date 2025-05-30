@@ -27,6 +27,7 @@ import {
   MessageSquare, // For tweet
   Linkedin, // For LinkedIn
   Mail, // For Email
+  Instagram as LucideInstagram, // For Instagram
   UserCircle,
   Grid,
   List,
@@ -35,17 +36,17 @@ import {
   Loader2,
   Image as LucideImage,
   Save,
-  Check, // Added Check icon
-  HelpCircle, // Added HelpCircle icon
-  KeyRound, // For password input
-  LogIn, // For login action
-  LogOut, // For logout action
-  UserPlus, // For signup action
+  Check, 
+  HelpCircle, 
+  KeyRound, 
+  LogIn, 
+  LogOut, 
+  UserPlus, 
   type LucideProps,
 } from 'lucide-react';
 
 export const Icons = {
-  Logo: (props: LucideProps) => ( // Simple abstract logo
+  Logo: (props: LucideProps) => ( 
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
@@ -87,6 +88,7 @@ export const Icons = {
   Tweet: MessageSquare,
   LinkedIn: Linkedin,
   Email: Mail,
+  Instagram: LucideInstagram,
   User: UserCircle,
   Grid: Grid,
   List: List,
