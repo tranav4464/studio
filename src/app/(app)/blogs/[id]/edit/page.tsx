@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import type { BlogPost, RepurposedContent } from '@/types';
+import type { BlogPost, RepurposedContent, BlogStatus } from '@/types';
 import { blogStore } from '@/lib/blog-store';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,6 +22,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 
 const imageThemes = ["General", "Dark", "Light", "Pastel", "Vibrant", "Monochrome"];
+const postStatuses: BlogStatus[] = ["draft", "published", "archived"];
 
 export default function BlogEditPage() {
   const params = useParams();
@@ -32,6 +33,7 @@ export default function BlogEditPage() {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [editableTitle, setEditableTitle] = useState('');
   const [content, setContent] = useState('');
+  const [currentStatus, setCurrentStatus] = useState<BlogStatus>('draft'); // New state for status
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -65,8 +67,9 @@ export default function BlogEditPage() {
         setPost(fetchedPost);
         setEditableTitle(fetchedPost.title);
         setContent(fetchedPost.content);
+        setCurrentStatus(fetchedPost.status); // Initialize status
         setHeroImagePrompt(fetchedPost.heroImagePrompt || fetchedPost.title);
-        setHeroImageTone(fetchedPost.tone || 'cinematic'); // Ensure tone is initialized
+        setHeroImageTone(fetchedPost.tone || 'cinematic'); 
         setHeroImageTheme(fetchedPost.heroImageTheme || 'General');
         setSelectedHeroImageUrl(fetchedPost.heroImageUrl || null);
         setHeroImageCaption(fetchedPost.heroImageCaption || '');
@@ -88,11 +91,12 @@ export default function BlogEditPage() {
     blogStore.updatePost(post.id, {
       title: editableTitle,
       content,
+      status: currentStatus, // Save status
       heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
       heroImagePrompt,
-      tone: heroImageTone, // Save heroImageTone as post.tone
+      tone: heroImageTone, 
       heroImageTheme,
       metaTitle,
       metaDescription,
@@ -101,6 +105,7 @@ export default function BlogEditPage() {
       ...prev,
       title: editableTitle,
       content,
+      status: currentStatus, // Update local post state with status
       heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
@@ -121,28 +126,22 @@ export default function BlogEditPage() {
     }
     setIsGeneratingHeroImage(true);
     setGeneratedHeroImageUrls(null);
-    setSelectedHeroImageUrl(null); // Deselect previous image
+    setSelectedHeroImageUrl(null); 
     setGenerationStatus("Initializing generation...");
-
-    // Use a callback for streaming updates if your action supports it.
-    // For now, we'll simulate some progress updates.
+    
     const streamCallback = (data: any) => {
         if (data.custom && data.custom.type === 'status') {
             setGenerationStatus(data.custom.message);
         }
     };
     
-    // Simulate progress
     streamCallback({custom: {type: 'status', message: 'Sending request to AI... (0/3)'}});
     await new Promise(resolve => setTimeout(resolve, 500));
 
-
     try {
-      // Pass heroImagePrompt, heroImageTone, and heroImageTheme
       const result = await generateHeroImageAction({ blogTitle: heroImagePrompt, tone: heroImageTone, theme: heroImageTheme });
       setGeneratedHeroImageUrls(result.imageUrls);
       if (result.imageUrls && result.imageUrls.length > 0) {
-        // Automatically select the first generated image
         setSelectedHeroImageUrl(result.imageUrls[0]); 
         toast({ title: "Hero images generated!", description: "Select your favorite variant below." });
       } else {
@@ -150,10 +149,10 @@ export default function BlogEditPage() {
       }
     } catch (error: any) {
       toast({ title: "Error generating images", description: error.message, variant: "destructive" });
-      setGeneratedHeroImageUrls([`https://placehold.co/600x300.png?text=Error`]); // Show error placeholder
+      setGeneratedHeroImageUrls([`https://placehold.co/600x300.png?text=Error`]); 
     }
     setIsGeneratingHeroImage(false);
-    setGenerationStatus(''); // Clear status
+    setGenerationStatus(''); 
   };
 
   const handleExportPng = () => {
@@ -161,22 +160,15 @@ export default function BlogEditPage() {
       toast({ title: "No image selected", description: "Please generate and select an image to export.", variant: "destructive" });
       return;
     }
-    // Check if the image is a data URI (base64 encoded)
     if (!selectedHeroImageUrl.startsWith('data:image')) {
-      // If it's a regular URL, you might need a server-side proxy to fetch and serve it for download
-      // or inform the user they need to save it manually.
-      // For simplicity, we'll assume data URIs for direct download.
       toast({ title: "Export Error", description: "Selected image is not a data URI and cannot be directly downloaded. AI generated images should be data URIs.", variant: "destructive" });
-      // Or, try to open in new tab for manual save if it's a web URL
-      // window.open(selectedHeroImageUrl, '_blank');
       return;
     }
     try {
       const link = document.createElement('a');
       link.href = selectedHeroImageUrl;
-      // Create a filename from the blog title or a default
       const filename = post?.title ? post.title.replace(/\s+/g, '-').toLowerCase() : 'hero-image';
-      link.download = `${filename}.png`; // Assume PNG for now, could be more dynamic
+      link.download = `${filename}.png`; 
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -296,17 +288,34 @@ export default function BlogEditPage() {
           <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader>
               <CardTitle>Blog Post Details</CardTitle>
-              <CardDescription>Edit the core details of your blog post.</CardDescription>
+              <CardDescription>Edit the core details and status of your blog post.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-1">
-                <Label htmlFor="editableTitle">Blog Title</Label>
-                <div className="flex gap-2 items-center">
-                  <Input id="editableTitle" value={editableTitle} onChange={(e) => setEditableTitle(e.target.value)} placeholder="Your Awesome Blog Title" className="flex-grow"/>
-                  <Button variant="outline" size="sm" onClick={handleSuggestBlogTitle} disabled={isSuggestingBlogTitle}>
-                    {isSuggestingBlogTitle ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Improve className="mr-2 h-4 w-4" />}
-                    Suggest
-                  </Button>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div className="space-y-1 md:col-span-2">
+                  <Label htmlFor="editableTitle">Blog Title</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input id="editableTitle" value={editableTitle} onChange={(e) => setEditableTitle(e.target.value)} placeholder="Your Awesome Blog Title" className="flex-grow"/>
+                    <Button variant="outline" size="sm" onClick={handleSuggestBlogTitle} disabled={isSuggestingBlogTitle}>
+                      {isSuggestingBlogTitle ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Improve className="mr-2 h-4 w-4" />}
+                      Suggest
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="postStatus">Status</Label>
+                  <Select value={currentStatus} onValueChange={(value: BlogStatus) => setCurrentStatus(value)}>
+                    <SelectTrigger id="postStatus">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {postStatuses.map(status => (
+                        <SelectItem key={status} value={status} className="capitalize">
+                          {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>
@@ -461,7 +470,7 @@ export default function BlogEditPage() {
                         </span>
                       </div>
                       <Progress
-                        value={50} // Simplified for testing, was: scoreType === 'Readability' ? (post.seoScore?.readability || 70) : scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity || 55) : (post.seoScore?.quality || 78)
+                        value={scoreType === 'Readability' ? (post.seoScore?.readability || 70) : scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity || 55) : (post.seoScore?.quality || 78)}
                         aria-label={`${scoreType} score`} />
                     </div>
                   ))}
@@ -490,3 +499,5 @@ export default function BlogEditPage() {
     </div>
   );
 }
+
+    
