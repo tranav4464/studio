@@ -61,14 +61,12 @@ export default function BlogEditPage() {
         setContent(fetchedPost.content);
         setHeroImagePrompt(fetchedPost.heroImagePrompt || fetchedPost.title);
         setHeroImageTone(fetchedPost.tone || 'cinematic');
-        setHeroImageTheme((fetchedPost as any).heroImageTheme || 'General');
+        setHeroImageTheme(fetchedPost.heroImageTheme || 'General');
         setSelectedHeroImageUrl(fetchedPost.heroImageUrl || null);
-        // If we previously stored multiple URLs, we could load them here
-        // For now, generatedHeroImageUrls is reset on each generation
         setHeroImageCaption(fetchedPost.heroImageCaption || '');
         setHeroImageAltText(fetchedPost.heroImageAltText || '');
-        setMetaTitle((fetchedPost as any).metaTitle || '');
-        setMetaDescription((fetchedPost as any).metaDescription || '');
+        setMetaTitle(fetchedPost.metaTitle || '');
+        setMetaDescription(fetchedPost.metaDescription || '');
       } else {
         toast({ title: "Blog post not found", variant: "destructive" });
         router.push('/dashboard');
@@ -80,27 +78,27 @@ export default function BlogEditPage() {
   const handleSave = async () => {
     if (!post) return;
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
-    blogStore.updatePost(post.id, { 
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    blogStore.updatePost(post.id, {
       content,
       heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
       heroImagePrompt,
-      metaTitle, 
-      metaDescription,
       heroImageTheme, // Save theme
-    });
-    setPost(prev => prev ? ({
-      ...prev, 
-      content, 
-      heroImageUrl: selectedHeroImageUrl || undefined, 
-      heroImageCaption, 
-      heroImageAltText, 
-      heroImagePrompt,
       metaTitle,
       metaDescription,
+    });
+    setPost(prev => prev ? ({
+      ...prev,
+      content,
+      heroImageUrl: selectedHeroImageUrl || undefined,
+      heroImageCaption,
+      heroImageAltText,
+      heroImagePrompt,
       heroImageTheme,
+      metaTitle,
+      metaDescription,
     }) : null);
     setIsSaving(false);
     toast({ title: "Blog post saved!", description: `"${post.title}" has been updated.` });
@@ -116,39 +114,38 @@ export default function BlogEditPage() {
     setSelectedHeroImageUrl(null);
     setGenerationStatus("Initializing generation...");
     try {
-      // The action now returns an array of URLs
       const result = await generateHeroImageAction({ blogTitle: heroImagePrompt, tone: heroImageTone, theme: heroImageTheme });
       setGeneratedHeroImageUrls(result.imageUrls);
       if (result.imageUrls && result.imageUrls.length > 0) {
-        setSelectedHeroImageUrl(result.imageUrls[0]); // Auto-select the first image
+        setSelectedHeroImageUrl(result.imageUrls[0]); // Select the first image by default
         toast({ title: "Hero images generated!", description: "Select your favorite variant below." });
       } else {
         toast({ title: "No images generated", description: "The AI could not generate images for this prompt.", variant: "destructive" });
       }
     } catch (error: any) {
       toast({ title: "Error generating images", description: error.message, variant: "destructive" });
-      setGeneratedHeroImageUrls([`https://placehold.co/600x300.png?text=Error`]); // Show placeholder on error
+      setGeneratedHeroImageUrls([`https://placehold.co/600x300.png?text=Error`]); // Fallback placeholder
     }
     setIsGeneratingHeroImage(false);
     setGenerationStatus('');
   };
-  
+
   const handleExportPng = () => {
     if (!selectedHeroImageUrl) {
       toast({ title: "No image selected", description: "Please generate and select an image to export.", variant: "destructive" });
       return;
     }
     if (!selectedHeroImageUrl.startsWith('data:image')) {
-      toast({ title: "Export Error", description: "Selected image is not a data URI and cannot be directly downloaded. This might be a placeholder.", variant: "destructive" });
-      // For non-data URIs, you might need server-side help or fetch and convert.
-      // For now, we only support direct download for data URIs.
+      toast({ title: "Export Error", description: "Selected image is not a data URI and cannot be directly downloaded. This might be a placeholder or an external URL.", variant: "destructive" });
       console.warn("Attempted to download non-data URI:", selectedHeroImageUrl);
       return;
     }
     try {
       const link = document.createElement('a');
       link.href = selectedHeroImageUrl;
-      link.download = `${post?.title.replace(/\s+/g, '-').toLowerCase() || 'hero-image'}.png`;
+      // Use post title for filename, fallback if needed
+      const filename = post?.title ? post.title.replace(/\s+/g, '-').toLowerCase() : 'hero-image';
+      link.download = `${filename}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -176,7 +173,7 @@ export default function BlogEditPage() {
     }
     setIsRepurposing(false);
   };
-  
+
   const copyToClipboard = (text: string, type: string) => {
     if (navigator.clipboard && text) {
       navigator.clipboard.writeText(text);
@@ -251,9 +248,9 @@ export default function BlogEditPage() {
                   </TabsList>
                   {(['tweet', 'linkedin', 'email'] as const).map(type => (
                     <TabsContent key={type} value={type} forceMount className="mt-4">
-                      <Textarea value={repurposedContent[type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : 'emailNewsletterSummary']} 
-                                onChange={(e) => setRepurposedContent(prev => prev ? {...prev, [type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : 'emailNewsletterSummary']: e.target.value} : null)} 
-                                rows={8} 
+                      <Textarea value={repurposedContent[type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : 'emailNewsletterSummary']}
+                                onChange={(e) => setRepurposedContent(prev => prev ? {...prev, [type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : 'emailNewsletterSummary']: e.target.value} : null)}
+                                rows={8}
                                 className="text-sm" />
                       <Button variant="outline" size="sm" className="mt-2" onClick={() => copyToClipboard(repurposedContent[type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : 'emailNewsletterSummary'], type)}><Icons.Copy className="mr-2 h-3 w-3"/>Copy</Button>
                     </TabsContent>
@@ -283,13 +280,13 @@ export default function BlogEditPage() {
                 {isGeneratingHeroImage ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Image className="mr-2 h-4 w-4" />}Generate Images
               </Button>
               {isGeneratingHeroImage && <div className="text-center p-4"><Icons.Spinner className="h-6 w-6 animate-spin text-primary" /> <p className="text-sm text-muted-foreground">{generationStatus || "Generating images..."}</p></div>}
-              
+
               {generatedHeroImageUrls && generatedHeroImageUrls.length > 0 && !isGeneratingHeroImage && (
                 <div className="mt-4 space-y-2">
                   <Label>Generated Variants (click to select)</Label>
                   <div className="grid grid-cols-3 gap-2">
                     {generatedHeroImageUrls.map((url, index) => (
-                      <div key={index} 
+                      <div key={index}
                            className={`relative aspect-video w-full overflow-hidden rounded-md border cursor-pointer transition-all ${selectedHeroImageUrl === url ? 'ring-2 ring-primary ring-offset-2' : 'hover:opacity-80'}`}
                            onClick={() => setSelectedHeroImageUrl(url)}>
                         <NextImage src={url} alt={`Variant ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint="variant choice" />
@@ -320,7 +317,7 @@ export default function BlogEditPage() {
               )}
             </CardContent>
           </Card>
-          
+
           <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader><CardTitle>SEO Metadata</CardTitle><CardDescription>Optimize your post for search engines.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
@@ -351,7 +348,13 @@ export default function BlogEditPage() {
                           {scoreType === 'Readability' ? post.seoScore?.readability || 70 : scoreType === 'Keyword Density' ? post.seoScore?.keywordDensity || 55 : post.seoScore?.quality || 78}%
                         </span>
                       </div>
-                      <Progress value={scoreType === 'Readability' ? post.seoScore?.readability || 70 : scoreType === 'Keyword Density' ? post.seoScore?.keywordDensity || 55 : post.seoScore?.quality || 78 : 0} aria-label={`${scoreType} score`} />
+                      <Progress 
+                        value={
+                          scoreType === 'Readability' ? (post.seoScore?.readability || 70) :
+                          scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity || 55) :
+                          (post.seoScore?.quality || 78) 
+                        } 
+                        aria-label={`${scoreType} score`} />
                     </div>
                   ))}
                   <Separator />
