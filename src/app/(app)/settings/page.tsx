@@ -300,7 +300,7 @@ export default function SettingsPage() {
 
         <Card className="md:col-span-1 lg:col-span-3 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl border-destructive/50">
           <CardHeader>
-            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <CardTitle>Danger Zone</CardTitle>
             <CardDescription>Be careful with actions in this section.</CardDescription>
           </CardHeader>
           <CardContent>
