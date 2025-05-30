@@ -53,7 +53,7 @@ export default function DashboardPage() {
               <Button
                 size="lg"
                 className="mt-6 sm:mt-0 shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-xl 
-                           bg-[#BAE1DB] text-[#1A4644] hover:bg-[#a7ccc6] 
+                           bg-[#BAE1DB] text-primary hover:bg-[#a7ccc6] 
                            dark:bg-[#1db954] dark:text-white dark:hover:bg-[#1aa34a]"
               >
                 <Icons.NewBlog className="mr-2 h-5 w-5 animate-pulse" />
@@ -108,3 +108,4 @@ export default function DashboardPage() {
     </>
   );
 }
+
