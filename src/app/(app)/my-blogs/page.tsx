@@ -1,70 +1,149 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { blogStore } from '@/lib/blog-store';
+import type { BlogPost, BlogStatus } from '@/types';
+import { BlogCard } from '@/components/dashboard/blog-card';
+import { Separator } from '@/components/ui/separator';
+import { format, parseISO } from 'date-fns';
 
-// Mock data for demonstration
-const mockBlogs = [
-  {
-    id: '1',
-    title: 'My First Blog Post',
-    lastEdited: '2023-10-27',
-    status: 'Published',
-  },
-  {
-    id: '2',
-    title: 'Draft Idea for a New Article',
-    lastEdited: '2023-10-26',
-    status: 'Draft',
-  },
-  {
-    id: '3',
-    title: 'Another Published Blog',
-    lastEdited: '2023-10-25',
-    status: 'Published',
-  },
+type SortOption = 'date-newest' | 'date-oldest' | 'title-az' | 'title-za';
+
+const statusOptions: Array<{value: BlogStatus | 'all', label: string}> = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'published', label: 'Published' },
+  { value: 'archived', label: 'Archived' },
+];
+
+const sortOptions: Array<{value: SortOption, label: string}> = [
+  { value: 'date-newest', label: 'Date: Newest First' },
+  { value: 'date-oldest', label: 'Date: Oldest First' },
+  { value: 'title-az', label: 'Title: A-Z' },
+  { value: 'title-za', label: 'Title: Z-A' },
 ];
 
 export default function MyBlogsPage() {
-  const [blogs, setBlogs] = useState([]); // Replace with actual data fetching
-  const [loading, setLoading] = useState(true);
+  const [allPosts, setAllPosts] = useState<BlogPost[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<BlogStatus | 'all'>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('date-newest');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching data
-    const fetchBlogs = async () => {
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-      setBlogs(mockBlogs as any); // Replace with actual API call
-      setLoading(false);
+    const fetchPosts = () => {
+      setAllPosts(blogStore.getPosts());
+      setIsLoading(false);
     };
 
-    fetchBlogs();
+    fetchPosts();
+    const unsubscribe = blogStore.subscribe(fetchPosts);
+    return () => unsubscribe();
   }, []);
 
+  const handleDeletePost = (id: string) => {
+    blogStore.deletePost(id);
+    // The subscription will trigger a re-fetch and update the list
+  };
+
+  const filteredAndSortedPosts = useMemo(() => {
+    let posts = [...allPosts];
+
+    // Apply search filter
+    if (searchTerm) {
+      posts = posts.filter(post =>
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.topic.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      posts = posts.filter(post => post.status === statusFilter);
+    }
+
+    // Apply sort
+    switch (sortBy) {
+      case 'date-newest':
+        posts.sort((a, b) => parseISO(b.updatedAt).getTime() - parseISO(a.updatedAt).getTime());
+        break;
+      case 'date-oldest':
+        posts.sort((a, b) => parseISO(a.updatedAt).getTime() - parseISO(b.updatedAt).getTime());
+        break;
+      case 'title-az':
+        posts.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'title-za':
+        posts.sort((a, b) => b.title.localeCompare(a.title));
+        break;
+    }
+    return posts;
+  }, [allPosts, searchTerm, statusFilter, sortBy]);
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="My Blogs"
         description="Manage and view all your blog posts."
       />
 
-      {/* Optional: Search Bar, Status Filters, Sort Options */}
-      {/* Add components here for filtering, searching, and sorting */}
-      {/* <div className="flex justify-between items-center">
-        <input type="text" placeholder="Search blogs..." className="border p-2 rounded" />
-        <div>Filter/Sort Options</div>
-      </div> */}
+      <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+        <CardContent className="p-4 space-y-4 md:space-y-0 md:flex md:flex-wrap md:items-center md:justify-between gap-4">
+          <div className="relative flex-grow sm:max-w-xs">
+            <Icons.Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search blogs by title or topic..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 h-10"
+            />
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <Select value={statusFilter} onValueChange={(value: BlogStatus | 'all') => setStatusFilter(value)}>
+              <SelectTrigger className="w-full sm:w-[180px] h-10">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value} className="capitalize">
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+              <SelectTrigger className="w-full sm:w-[200px] h-10">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-      {loading ? (
-        <p>Loading blogs...</p>
-      ) : blogs.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center p-8 text-center transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-lg">
+      {isLoading ? (
+        <div className="flex justify-center items-center py-10">
+          <Icons.Spinner className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : filteredAndSortedPosts.length === 0 ? (
+        <Card className="flex flex-col items-center justify-center p-8 text-center transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
           <CardHeader>
-            <CardTitle>You haven't written any blogs yet.</CardTitle>
+            <CardTitle>{searchTerm || statusFilter !== 'all' ? 'No blogs match your criteria.' : "You haven't created any blogs yet."}</CardTitle>
           </CardHeader>
           <CardContent>
             <Button asChild>
@@ -75,40 +154,12 @@ export default function MyBlogsPage() {
           </CardContent>
         </Card>
       ) : (
-        // Blog listing table/grid
-        // Replace with a proper table or grid component
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {blogs.map((blog: any) => ( // Use actual blog type
-            <Card key={blog.id} className="transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-lg">
-              <CardHeader>
-                <CardTitle>{blog.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Last Edited: {blog.lastEdited}</p>
-                <p>Status: {blog.status}</p>
-                <div className="flex gap-2 mt-2">
-                  <Link href={`/blogs/${blog.id}/edit`}>
-                    <Button variant="outline" size="sm">
-                      <Icons.Edit className="h-4 w-4" /> Edit
-                    </Button>
-                  </Link>
-                  {/* Add Export and Delete buttons */}
-                  {/* <Button variant="outline" size="sm">Export</Button> */}
-                  {/* <Button variant="destructive" size="sm">Delete</Button> */}
-                </div>
-              </CardContent>
-            </Card>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredAndSortedPosts.map((post) => (
+            <BlogCard key={post.id} post={post} onDelete={handleDeletePost} />
           ))}
         </div>
       )}
-
-      {/* Optional: Pagination or Infinite Scroll */}
-      {/* Add pagination or infinite scroll logic here */}
-      {/* <div>Pagination Controls</div> */}
-
-      {/* Optional: Bulk Actions (Advanced) */}
-      {/* Add bulk action options here */}
-      {/* <div className="mt-4">Bulk Actions</div> */}
     </div>
   );
 }
