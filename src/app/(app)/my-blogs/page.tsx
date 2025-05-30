@@ -98,7 +98,7 @@ export default function MyBlogsPage() {
       <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
         <CardContent className="p-4 space-y-4 md:space-y-0 md:flex md:flex-wrap md:items-center md:justify-between gap-4">
           <div className="relative flex-grow sm:max-w-xs">
-            <Icons.Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Icons.SEO className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search blogs by title or topic..."
@@ -163,3 +163,4 @@ export default function MyBlogsPage() {
     </div>
   );
 }
+
