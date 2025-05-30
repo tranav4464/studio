@@ -18,8 +18,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react'; // Import useState
-import { cn } from '@/lib/utils'; // Import cn
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface BlogCardProps {
   post: BlogPost;
@@ -28,7 +28,7 @@ interface BlogCardProps {
 
 export function BlogCard({ post, onDelete }: BlogCardProps) {
   const { toast } = useToast();
-  const [isFavorited, setIsFavorited] = useState(false); // State for favorite status
+  const [isFavorited, setIsFavorited] = useState(false);
 
   const handleDelete = () => {
     if (onDelete) {
@@ -47,15 +47,26 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
   };
 
   const handleFavorite = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click when clicking favorite
+    e.stopPropagation(); 
     const newFavoriteState = !isFavorited;
     setIsFavorited(newFavoriteState);
     toast({ 
       title: "Favorite Toggled!", 
       description: `"${post.title}" is now ${newFavoriteState ? 'favorited' : 'unfavorited'}. (UI demonstration)` 
     });
-    // In a real app, you'd update the post's favorite status here:
-    // blogStore.updatePost(post.id, { isFavorite: newFavoriteState });
+  };
+
+  const getBadgeVariant = () => {
+    switch (post.status) {
+      case 'published':
+        return 'published';
+      case 'draft':
+        return 'draft';
+      case 'archived':
+        return 'secondary'; // Or 'outline', or a specific 'archived' variant if defined
+      default:
+        return 'secondary';
+    }
   };
 
   return (
@@ -167,7 +178,7 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
         </p>
       </CardContent>
       <CardFooter className="p-4 flex justify-between items-center border-t">
-        <Badge variant={post.status === 'published' ? 'default' : 'secondary'} className="capitalize text-xs">
+        <Badge variant={getBadgeVariant()} className="capitalize text-xs">
           {post.status}
         </Badge>
         <Link href={`/blogs/${post.id}/edit`} passHref>

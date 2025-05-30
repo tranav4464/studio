@@ -63,33 +63,33 @@ code, pre, kbd, samp {
   }
 
   .dark {
-    --background: 240 10% 10%; /* Dark Blue/Gray */
-    --foreground: 0 0% 96.1%; /* Light Gray text */
+    --background: 0 0% 7%; /* #121212 */
+    --foreground: 0 0% 98%; /* #FAFAFA */
 
-    --card: 240 10% 15%; /* Slightly lighter dark cards */
-    --card-foreground: 0 0% 96.1%;
+    --card: 240 5% 10%; /* #1A1A1D */
+    --card-foreground: 0 0% 98%; /* #FAFAFA */
 
-    --popover: 240 10% 15%;
-    --popover-foreground: 0 0% 96.1%;
+    --popover: 240 5% 10%; /* #1A1A1D */
+    --popover-foreground: 0 0% 98%; /* #FAFAFA */
 
-    --primary: 180 80% 40%; /* Brighter Teal for dark mode e.g. #14C2C2 */
-    --primary-foreground: 0 0% 98%; 
+    --primary: 212 70% 59%; /* Blue #4A90E2 for Primary CTA */
+    --primary-foreground: 0 0% 100%; /* White #FFFFFF for CTA text */
 
-    --secondary: 240 10% 20%; 
-    --secondary-foreground: 0 0% 96.1%;
+    --secondary: 0 0% 20%; /* Dark Gray #333333 for secondary elements */
+    --secondary-foreground: 0 0% 80%; /* Lighter gray text #CCCCCC */
 
-    --muted: 240 10% 20%;
-    --muted-foreground: 0 0% 70%; /* Lighter muted text */
+    --muted: 0 0% 15%; /* #262626 */
+    --muted-foreground: 0 0% 63%; /* #A0A0A0 for secondary text */
 
-    --accent: 45 90% 55%; /* Brighter Yellow for dark mode e.g. #FFD040 */
-    --accent-foreground: 240 10% 3.9%;
+    --accent: 45 90% 55%; /* Brighter Yellow #FFD040 */
+    --accent-foreground: 240 10% 3.9%; /* Dark text on Yellow */
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 72% 51%; /* Red #E53E3E */
+    --destructive-foreground: 0 0% 98%; /* #FAFAFA */
 
-    --border: 240 10% 25%;
-    --input: 240 10% 25%;
-    --ring: 180 80% 40%; /* Brighter Teal for ring */
+    --border: 0 0% 33%; /* #555555 */
+    --input: 0 0% 33%; /* #555555 */
+    --ring: 212 70% 59%; /* Blue #4A90E2 for focus rings */
     
     /* Chart colors for dark mode */
     --chart-1: 220 70% 50%;
@@ -99,14 +99,14 @@ code, pre, kbd, samp {
     --chart-5: 340 75% 55%;
 
     /* Sidebar specific colors for dark mode */
-    --sidebar-background: 240 10% 8%; /* Darker sidebar */
-    --sidebar-foreground: 0 0% 85%; /* Lighter text for sidebar */
-    --sidebar-primary: 180 80% 40%; /* Teal from dark theme */
-    --sidebar-primary-foreground: 0 0% 98%; /* White text */
-    --sidebar-accent: 45 90% 55%; /* Yellow from dark theme */
-    --sidebar-accent-foreground: 240 10% 3.9%; /* Dark text */
-    --sidebar-border: 240 10% 20%;
-    --sidebar-ring: 180 80% 40%;
+    --sidebar-background: 240 7% 13%; /* #1F1F23 */
+    --sidebar-foreground: 0 0% 80%; /* #CCCCCC */
+    --sidebar-primary: 212 70% 59%; /* Blue #4A90E2 */
+    --sidebar-primary-foreground: 0 0% 100%; /* White #FFFFFF */
+    --sidebar-accent: 45 90% 55%; /* Yellow #FFD040 */
+    --sidebar-accent-foreground: 240 10% 3.9%; /* Dark text on Yellow */
+    --sidebar-border: 0 0% 25%; /* #404040 */
+    --sidebar-ring: 212 70% 59%; /* Blue #4A90E2 */
   }
 }
 
