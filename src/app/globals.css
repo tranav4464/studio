@@ -15,22 +15,22 @@ code, pre, kbd, samp {
 @layer base {
   :root {
     --background: 0 0% 96.1%; /* Light Gray #F5F5F5 */
-    --foreground: 240 10% 3.9%; /* Dark Blue/Black */
+    --foreground: 0 0% 0%; /* Black */
 
     --card: 0 0% 100%; /* White */
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 0 0% 0%; /* Black */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 0 0% 0%; /* Black */
 
     --primary: 180 100% 25%; /* Teal #008080 */
     --primary-foreground: 0 0% 98%; /* White/Light text */
 
     --secondary: 0 0% 92%; /* Lighter gray for secondary elements */
-    --secondary-foreground: 240 10% 20%; /* Darker text for secondary */
+    --secondary-foreground: 0 0% 0%; /* Black */
 
     --muted: 0 0% 90%; /* Muted gray */
-    --muted-foreground: 240 5% 45%; /* Muted text */
+    --muted-foreground: 0 0% 0%; /* Black */
 
     --accent: 45 100% 51.4%; /* Yellow #FFC107 */
     --accent-foreground: 240 10% 3.9%; /* Dark text on Yellow */
@@ -53,7 +53,7 @@ code, pre, kbd, samp {
 
     /* Sidebar specific colors */
     --sidebar-background: 0 0% 100%; /* White sidebar */
-    --sidebar-foreground: 240 10% 20%; /* Dark text for sidebar */
+    --sidebar-foreground: 0 0% 0%; /* Black */
     --sidebar-primary: 180 100% 25%; /* Teal */
     --sidebar-primary-foreground: 0 0% 98%; /* White text */
     --sidebar-accent: 45 100% 51.4%; /* Yellow */
@@ -64,22 +64,22 @@ code, pre, kbd, samp {
 
   .dark {
     --background: 0 0% 7%; /* #121212 */
-    --foreground: 0 0% 98%; /* #FAFAFA */
+    --foreground: 0 0% 100%; /* White */
 
     --card: 240 5% 10%; /* #1A1A1D */
-    --card-foreground: 0 0% 98%; /* #FAFAFA */
+    --card-foreground: 0 0% 100%; /* White */
 
     --popover: 240 5% 10%; /* #1A1A1D */
-    --popover-foreground: 0 0% 98%; /* #FAFAFA */
+    --popover-foreground: 0 0% 100%; /* White */
 
     --primary: 212 70% 59%; /* Blue #4A90E2 for Primary CTA */
     --primary-foreground: 0 0% 100%; /* White #FFFFFF for CTA text */
 
     --secondary: 0 0% 20%; /* Dark Gray #333333 for secondary elements */
-    --secondary-foreground: 0 0% 80%; /* Lighter gray text #CCCCCC */
+    --secondary-foreground: 0 0% 100%; /* White */
 
     --muted: 0 0% 15%; /* #262626 */
-    --muted-foreground: 0 0% 63%; /* #A0A0A0 for secondary text */
+    --muted-foreground: 0 0% 100%; /* White */
 
     --accent: 45 90% 55%; /* Brighter Yellow #FFD040 */
     --accent-foreground: 240 10% 3.9%; /* Dark text on Yellow */
@@ -100,7 +100,7 @@ code, pre, kbd, samp {
 
     /* Sidebar specific colors for dark mode */
     --sidebar-background: 240 7% 13%; /* #1F1F23 */
-    --sidebar-foreground: 0 0% 80%; /* #CCCCCC */
+    --sidebar-foreground: 0 0% 100%; /* White */
     --sidebar-primary: 212 70% 59%; /* Blue #4A90E2 */
     --sidebar-primary-foreground: 0 0% 100%; /* White #FFFFFF */
     --sidebar-accent: 45 90% 55%; /* Yellow #FFD040 */
