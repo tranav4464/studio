@@ -143,6 +143,8 @@ export default function BlogEditPage() {
       setGeneratedHeroImageUrls(result.imageUrls);
       if (result.imageUrls && result.imageUrls.length > 0) {
         setSelectedHeroImageUrl(result.imageUrls[0]); 
+        setHeroImageAltText(`AI generated hero image for: ${heroImagePrompt}, style: ${heroImageTone}, theme: ${heroImageTheme}`);
+        setHeroImageCaption(`Hero image for "${editableTitle}" - ${heroImageTone} style, ${heroImageTheme} theme`);
         toast({ title: "Hero images generated!", description: "Select your favorite variant below." });
       } else {
         toast({ title: "No images generated", description: "The AI could not generate images for this prompt.", variant: "destructive" });
@@ -350,10 +352,10 @@ export default function BlogEditPage() {
               {isRepurposing && <div className="text-center p-4"><Icons.Spinner className="h-6 w-6 animate-spin text-primary" /> <p className="text-sm text-muted-foreground">Generating snippets...</p></div>}
               {repurposedContent && (
                 <Tabs defaultValue="tweet" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4"> {/* Updated grid-cols-3 to grid-cols-4 */}
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="tweet"><Icons.Tweet className="mr-1 h-4 w-4"/>Tweet</TabsTrigger>
                     <TabsTrigger value="linkedin"><Icons.LinkedIn className="mr-1 h-4 w-4"/>LinkedIn</TabsTrigger>
-                    <TabsTrigger value="instagram"><Icons.Instagram className="mr-1 h-4 w-4"/>Instagram</TabsTrigger> {/* Added Instagram tab */}
+                    <TabsTrigger value="instagram"><Icons.Instagram className="mr-1 h-4 w-4"/>Instagram</TabsTrigger>
                     <TabsTrigger value="email"><Icons.Email className="mr-1 h-4 w-4"/>Email</TabsTrigger>
                   </TabsList>
                   {(['tweet', 'linkedin', 'instagram', 'email'] as const).map(type => (
