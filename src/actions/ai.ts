@@ -7,29 +7,23 @@ import { repurposeContent, type RepurposeContentInput, type RepurposeContentOutp
 export async function generateHeroImageAction(input: GenerateHeroImageInput): Promise<GenerateHeroImageOutput> {
   try {
     // Add a small delay to simulate network latency for better UX feedback
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // For actual streaming or progress updates, Genkit's streaming capabilities would be used.
+    // The flow itself can use streamingCallback for intermediate updates if needed.
     const result = await generateHeroImage(input);
-    if (!result.imageUrl) {
-      // This can happen if the AI fails to produce an image but doesn't throw.
-      // The genkit flow might return a text part instead of media if it can't fulfill.
-      // Fallback or error.
-      console.warn("AI did not return an image URL. Input:", input, "Output:", result);
-      // Using a placeholder if generation fails to provide visual feedback
-      return { imageUrl: `https://placehold.co/800x400.png?text=Image+Generation+Failed` };
+    
+    if (!result.imageUrls || result.imageUrls.length === 0) {
+      console.warn("AI did not return any image URLs. Input:", input, "Output:", result);
+      return { imageUrls: [`https://placehold.co/800x400.png?text=Image+Generation+Failed`] };
     }
     return result;
   } catch (error) {
     console.error("Error generating hero image:", error);
-    // Return a placeholder on error as well for user feedback.
-    return { imageUrl: `https://placehold.co/800x400.png?text=Error+Generating` };
-    // For a real app, you might throw a more specific error or handle it differently.
-    // throw new Error("Failed to generate hero image. Please try again."); 
+    return { imageUrls: [`https://placehold.co/800x400.png?text=Error+Generating+Images`] };
   }
 }
 
 export async function repurposeContentAction(input: RepurposeContentInput): Promise<RepurposeContentOutput> {
   try {
-    // Add a small delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     const result = await repurposeContent(input);
     return result;
@@ -39,10 +33,10 @@ export async function repurposeContentAction(input: RepurposeContentInput): Prom
   }
 }
 
-// Mock action for blog generation (not part of provided AI flows)
+// Mock action for blog generation
 export async function generateFullBlogAction(params: { topic: string, outline: string[], tone: string, style: string, length: string }): Promise<{ content: string }> {
   console.log("Mock generateFullBlogAction called with:", params);
-  await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 2000)); 
   
   const generatedContent = `
 # ${params.topic} - A ${params.style} take with a ${params.tone} tone (${params.length})

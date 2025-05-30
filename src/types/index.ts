@@ -15,10 +15,10 @@ export interface BlogPost {
   heroImagePrompt?: string;
   heroImageCaption?: string;
   heroImageAltText?: string;
+  heroImageTheme?: string; // Added for theme persistence
   seoScore?: {
     readability: number; // 0-100
     keywordDensity: number; // 0-100
-
     quality: number; // 0-100
   };
 }

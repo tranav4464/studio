@@ -11,14 +11,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { PageHeader } from '@/components/shared/page-header';
 import { useToast } from '@/hooks/use-toast';
 import { generateHeroImageAction, repurposeContentAction } from '@/actions/ai';
-import NextImage from 'next/image'; // Renamed to avoid conflict
+import NextImage from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+
+const imageThemes = ["General", "Dark", "Light", "Pastel", "Vibrant", "Monochrome"];
 
 export default function BlogEditPage() {
   const params = useParams();
@@ -33,10 +36,14 @@ export default function BlogEditPage() {
 
   const [heroImagePrompt, setHeroImagePrompt] = useState('');
   const [heroImageTone, setHeroImageTone] = useState('cinematic');
-  const [generatedHeroImageUrl, setGeneratedHeroImageUrl] = useState<string | null>(null);
+  const [heroImageTheme, setHeroImageTheme] = useState('General');
+  const [generatedHeroImageUrls, setGeneratedHeroImageUrls] = useState<string[] | null>(null);
+  const [selectedHeroImageUrl, setSelectedHeroImageUrl] = useState<string | null>(null);
   const [heroImageCaption, setHeroImageCaption] = useState('');
   const [heroImageAltText, setHeroImageAltText] = useState('');
   const [isGeneratingHeroImage, setIsGeneratingHeroImage] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState('');
+
 
   const [repurposeTone, setRepurposeTone] = useState('professional');
   const [repurposedContent, setRepurposedContent] = useState<RepurposedContent | null>(null);
@@ -53,12 +60,13 @@ export default function BlogEditPage() {
         setPost(fetchedPost);
         setContent(fetchedPost.content);
         setHeroImagePrompt(fetchedPost.heroImagePrompt || fetchedPost.title);
-        setHeroImageTone(fetchedPost.tone || 'cinematic'); // Use blog tone as default for image
+        setHeroImageTone(fetchedPost.tone || 'cinematic');
+        setHeroImageTheme((fetchedPost as any).heroImageTheme || 'General');
+        setSelectedHeroImageUrl(fetchedPost.heroImageUrl || null);
+        // If we previously stored multiple URLs, we could load them here
+        // For now, generatedHeroImageUrls is reset on each generation
         setHeroImageCaption(fetchedPost.heroImageCaption || '');
         setHeroImageAltText(fetchedPost.heroImageAltText || '');
-        setGeneratedHeroImageUrl(fetchedPost.heroImageUrl || null);
-        // Assuming meta fields could be part of BlogPost in the future or stored alongside
-        // For now, we'll initialize them if they are part of the post, or default to empty
         setMetaTitle((fetchedPost as any).metaTitle || '');
         setMetaDescription((fetchedPost as any).metaDescription || '');
       } else {
@@ -75,24 +83,24 @@ export default function BlogEditPage() {
     await new Promise(resolve => setTimeout(resolve, 1000)); 
     blogStore.updatePost(post.id, { 
       content,
-      heroImageUrl: generatedHeroImageUrl || undefined,
+      heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
       heroImagePrompt,
-      // Persist meta fields if they were part of the BlogPost type
-      // For now, this is a mock save; actual persistence would require type update
       metaTitle, 
-      metaDescription 
+      metaDescription,
+      heroImageTheme, // Save theme
     });
     setPost(prev => prev ? ({
       ...prev, 
       content, 
-      heroImageUrl: generatedHeroImageUrl || undefined, 
+      heroImageUrl: selectedHeroImageUrl || undefined, 
       heroImageCaption, 
       heroImageAltText, 
       heroImagePrompt,
       metaTitle,
-      metaDescription
+      metaDescription,
+      heroImageTheme,
     }) : null);
     setIsSaving(false);
     toast({ title: "Blog post saved!", description: `"${post.title}" has been updated.` });
@@ -104,16 +112,53 @@ export default function BlogEditPage() {
       return;
     }
     setIsGeneratingHeroImage(true);
-    setGeneratedHeroImageUrl(null);
+    setGeneratedHeroImageUrls(null);
+    setSelectedHeroImageUrl(null);
+    setGenerationStatus("Initializing generation...");
     try {
-      const result = await generateHeroImageAction({ blogTitle: heroImagePrompt, tone: heroImageTone });
-      setGeneratedHeroImageUrl(result.imageUrl);
-      toast({ title: "Hero image generated!", description: "Review the image below." });
+      // The action now returns an array of URLs
+      const result = await generateHeroImageAction({ blogTitle: heroImagePrompt, tone: heroImageTone, theme: heroImageTheme });
+      setGeneratedHeroImageUrls(result.imageUrls);
+      if (result.imageUrls && result.imageUrls.length > 0) {
+        setSelectedHeroImageUrl(result.imageUrls[0]); // Auto-select the first image
+        toast({ title: "Hero images generated!", description: "Select your favorite variant below." });
+      } else {
+        toast({ title: "No images generated", description: "The AI could not generate images for this prompt.", variant: "destructive" });
+      }
     } catch (error: any) {
-      toast({ title: "Error generating image", description: error.message, variant: "destructive" });
+      toast({ title: "Error generating images", description: error.message, variant: "destructive" });
+      setGeneratedHeroImageUrls([`https://placehold.co/600x300.png?text=Error`]); // Show placeholder on error
     }
     setIsGeneratingHeroImage(false);
+    setGenerationStatus('');
   };
+  
+  const handleExportPng = () => {
+    if (!selectedHeroImageUrl) {
+      toast({ title: "No image selected", description: "Please generate and select an image to export.", variant: "destructive" });
+      return;
+    }
+    if (!selectedHeroImageUrl.startsWith('data:image')) {
+      toast({ title: "Export Error", description: "Selected image is not a data URI and cannot be directly downloaded. This might be a placeholder.", variant: "destructive" });
+      // For non-data URIs, you might need server-side help or fetch and convert.
+      // For now, we only support direct download for data URIs.
+      console.warn("Attempted to download non-data URI:", selectedHeroImageUrl);
+      return;
+    }
+    try {
+      const link = document.createElement('a');
+      link.href = selectedHeroImageUrl;
+      link.download = `${post?.title.replace(/\s+/g, '-').toLowerCase() || 'hero-image'}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({ title: "Image downloading...", description: "Check your downloads folder."});
+    } catch (error) {
+      console.error("Error downloading image:", error);
+      toast({ title: "Download Failed", description: "Could not download the image.", variant: "destructive" });
+    }
+  };
+
 
   const handleRepurposeContent = async () => {
     if (!content) {
@@ -170,7 +215,7 @@ export default function BlogEditPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader><CardTitle>Blog Content Editor</CardTitle><CardDescription>Edit your blog post. Use AI tools for assistance.</CardDescription></CardHeader>
             <CardContent>
               <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={25} className="text-base p-4 border rounded-md shadow-inner focus:ring-primary focus:border-primary" placeholder="Start writing..."/>
@@ -179,12 +224,12 @@ export default function BlogEditPage() {
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Improve' feature coming soon!" })}><Icons.Improve className="mr-2 h-4 w-4"/>Improve</Button>
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Expand' feature coming soon!" })}><Icons.Expand className="mr-2 h-4 w-4"/>Expand</Button>
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Simplify' feature coming soon!" })}><Icons.Simplify className="mr-2 h-4 w-4"/>Simplify</Button>
-                <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Depth Boost' feature coming soon!" })}><Icons.Sparkles className="mr-2 h-4 w-4"/>Depth Boost</Button> {/* Placeholder Icon */}
-                <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Visualize' feature coming soon!" })}><Icons.Image className="mr-2 h-4 w-4"/>Visualize</Button> {/* Placeholder Icon */}
+                <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Depth Boost' feature coming soon!" })}><Icons.Sparkles className="mr-2 h-4 w-4"/>Depth Boost</Button>
+                <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Visualize' feature coming soon!" })}><Icons.Image className="mr-2 h-4 w-4"/>Visualize</Button>
             </CardFooter>
           </Card>
 
-          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader><CardTitle>Content Repurposing</CardTitle><CardDescription>Generate social media snippets and summaries.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-end gap-4">
@@ -220,32 +265,63 @@ export default function BlogEditPage() {
         </div>
 
         <div className="lg:col-span-1 space-y-6">
-          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
-            <CardHeader><CardTitle>Hero Image Generator</CardTitle><CardDescription>Create a hero image for your post.</CardDescription></CardHeader>
+          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+            <CardHeader><CardTitle>Hero Image Generator</CardTitle><CardDescription>Create hero images for your post.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1"><Label htmlFor="heroPrompt">Image Prompt</Label><Input id="heroPrompt" value={heroImagePrompt} onChange={(e) => setHeroImagePrompt(e.target.value)} placeholder="e.g., Futuristic cityscape" /></div>
-              <div className="space-y-1"><Label htmlFor="heroTone">Image Tone/Style</Label><Input id="heroTone" value={heroImageTone} onChange={(e) => setHeroImageTone(e.target.value)} placeholder="e.g., cinematic, vibrant" /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1"><Label htmlFor="heroTone">Image Tone/Style</Label><Input id="heroTone" value={heroImageTone} onChange={(e) => setHeroImageTone(e.target.value)} placeholder="e.g., cinematic, vibrant" /></div>
+                <div className="space-y-1">
+                  <Label htmlFor="heroTheme">Image Theme</Label>
+                  <Select value={heroImageTheme} onValueChange={(value: string) => setHeroImageTheme(value)}>
+                    <SelectTrigger id="heroTheme"><SelectValue placeholder="Select theme" /></SelectTrigger>
+                    <SelectContent>{imageThemes.map(theme => <SelectItem key={theme} value={theme}>{theme}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
               <Button onClick={handleGenerateHeroImage} disabled={isGeneratingHeroImage} className="w-full">
-                {isGeneratingHeroImage ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Image className="mr-2 h-4 w-4" />}Generate Image
+                {isGeneratingHeroImage ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Image className="mr-2 h-4 w-4" />}Generate Images
               </Button>
-              {isGeneratingHeroImage && <div className="text-center p-4"><Icons.Spinner className="h-6 w-6 animate-spin text-primary" /> <p className="text-sm text-muted-foreground">Generating image...</p></div>}
-              {generatedHeroImageUrl && (
+              {isGeneratingHeroImage && <div className="text-center p-4"><Icons.Spinner className="h-6 w-6 animate-spin text-primary" /> <p className="text-sm text-muted-foreground">{generationStatus || "Generating images..."}</p></div>}
+              
+              {generatedHeroImageUrls && generatedHeroImageUrls.length > 0 && !isGeneratingHeroImage && (
                 <div className="mt-4 space-y-2">
+                  <Label>Generated Variants (click to select)</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {generatedHeroImageUrls.map((url, index) => (
+                      <div key={index} 
+                           className={`relative aspect-video w-full overflow-hidden rounded-md border cursor-pointer transition-all ${selectedHeroImageUrl === url ? 'ring-2 ring-primary ring-offset-2' : 'hover:opacity-80'}`}
+                           onClick={() => setSelectedHeroImageUrl(url)}>
+                        <NextImage src={url} alt={`Variant ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint="variant choice" />
+                        {selectedHeroImageUrl === url && (
+                            <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
+                                <Icons.Check className="h-6 w-6 text-white"/>
+                            </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedHeroImageUrl && (
+                <div className="mt-4 space-y-3 pt-3 border-t">
+                  <Label className="font-semibold">Selected Image:</Label>
                   <div className="relative aspect-video w-full overflow-hidden rounded-md border">
-                    <NextImage src={generatedHeroImageUrl} alt={heroImageAltText || "Generated hero image"} layout="fill" objectFit="cover" data-ai-hint="illustration abstract"/>
+                    <NextImage src={selectedHeroImageUrl} alt={heroImageAltText || "Selected hero image"} layout="fill" objectFit="cover" data-ai-hint="illustration abstract"/>
                   </div>
                   <div className="space-y-1"><Label htmlFor="heroCaption">Caption</Label><Input id="heroCaption" value={heroImageCaption} onChange={(e) => setHeroImageCaption(e.target.value)} placeholder="Image caption" /></div>
                   <div className="space-y-1"><Label htmlFor="heroAltText">Alt Text</Label><Input id="heroAltText" value={heroImageAltText} onChange={(e) => setHeroImageAltText(e.target.value)} placeholder="Accessibility alt text" /></div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => toast({ title: "Export PNG", description:"Coming soon!"})}>Export PNG</Button>
-                    <Button variant="outline" size="sm" onClick={() => toast({ title: "Export SVG", description:"Coming soon!"})}>Export SVG</Button>
+                    <Button variant="outline" size="sm" onClick={handleExportPng}>Export PNG</Button>
+                    <Button variant="outline" size="sm" onClick={() => toast({ title: "Export SVG", description:"SVG export coming soon! Vector generation is complex."})}>Export SVG</Button>
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
           
-          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader><CardTitle>SEO Metadata</CardTitle><CardDescription>Optimize your post for search engines.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1">
@@ -261,7 +337,7 @@ export default function BlogEditPage() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader><CardTitle>Optimization Panel</CardTitle><CardDescription>SEO scores and content analysis.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               <Tabs defaultValue="seo" className="w-full">
@@ -275,7 +351,7 @@ export default function BlogEditPage() {
                           {scoreType === 'Readability' ? post.seoScore?.readability || 70 : scoreType === 'Keyword Density' ? post.seoScore?.keywordDensity || 55 : post.seoScore?.quality || 78}%
                         </span>
                       </div>
-                      <Progress value={scoreType === 'Readability' ? post.seoScore?.readability || 70 : scoreType === 'Keyword Density' ? post.seoScore?.keywordDensity || 55 : scoreType === 'Overall Quality' ? post.seoScore?.quality || 78 : 0} aria-label={`${scoreType} score`} />
+                      <Progress value={scoreType === 'Readability' ? post.seoScore?.readability || 70 : scoreType === 'Keyword Density' ? post.seoScore?.keywordDensity || 55 : post.seoScore?.quality || 78 : 0} aria-label={`${scoreType} score`} />
                     </div>
                   ))}
                   <Separator />
@@ -303,5 +379,3 @@ export default function BlogEditPage() {
     </div>
   );
 }
-
-  

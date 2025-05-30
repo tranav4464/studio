@@ -35,6 +35,7 @@ import {
   Loader2,
   Image as LucideImage,
   Save,
+  Check, // Added Check icon
   type LucideProps,
 } from 'lucide-react';
 
@@ -88,6 +89,7 @@ export const Icons = {
   Spinner: Loader2,
   Image: LucideImage,
   Save: Save,
+  Check: Check, // Added Check icon
 };
 
 export type IconName = keyof typeof Icons;
