@@ -71,8 +71,10 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : recentPosts.length === 0 ? (
-            <div className="text-center py-10 bg-card rounded-lg shadow-inner border border-dashed border-muted-foreground/20 flex flex-col items-center justify-center animate-fade-in transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
-               <p className="text-muted-foreground mb-4">No recent blogs to display.</p>
+            <div className="text-center py-16 bg-card rounded-lg shadow-inner border border-dashed border-muted-foreground/20 flex flex-col items-center justify-center animate-fade-in transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+               <Icons.MyBlogs className="h-16 w-16 text-muted-foreground/40 mb-6" />
+               <h3 className="text-xl font-semibold text-foreground mb-2">No blogs yet.</h3>
+               <p className="text-muted-foreground mb-6">Let’s create one and see your masterpieces here!</p>
               <Link href="/new-blog" passHref>
                 <Button>
                   <Icons.NewBlog className="mr-2 h-4 w-4" />
