@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import * as React from "react"; 
+import * as React from "react";
 import {
   Popover,
   PopoverContent,
@@ -31,15 +31,15 @@ interface NavItem {
   icon: IconName;
   badge?: string;
   disabled?: boolean;
-  action?: () => void; 
+  action?: () => void;
   isBottom?: boolean; // To identify logout button
 }
 
 const mockUser = {
   name: "Demo User",
   email: "user@example.com",
-  initials: "DU", 
-  avatarUrl: `https://avatar.vercel.sh/user@example.com`, 
+  initials: "DU",
+  avatarUrl: `https://avatar.vercel.sh/user@example.com`,
 };
 
 
@@ -53,7 +53,7 @@ export function SidebarNav() {
   const handleLogout = () => {
     // In a real app, you'd clear the session/token here
     toast({ title: "Logged Out", description: "You have been successfully logged out." });
-    router.push('/login'); // Redirect to login page
+    router.push('/dashboard'); // Changed from /login to /dashboard as per user request
   };
 
   const navItems: NavItem[] = [
@@ -61,17 +61,27 @@ export function SidebarNav() {
     { href: "/new-blog", label: "New Blog", icon: "NewBlog" },
     { href: "/my-blogs", label: "My Blogs", icon: "MyBlogs" },
     { href: "/settings", label: "Settings", icon: "Settings" },
-    { 
-      label: "Help & Guides", 
-      icon: "HelpCircle", 
-      action: () => toast({ title: "Help & Guides", description: "In-app guides and tips are coming soon!" }) 
+    {
+      label: "Analytics",
+      icon: "Analytics",
+      action: () => toast({ title: "Analytics Dashboard", description: "Feature coming soon!" })
+    },
+    {
+      label: "Product Tour",
+      icon: "ProductTour",
+      action: () => toast({ title: "Product Tour", description: "Interactive onboarding guide coming soon!" })
+    },
+    {
+      label: "Help & Guides",
+      icon: "HelpCircle",
+      action: () => toast({ title: "Help & Guides", description: "In-app guides and tips are coming soon!" })
     },
   ];
 
   const bottomNavItems: NavItem[] = [
     { label: "Logout", icon: "LogOut", action: handleLogout, isBottom: true },
   ];
-  
+
 
   const handleMouseEnterProfile = () => {
     if (hoverTimeoutRef.current) {
@@ -84,7 +94,7 @@ export function SidebarNav() {
   const handleMouseLeaveProfile = () => {
     hoverTimeoutRef.current = setTimeout(() => {
       setIsProfilePopoverOpen(false);
-    }, 200); 
+    }, 200);
   };
 
   const renderNavItem = (item: NavItem) => (
@@ -138,7 +148,7 @@ export function SidebarNav() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-4">
-        {/* <Separator className="my-2"/>  Removed this separator */}
+        {/* <Separator className="my-2"/> */}
         <Popover open={isProfilePopoverOpen} onOpenChange={setIsProfilePopoverOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -154,9 +164,9 @@ export function SidebarNav() {
           <PopoverContent
             side="top"
             align="start"
-            className="w-auto min-w-[220px] p-3 shadow-xl rounded-lg" 
-            onMouseEnter={handleMouseEnterProfile} 
-            onMouseLeave={handleMouseLeaveProfile} 
+            className="w-auto min-w-[220px] p-3 shadow-xl rounded-lg"
+            onMouseEnter={handleMouseEnterProfile}
+            onMouseLeave={handleMouseLeaveProfile}
           >
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">

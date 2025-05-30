@@ -15,13 +15,13 @@ import {
   ChevronLeft,
   ChevronRight,
   FilePlus,
-  Sparkles,
-  Wand2, // Alternative for Improve
+  Sparkles, // Used for Icons.Improve
+  Wand2, // Alternative for Improve, currently Icons.Simplify
   Palette, // For style/tone
   Type, // For length or text options
-  Search, // For SEO/gap analysis
+  Search, // For SEO/gap analysis, currently Icons.SEO
   ShieldCheck, // For plagiarism check
-  BarChart3, // For SEO scores
+  BarChart3, // For SEO scores, will also be Icons.Analytics
   ImageIcon,
   Share2,
   MessageSquare, // For tweet
@@ -36,17 +36,20 @@ import {
   Loader2,
   Image as LucideImage,
   Save,
-  Check, 
-  HelpCircle, 
-  KeyRound, 
-  LogIn, 
-  LogOut, 
-  UserPlus, 
+  Check,
+  HelpCircle,
+  KeyRound,
+  LogIn,
+  LogOut,
+  UserPlus,
+  Star, // For Favorite
+  Lightbulb, // For Product Tour
+  Users, // For Team/Collaboration
   type LucideProps,
 } from 'lucide-react';
 
 export const Icons = {
-  Logo: (props: LucideProps) => ( 
+  Logo: (props: LucideProps) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
@@ -75,14 +78,15 @@ export const Icons = {
   ChevronLeft: ChevronLeft,
   ChevronRight: ChevronRight,
   FilePlus: FilePlus,
-  Improve: Sparkles, 
-  Expand: ExternalLink, 
-  Simplify: Wand2, 
+  Improve: Sparkles,
+  Expand: ExternalLink,
+  Simplify: Wand2,
   Style: Palette,
   Length: Type,
   SEO: Search,
   Plagiarism: ShieldCheck,
   Scores: BarChart3,
+  Analytics: BarChart3, // Reusing Scores icon for Analytics
   PlaceholderImage: ImageIcon,
   Share: Share2,
   Tweet: MessageSquare,
@@ -98,10 +102,13 @@ export const Icons = {
   Save: Save,
   Check: Check,
   HelpCircle: HelpCircle,
+  ProductTour: Lightbulb, // Icon for Product Tour
   KeyRound: KeyRound,
   LogIn: LogIn,
   LogOut: LogOut,
   UserPlus: UserPlus,
+  Favorite: Star, // Icon for Favorite
+  Team: Users, // Icon for Team/Collaboration
 };
 
 export type IconName = keyof typeof Icons;

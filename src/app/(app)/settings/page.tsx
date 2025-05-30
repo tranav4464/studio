@@ -14,7 +14,9 @@ import { PageHeader } from '@/components/shared/page-header';
 import type { Settings, BlogTone, BlogStyle, BlogLength } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea'; 
+import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
 
 const tones: BlogTone[] = ["formal", "casual", "informative", "persuasive", "humorous"];
 const styles: BlogStyle[] = ["academic", "journalistic", "storytelling", "technical"];
@@ -33,7 +35,7 @@ const defaultSettings: Settings = {
     { name: "Quick Update", tone: "casual", style: "storytelling" },
     { name: "Deep Dive Tech", tone: "formal", style: "technical" },
   ],
-  userProfile: { 
+  userProfile: {
     name: "Demo User",
     email: "user@example.com"
   }
@@ -45,7 +47,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
-  
+
   useEffect(() => {
     const savedSettings = localStorage.getItem('contentCraftAISettings');
     if (savedSettings) {
@@ -64,7 +66,7 @@ export default function SettingsPage() {
         setSettings(completeSettings);
       } catch (e) {
         console.error("Failed to parse settings from localStorage", e);
-        localStorage.setItem('contentCraftAISettings', JSON.stringify(defaultSettings)); 
+        localStorage.setItem('contentCraftAISettings', JSON.stringify(defaultSettings));
         setSettings(defaultSettings); // Fallback to default settings
       }
     } else {
@@ -74,7 +76,7 @@ export default function SettingsPage() {
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
+    await new Promise(resolve => setTimeout(resolve, 1000));
     localStorage.setItem('contentCraftAISettings', JSON.stringify(settings));
     setIsSaving(false);
     toast({ title: "Settings Saved", description: "Your preferences have been updated." });
@@ -102,10 +104,10 @@ export default function SettingsPage() {
     setNewPresetName("");
     toast({ title: "Preset added"});
   };
-  
+
   const handleRemovePreset = (indexToRemove: number) => {
     setSettings(prev => ({
-        ...prev, 
+        ...prev,
         stylePresets: prev.stylePresets.filter((_, index) => index !== indexToRemove)
     }));
     toast({title: "Preset removed"});
@@ -123,7 +125,7 @@ export default function SettingsPage() {
 
   const handleLogout = () => {
     toast({ title: "Logged Out", description: "You have been successfully logged out." });
-    router.push('/login'); 
+    router.push('/dashboard'); // Changed from /login to /dashboard
   };
 
   return (
@@ -252,7 +254,7 @@ export default function SettingsPage() {
             </Button>
           </CardFooter>
         </Card>
-        
+
         <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
           <CardHeader><CardTitle>Notification Settings</CardTitle><CardDescription>Manage your notification preferences (feature coming soon).</CardDescription></CardHeader>
           <CardContent className="space-y-4">
@@ -282,12 +284,12 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="feedbackText">Your Message</Label>
-              <Textarea 
-                id="feedbackText" 
-                value={feedbackText} 
-                onChange={(e) => setFeedbackText(e.target.value)} 
-                placeholder="Tell us what you think or describe the issue..." 
-                rows={5} 
+              <Textarea
+                id="feedbackText"
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="Tell us what you think or describe the issue..."
+                rows={5}
               />
             </div>
           </CardContent>
@@ -298,8 +300,20 @@ export default function SettingsPage() {
           </CardFooter>
         </Card>
 
+        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+          <CardHeader><CardTitle>Team Management</CardTitle><CardDescription>Manage team members and collaboration settings.</CardDescription></CardHeader>
+          <CardContent>
+            <Alert>
+              <Icons.Team className="h-4 w-4" />
+              <AlertTitle>Coming Soon!</AlertTitle>
+              <AlertDescription>
+                Collaboration features, including adding team members and shared workspaces, are under development.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+
       </div>
     </div>
   );
 }
-

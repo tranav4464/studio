@@ -29,7 +29,7 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
 
   const handleDelete = () => {
     if (onDelete) {
-      onDelete(post.id); 
+      onDelete(post.id);
       toast({
         title: "Blog post deleted",
         description: `"${post.title}" has been successfully deleted.`,
@@ -43,6 +43,12 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
     }
   };
 
+  const handleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click when clicking favorite
+    toast({ title: "Favorite clicked!", description: `"${post.title}" (feature coming soon)`});
+    // In a real app, you'd update the post's favorite status here
+  };
+
   return (
     <Card className="flex flex-col h-full shadow-lg rounded-lg overflow-hidden transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
       {post.heroImageUrl && (
@@ -54,6 +60,29 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
             objectFit="cover"
             data-ai-hint="article abstract"
           />
+           <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 h-8 w-8 bg-background/70 hover:bg-background/90 text-muted-foreground hover:text-primary"
+            onClick={handleFavorite}
+            aria-label="Favorite post"
+          >
+            <Icons.Favorite className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      {!post.heroImageUrl && (
+         <div className="relative h-48 w-full bg-muted flex items-center justify-center">
+            <Icons.PlaceholderImage className="h-16 w-16 text-muted-foreground/50" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 h-8 w-8 bg-background/70 hover:bg-background/90 text-muted-foreground hover:text-primary"
+              onClick={handleFavorite}
+              aria-label="Favorite post"
+            >
+              <Icons.Favorite className="h-4 w-4" />
+            </Button>
         </div>
       )}
       <CardHeader className="p-4">
