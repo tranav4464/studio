@@ -16,6 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import * as React from "react"; // Ensure React is imported for useState
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface NavItem {
   href: string;
@@ -26,14 +33,39 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: "Dashboard" }, // Already pointing to /dashboard, no change needed here based on instruction
+  { href: "/dashboard", label: "Dashboard", icon: "Dashboard" },
   { href: "/new-blog", label: "New Blog", icon: "NewBlog" },
-  { href: "/my-blogs", label: "My Blogs", icon: "MyBlogs" }, // Already pointing to /my-blogs, no change needed here based on instruction
+  { href: "/my-blogs", label: "My Blogs", icon: "MyBlogs" },
   { href: "/settings", label: "Settings", icon: "Settings" },
 ];
 
+// Mock user data (replace with actual data source if available)
+const mockUser = {
+  name: "Demo User",
+  email: "user@example.com",
+  initials: "DU", 
+  avatarUrl: `https://avatar.vercel.sh/user@example.com`, 
+};
+
+
 export function SidebarNav() {
   const pathname = usePathname();
+  const [isProfilePopoverOpen, setIsProfilePopoverOpen] = React.useState(false);
+  const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnterProfile = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setIsProfilePopoverOpen(true);
+  };
+
+  const handleMouseLeaveProfile = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsProfilePopoverOpen(false);
+    }, 200); // Small delay to allow moving cursor to popover
+  };
 
   return (
     <>
@@ -65,10 +97,47 @@ export function SidebarNav() {
       </SidebarContent>
       <SidebarFooter className="p-4 mt-auto">
         <Separator className="my-2"/>
-        <Button variant="ghost" className="w-full justify-start gap-2">
-          <Icons.User className="h-4 w-4" /> 
-          <span>Profile</span>
-        </Button>
+        <Popover open={isProfilePopoverOpen} onOpenChange={setIsProfilePopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2"
+              onMouseEnter={handleMouseEnterProfile}
+              onMouseLeave={handleMouseLeaveProfile}
+            >
+              <Icons.User className="h-4 w-4" />
+              <span>Profile</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align="start"
+            className="w-auto min-w-[220px] p-3 shadow-xl rounded-lg" 
+            onMouseEnter={handleMouseEnterProfile} 
+            onMouseLeave={handleMouseLeaveProfile} 
+          >
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={mockUser.avatarUrl} alt={mockUser.name} />
+                <AvatarFallback>{mockUser.initials}</AvatarFallback>
+              </Avatar>
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold leading-none text-foreground">{mockUser.name}</p>
+                <p className="text-xs text-muted-foreground">{mockUser.email}</p>
+              </div>
+            </div>
+            {/* You can add more actions like "Manage Account" or "Logout" here later */}
+            {/* Example:
+            <Separator className="my-2" />
+            <Button variant="ghost" size="sm" className="w-full justify-start text-sm">
+              Manage Account
+            </Button>
+            <Button variant="ghost" size="sm" className="w-full justify-start text-sm text-destructive hover:text-destructive-foreground hover:bg-destructive">
+              Logout
+            </Button>
+            */}
+          </PopoverContent>
+        </Popover>
       </SidebarFooter>
     </>
   );
@@ -84,3 +153,5 @@ function IconComponent({ name, className }: IconComponentProps) {
   if (!Icon) return null;
   return <Icon className={cn("h-4 w-4", className)} />;
 }
+
+    
