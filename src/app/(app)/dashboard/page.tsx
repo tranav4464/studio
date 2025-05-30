@@ -45,7 +45,7 @@ export default function DashboardPage() {
       <div className="flex h-full">
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="bg-[#061d1c] text-white dark:bg-[#1db954] dark:text-white p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-2xl">
-            <div>
+            <div className="text-foreground dark:text-white">
               <h1 className="text-4xl font-extrabold tracking-tight">Hi {userName}, ready to create?</h1>
               <p className="text-lg opacity-90 mt-2">Turn your ideas into full content in minutes with AI.</p>
             </div>
@@ -53,7 +53,7 @@ export default function DashboardPage() {
               <Button
                 size="lg"
                 className="mt-6 sm:mt-0 shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-xl 
-                           bg-white text-[#4a90e2] hover:bg-gray-100 
+                           bg-[#BAE1DB] text-[#1A4644] hover:bg-[#a7ccc6] 
                            dark:bg-[#1db954] dark:text-white dark:hover:bg-[#1aa34a]"
               >
                 <Icons.NewBlog className="mr-2 h-5 w-5 animate-pulse" />
