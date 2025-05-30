@@ -1,18 +1,22 @@
 
 import type {Metadata} from 'next';
-import {Geist, Geist_Mono} from 'next/font/google';
+import { Inter, JetBrains_Mono } from 'next/font/google'; // Updated font imports
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "next-themes";
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+// Configure Inter font
+const inter = Inter({
+  variable: '--font-inter',
   subsets: ['latin'],
+  display: 'swap', // Improves font loading performance
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+// Configure JetBrains Mono font
+const jetbrainsMono = JetBrains_Mono({
+  variable: '--font-jetbrains-mono',
   subsets: ['latin'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -27,7 +31,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      {/* Apply font variables to the html tag for global availability */}
+      <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
