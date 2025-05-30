@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface BlogCardProps {
@@ -29,6 +29,12 @@ interface BlogCardProps {
 export function BlogCard({ post, onDelete }: BlogCardProps) {
   const { toast } = useToast();
   const [isFavorited, setIsFavorited] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    // Reset imageError when the post prop changes
+    setImageError(false);
+  }, [post.heroImageUrl]);
 
   const handleDelete = () => {
     if (onDelete) {
@@ -63,15 +69,42 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
       case 'draft':
         return 'draft';
       case 'archived':
-        return 'secondary'; // Or 'outline', or a specific 'archived' variant if defined
+        return 'secondary'; 
       default:
         return 'secondary';
     }
   };
 
+  const renderImagePlaceholder = () => (
+    <div className="relative h-48 w-full bg-muted flex items-center justify-center">
+      <Icons.Logo className="h-16 w-16 text-muted-foreground/30" />
+      {renderFavoriteButton()}
+    </div>
+  );
+
+  const renderFavoriteButton = () => (
+     <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-2 h-8 w-8 bg-background/70 hover:bg-background/90 group transform transition-transform duration-150 hover:scale-110 active:scale-95"
+        onClick={handleFavorite}
+        aria-label={isFavorited ? "Unfavorite post" : "Favorite post"}
+      >
+        <Icons.Favorite 
+          className={cn(
+            "h-4 w-4 transition-all duration-150",
+            isFavorited 
+              ? "text-yellow-500 fill-yellow-400" 
+              : "text-muted-foreground group-hover:text-primary fill-none"
+          )}
+          strokeWidth={isFavorited ? 1.5 : 2}
+        />
+      </Button>
+  );
+
   return (
     <Card className="flex flex-col h-full shadow-lg rounded-lg overflow-hidden transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
-      {post.heroImageUrl && (
+      {post.heroImageUrl && !imageError ? (
         <div className="relative h-48 w-full">
           <NextImage
             src={post.heroImageUrl}
@@ -79,47 +112,12 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
             layout="fill"
             objectFit="cover"
             data-ai-hint="article abstract"
+            onError={() => setImageError(true)}
           />
-           <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 h-8 w-8 bg-background/70 hover:bg-background/90 group transform transition-transform duration-150 hover:scale-110 active:scale-95"
-            onClick={handleFavorite}
-            aria-label={isFavorited ? "Unfavorite post" : "Favorite post"}
-          >
-            <Icons.Favorite 
-              className={cn(
-                "h-4 w-4 transition-all duration-150",
-                isFavorited 
-                  ? "text-yellow-500 fill-yellow-400" 
-                  : "text-muted-foreground group-hover:text-primary fill-none"
-              )}
-              strokeWidth={isFavorited ? 1.5 : 2}
-            />
-          </Button>
+           {renderFavoriteButton()}
         </div>
-      )}
-      {!post.heroImageUrl && (
-         <div className="relative h-48 w-full bg-muted flex items-center justify-center">
-            <Icons.Logo className="h-16 w-16 text-muted-foreground/30" />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 h-8 w-8 bg-background/70 hover:bg-background/90 group transform transition-transform duration-150 hover:scale-110 active:scale-95"
-              onClick={handleFavorite}
-              aria-label={isFavorited ? "Unfavorite post" : "Favorite post"}
-            >
-              <Icons.Favorite 
-                className={cn(
-                  "h-4 w-4 transition-all duration-150",
-                  isFavorited 
-                    ? "text-yellow-500 fill-yellow-400" 
-                    : "text-muted-foreground group-hover:text-primary fill-none"
-                )}
-                strokeWidth={isFavorited ? 1.5 : 2}
-              />
-            </Button>
-        </div>
+      ) : (
+        renderImagePlaceholder()
       )}
       <CardHeader className="p-4">
         <div className="flex justify-between items-start">
