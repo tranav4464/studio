@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { blogStore } from '@/lib/blog-store';
 import type { BlogPost, BlogStatus } from '@/types';
 import { BlogCard } from '@/components/dashboard/blog-card';
-import { Separator } from '@/components/ui/separator';
+import { BlogCardSkeleton } from '@/components/dashboard/blog-card-skeleton'; // Import skeleton
 import { format, parseISO } from 'date-fns';
 
 type SortOption = 'date-newest' | 'date-oldest' | 'title-az' | 'title-za';
@@ -43,21 +43,23 @@ export default function MyBlogsPage() {
       setAllPosts(blogStore.getPosts());
       setIsLoading(false);
     };
-
-    fetchPosts();
+    // Simulate a short delay for loading effect, remove if blogStore is async in future
+    const timer = setTimeout(fetchPosts, 500); 
+    
     const unsubscribe = blogStore.subscribe(fetchPosts);
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    }
   }, []);
 
   const handleDeletePost = (id: string) => {
     blogStore.deletePost(id);
-    // The subscription will trigger a re-fetch and update the list
   };
 
   const filteredAndSortedPosts = useMemo(() => {
     let posts = [...allPosts];
 
-    // Apply search filter
     if (searchTerm) {
       posts = posts.filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,12 +67,10 @@ export default function MyBlogsPage() {
       );
     }
 
-    // Apply status filter
     if (statusFilter !== 'all') {
       posts = posts.filter(post => post.status === statusFilter);
     }
 
-    // Apply sort
     switch (sortBy) {
       case 'date-newest':
         posts.sort((a, b) => parseISO(b.updatedAt).getTime() - parseISO(a.updatedAt).getTime());
@@ -137,8 +137,11 @@ export default function MyBlogsPage() {
       </Card>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-10">
-          <Icons.Spinner className="h-8 w-8 animate-spin text-primary" />
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {/* Show a few skeletons, e.g., 4 */}
+          {Array.from({ length: 4 }).map((_, index) => (
+            <BlogCardSkeleton key={index} />
+          ))}
         </div>
       ) : filteredAndSortedPosts.length === 0 ? (
         <Card className="flex flex-col items-center justify-center p-8 text-center transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
@@ -163,4 +166,3 @@ export default function MyBlogsPage() {
     </div>
   );
 }
-
