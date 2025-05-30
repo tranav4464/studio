@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react'; // Import useState
+import { cn } from '@/lib/utils'; // Import cn
 
 interface BlogCardProps {
   post: BlogPost;
@@ -26,6 +28,7 @@ interface BlogCardProps {
 
 export function BlogCard({ post, onDelete }: BlogCardProps) {
   const { toast } = useToast();
+  const [isFavorited, setIsFavorited] = useState(false); // State for favorite status
 
   const handleDelete = () => {
     if (onDelete) {
@@ -45,8 +48,14 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
 
   const handleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click when clicking favorite
-    toast({ title: "Favorite clicked!", description: `"${post.title}" (feature coming soon)`});
-    // In a real app, you'd update the post's favorite status here
+    const newFavoriteState = !isFavorited;
+    setIsFavorited(newFavoriteState);
+    toast({ 
+      title: "Favorite Toggled!", 
+      description: `"${post.title}" is now ${newFavoriteState ? 'favorited' : 'unfavorited'}. (UI demonstration)` 
+    });
+    // In a real app, you'd update the post's favorite status here:
+    // blogStore.updatePost(post.id, { isFavorite: newFavoriteState });
   };
 
   return (
@@ -63,11 +72,19 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
            <Button
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 h-8 w-8 bg-background/70 hover:bg-background/90 text-muted-foreground hover:text-primary"
+            className="absolute top-2 right-2 h-8 w-8 bg-background/70 hover:bg-background/90 group transform transition-transform duration-150 hover:scale-110 active:scale-95"
             onClick={handleFavorite}
-            aria-label="Favorite post"
+            aria-label={isFavorited ? "Unfavorite post" : "Favorite post"}
           >
-            <Icons.Favorite className="h-4 w-4" />
+            <Icons.Favorite 
+              className={cn(
+                "h-4 w-4 transition-all duration-150",
+                isFavorited 
+                  ? "text-yellow-500 fill-yellow-400" 
+                  : "text-muted-foreground group-hover:text-primary fill-none"
+              )}
+              strokeWidth={isFavorited ? 1.5 : 2}
+            />
           </Button>
         </div>
       )}
@@ -77,11 +94,19 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-2 right-2 h-8 w-8 bg-background/70 hover:bg-background/90 text-muted-foreground hover:text-primary"
+              className="absolute top-2 right-2 h-8 w-8 bg-background/70 hover:bg-background/90 group transform transition-transform duration-150 hover:scale-110 active:scale-95"
               onClick={handleFavorite}
-              aria-label="Favorite post"
+              aria-label={isFavorited ? "Unfavorite post" : "Favorite post"}
             >
-              <Icons.Favorite className="h-4 w-4" />
+              <Icons.Favorite 
+                className={cn(
+                  "h-4 w-4 transition-all duration-150",
+                  isFavorited 
+                    ? "text-yellow-500 fill-yellow-400" 
+                    : "text-muted-foreground group-hover:text-primary fill-none"
+                )}
+                strokeWidth={isFavorited ? 1.5 : 2}
+              />
             </Button>
         </div>
       )}
