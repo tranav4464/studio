@@ -43,13 +43,16 @@ export default function DashboardPage() {
     <>
       <div className="flex h-full">
         <main className="flex-1 p-6 overflow-y-auto">
-          <div className="bg-gradient-to-r from-primary to-accent text-primary-foreground p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between animate-gradient-shift transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-2xl">
+          <div className="bg-[#4a90e2] dark:bg-[#1db954] text-primary-foreground p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between animate-gradient-shift transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-2xl">
             <div>
               <h1 className="text-4xl font-extrabold tracking-tight">Hi {userName}, ready to create?</h1>
               <p className="text-lg opacity-90 mt-2">Turn your ideas into full content in minutes with AI.</p>
             </div>
             <Link href="/new-blog" passHref>
-              <Button size="lg" variant="secondary" className="mt-6 sm:mt-0 shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-xl">
+              <Button 
+                size="lg" 
+                className="mt-6 sm:mt-0 shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-xl bg-[#4a90e2] text-white hover:bg-[#4382cb] dark:bg-[#1db954] dark:text-white dark:hover:bg-[#1aa34a]"
+              >
                 <Icons.NewBlog className="mr-2 h-5 w-5 animate-pulse" />
                 Generate a New Blog
               </Button>
