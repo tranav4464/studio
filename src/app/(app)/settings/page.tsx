@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Added for logout
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +14,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import type { Settings, BlogTone, BlogStyle, BlogLength } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea'; // Added for feedback form
+import { Textarea } from '@/components/ui/textarea'; 
 
 const tones: BlogTone[] = ["formal", "casual", "informative", "persuasive", "humorous"];
 const styles: BlogStyle[] = ["academic", "journalistic", "storytelling", "technical"];
@@ -32,7 +33,7 @@ const defaultSettings: Settings = {
     { name: "Quick Update", tone: "casual", style: "storytelling" },
     { name: "Deep Dive Tech", tone: "formal", style: "technical" },
   ],
-  userProfile: { // Added for account settings
+  userProfile: { 
     name: "Demo User",
     email: "user@example.com"
   }
@@ -40,6 +41,7 @@ const defaultSettings: Settings = {
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const router = useRouter(); // Added for logout
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
@@ -49,26 +51,30 @@ export default function SettingsPage() {
     if (savedSettings) {
       try {
         const parsedSettings = JSON.parse(savedSettings);
-        // Ensure parsed settings have the correct structure including new userProfile
-        if (parsedSettings.rules && parsedSettings.stylePresets) {
-            const completeSettings = { ...defaultSettings, ...parsedSettings };
-            if (!completeSettings.userProfile) {
-                completeSettings.userProfile = defaultSettings.userProfile;
-            }
-            setSettings(completeSettings);
-        } else {
-            localStorage.setItem('contentCraftAISettings', JSON.stringify(defaultSettings)); 
+        const completeSettings = { ...defaultSettings, ...parsedSettings };
+        if (!completeSettings.userProfile) {
+            completeSettings.userProfile = defaultSettings.userProfile;
         }
+        if (!completeSettings.rules) { // Ensure rules object exists
+            completeSettings.rules = defaultSettings.rules;
+        }
+        if (!completeSettings.stylePresets) { // Ensure stylePresets array exists
+            completeSettings.stylePresets = defaultSettings.stylePresets;
+        }
+        setSettings(completeSettings);
       } catch (e) {
         console.error("Failed to parse settings from localStorage", e);
         localStorage.setItem('contentCraftAISettings', JSON.stringify(defaultSettings)); 
+        setSettings(defaultSettings); // Fallback to default settings
       }
+    } else {
+        setSettings(defaultSettings); // If no saved settings, use defaults
     }
   }, []);
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate saving
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
     localStorage.setItem('contentCraftAISettings', JSON.stringify(settings));
     setIsSaving(false);
     toast({ title: "Settings Saved", description: "Your preferences have been updated." });
@@ -110,10 +116,14 @@ export default function SettingsPage() {
         toast({title: "Feedback cannot be empty", variant: "destructive"});
         return;
     }
-    // In a real app, this would submit to a backend
     console.log("Feedback submitted:", feedbackText);
     toast({title: "Feedback Submitted", description: "Thank you for your feedback!"});
     setFeedbackText("");
+  };
+
+  const handleLogout = () => {
+    toast({ title: "Logged Out", description: "You have been successfully logged out." });
+    router.push('/login'); 
   };
 
   return (
@@ -129,8 +139,8 @@ export default function SettingsPage() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
           <CardHeader><CardTitle>Default Blog Settings</CardTitle><CardDescription>Set your default preferences for new blog posts.</CardDescription></CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -164,7 +174,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
           <CardHeader><CardTitle>Personalization Rules</CardTitle><CardDescription>Define specific rules for content generation.</CardDescription></CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between space-x-2 p-4 border rounded-lg hover:shadow-sm transition-shadow">
@@ -188,7 +198,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader><CardTitle>Style Presets</CardTitle><CardDescription>Save and manage your favorite tone and style combinations.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
                 {settings.stylePresets.length > 0 ? (
@@ -221,7 +231,7 @@ export default function SettingsPage() {
             </CardContent>
         </Card>
 
-        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
           <CardHeader><CardTitle>Account Settings</CardTitle><CardDescription>Manage your account details.</CardDescription></CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -236,9 +246,38 @@ export default function SettingsPage() {
               Change Password
             </Button>
           </CardContent>
+          <CardFooter>
+            <Button variant="outline" onClick={handleLogout} className="w-full">
+              <Icons.LogOut className="mr-2 h-4 w-4" /> Logout
+            </Button>
+          </CardFooter>
+        </Card>
+        
+        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+          <CardHeader><CardTitle>Notification Settings</CardTitle><CardDescription>Manage your notification preferences (feature coming soon).</CardDescription></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between space-x-2 p-3 border rounded-lg opacity-50 cursor-not-allowed">
+              <Label htmlFor="productUpdates" className="flex flex-col space-y-1">
+                <span>Product Updates</span>
+                <span className="font-normal text-xs leading-snug text-muted-foreground">
+                  Receive emails about new features and updates.
+                </span>
+              </Label>
+              <Switch id="productUpdates" checked={false} disabled/>
+            </div>
+            <div className="flex items-center justify-between space-x-2 p-3 border rounded-lg opacity-50 cursor-not-allowed">
+              <Label htmlFor="weeklySummary" className="flex flex-col space-y-1">
+                <span>Weekly Summary</span>
+                <span className="font-normal text-xs leading-snug text-muted-foreground">
+                  Get a weekly summary of your content activity.
+                </span>
+              </Label>
+              <Switch id="weeklySummary" checked={false} disabled/>
+            </div>
+          </CardContent>
         </Card>
 
-        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
           <CardHeader><CardTitle>Feedback & Support</CardTitle><CardDescription>Report a bug or send us your feedback.</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -257,6 +296,23 @@ export default function SettingsPage() {
               Submit Feedback
             </Button>
           </CardFooter>
+        </Card>
+
+        <Card className="md:col-span-1 lg:col-span-3 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl border-destructive/50">
+          <CardHeader>
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <CardDescription>Be careful with actions in this section.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="destructive" 
+              className="w-full sm:w-auto"
+              onClick={() => toast({title: "Delete Account", description: "Account deletion is a critical action and is not yet implemented.", variant: "destructive"})}
+            >
+              <Icons.Delete className="mr-2 h-4 w-4" /> Delete Account
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">This action is irreversible and will permanently delete all your data.</p>
+          </CardContent>
         </Card>
 
       </div>
