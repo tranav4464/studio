@@ -24,17 +24,19 @@ export default function DashboardPage() {
   useEffect(() => {
     setIsLoading(true);
     const fetchPosts = () => {
+      // Simulate API call delay
       setRecentPosts(blogStore.getPosts().slice(0, postsToShow));
       setIsLoading(false);
     };
 
-    const timer = setTimeout(fetchPosts, 500);
+    const timer = setTimeout(fetchPosts, 500); // Simulate network delay
 
+    // Subscribe to changes in the blogStore
     const unsubscribe = blogStore.subscribe(fetchPosts);
 
     return () => {
       clearTimeout(timer);
-      unsubscribe();
+      unsubscribe(); // Clean up the subscription
     }
   }, [postsToShow]);
 
@@ -42,7 +44,7 @@ export default function DashboardPage() {
     <>
       <div className="flex h-full">
         <main className="flex-1 p-6 overflow-y-auto">
-          <div className="bg-[#4a90e2] text-white dark:bg-[#1db954] dark:text-white p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-2xl">
+          <div className="bg-[#4a90e2] dark:bg-[#1db954] dark:text-white p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-2xl">
             <div>
               <h1 className="text-4xl font-extrabold tracking-tight">Hi {userName}, ready to create?</h1>
               <p className="text-lg opacity-90 mt-2">Turn your ideas into full content in minutes with AI.</p>
@@ -67,6 +69,7 @@ export default function DashboardPage() {
 
           {isLoading ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+              {/* Adjust the number of skeletons based on postsToShow or a fixed number */}
               {Array.from({ length: postsToShow > 0 ? Math.min(postsToShow, 3) : 3 }).map((_, index) => (
                 <BlogCardSkeleton key={index} />
               ))}
