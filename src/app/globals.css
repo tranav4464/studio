@@ -99,7 +99,7 @@ code, pre, kbd, samp {
     --chart-5: 340 75% 55%;
 
     /* Sidebar specific colors for dark mode */
-    --sidebar-background: 203 68% 19%; /* Dark #0F3E50 */
+    --sidebar-background: 222 47% 11%; /* #0F172A */
     --sidebar-foreground: 0 0% 100%; /* Lightest #FFFFFF */
     --sidebar-primary: 199 32% 55%; /* Brand #6C9DAF */
     --sidebar-primary-foreground: 0 0% 100%; /* Lightest #FFFFFF */
@@ -118,3 +118,4 @@ code, pre, kbd, samp {
     @apply bg-background text-foreground;
   }
 }
+
