@@ -18,10 +18,12 @@ export interface BlogPost {
   seoScore?: {
     readability: number; // 0-100
     keywordDensity: number; // 0-100
+
     quality: number; // 0-100
   };
 }
 
+export type BlogStatus = "draft" | "published" | "archived";
 export type BlogTone = "formal" | "casual" | "informative" | "persuasive" | "humorous";
 export type BlogStyle = "academic" | "journalistic" | "storytelling" | "technical";
 export type BlogLength = "short" | "medium" | "long";

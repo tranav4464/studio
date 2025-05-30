@@ -17,23 +17,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { blogStore } from '@/lib/blog-store';
+// Removed direct import of blogStore from here, delete should be passed as prop
 import { useToast } from '@/hooks/use-toast';
 
 interface BlogCardProps {
   post: BlogPost;
-  onDelete: (id: string) => void;
+  onDelete?: (id: string) => void; // Make onDelete optional if not always provided
 }
 
 export function BlogCard({ post, onDelete }: BlogCardProps) {
   const { toast } = useToast();
 
   const handleDelete = () => {
-    onDelete(post.id); 
-    toast({
-      title: "Blog post deleted",
-      description: `"${post.title}" has been successfully deleted.`,
-    });
+    if (onDelete) {
+      onDelete(post.id); 
+      toast({
+        title: "Blog post deleted",
+        description: `"${post.title}" has been successfully deleted.`,
+      });
+    } else {
+      toast({
+        title: "Delete function not available",
+        description: "Cannot delete this post.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -67,28 +75,32 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
               <DropdownMenuItem onClick={() => toast({title: "Export feature coming soon."})} className="cursor-pointer">
                 <Icons.Export className="mr-2 h-4 w-4" /> Export
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-               <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10 w-full cursor-pointer">
-                    <Icons.Delete className="mr-2 h-4 w-4" /> Delete
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete the blog post "{post.title}".
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              {onDelete && ( // Only show delete if onDelete is provided
+                <>
+                  <DropdownMenuSeparator />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10 w-full cursor-pointer">
+                        <Icons.Delete className="mr-2 h-4 w-4" /> Delete
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the blog post "{post.title}".
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

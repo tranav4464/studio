@@ -1,123 +1,92 @@
 
 "use client";
-
-import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { BlogCard } from '@/components/dashboard/blog-card';
-import type { BlogPost } from '@/types';
 import { PageHeader } from '@/components/shared/page-header';
 import { blogStore } from '@/lib/blog-store';
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { useToast } from '@/hooks/use-toast';
+import type { BlogPost } from '@/types';
+import { Card, CardContent } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 
 export default function DashboardPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [searchTerm, setSearchTerm] = useState('');
-  const { toast } = useToast();
+  const [recentPosts, setRecentPosts] = useState<BlogPost[]>([]);
+  const [postsToShow, setPostsToShow] = useState(5); // State to track number of posts to show
+  // Placeholder for user name - replace with actual user data
+  const userName = "Creator";
+
+  const loadMorePosts = () => {
+    setPostsToShow(prev => prev + 5);
+  };
 
   useEffect(() => {
-    setPosts(blogStore.getPosts()); // Initial load
-    const unsubscribe = blogStore.subscribe(() => {
-      setPosts(blogStore.getPosts());
-    });
+    const fetchPosts = () => {
+      // Fetch all posts and then slice based on postsToShow
+      setRecentPosts(blogStore.getPosts().slice(0, postsToShow));
+    };
+
+    fetchPosts(); // Initial fetch
+
+    const unsubscribe = blogStore.subscribe(fetchPosts); // Subscribe to changes in blogStore
+
     return () => unsubscribe();
-  }, []);
-
-  const handlePostDeleted = useCallback((deletedPostId: string) => {
-    blogStore.deletePost(deletedPostId); 
-    // The subscription will update the posts state
-  }, []);
-
-  const filteredPosts = posts.filter(post => 
-    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.topic.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    // Re-run effect when postsToShow changes
+  }, [postsToShow]);
 
   return (
-    <div className="container mx-auto">
-      <PageHeader
-        title="My Blogs"
-        description="Manage your blog posts or create a new one."
-        actions={
-          <Link href="/new-blog" passHref>
-            <Button>
-              <Icons.NewBlog className="mr-2 h-4 w-4" />
-              Create New Blog
-            </Button>
-          </Link>
-        }
-      />
+    <>
+      <div className="flex h-full">
+        {/* Main Content Area */}
+        <main className="flex-1 p-6 overflow-y-auto">
+          {/* Welcome Banner */}
+          <div className="bg-gradient-to-r from-primary to-accent text-white p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between animate-gradient-shift">
+            <div>
+              <h1 className="text-4xl font-extrabold tracking-tight">Hi {userName}, ready to create?</h1>
+              <p className="text-lg opacity-90 mt-2">Turn your ideas into full content in minutes with AI.</p>
+            </div>
+            <Link href="/new-blog" passHref>
+              <Button size="lg" variant="secondary" className="mt-6 sm:mt-0 shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-xl">
+                <Icons.NewBlog className="mr-2 h-5 w-5 animate-pulse" />
+                Generate a New Blog
+              </Button>
+            </Link>
+          </div>
 
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <Input 
-          placeholder="Search blogs by title or topic..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm h-9"
-        />
-        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'grid' | 'list')}>
-          <TabsList>
-            <TabsTrigger value="grid" className="px-3 py-1.5 h-9"><Icons.Grid className="h-4 w-4 mr-2" />Grid</TabsTrigger>
-            <TabsTrigger value="list" className="px-3 py-1.5 h-9"><Icons.List className="h-4 w-4 mr-2" />List</TabsTrigger>
-          </TabsList>
-        </Tabs>
+          <PageHeader
+            title="Recent Blogs"
+            description="Your latest creations."
+          />
+
+          {recentPosts.length === 0 ? (
+            <div className="text-center py-10 bg-card rounded-lg shadow-inner border border-dashed border-muted-foreground/20 flex flex-col items-center justify-center animate-fade-in">
+               <p className="text-muted-foreground mb-4">No recent blogs to display.</p>
+              <Link href="/new-blog" passHref>
+                <Button>
+                  <Icons.NewBlog className="mr-2 h-4 w-4" />
+                  Create Your First Blog
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8"> {/* Added margin-bottom to separate from button */}
+                {recentPosts.map((post) => (
+                  <BlogCard key={post.id} post={post} onDelete={(id) => blogStore.deletePost(id)} />
+                ))}
+              </div> {/* Closing the grid div */}
+              {/* Load More Button */}
+              {recentPosts.length < blogStore.getPosts().length && (
+                <div className="text-center"> {/* Removed extra margin-top */}
+                  <Button onClick={loadMorePosts}>Load More</Button>
+                </div>
+              )}
+            </>
+          )} 
+        </main>{' '}
       </div>
-
-      {filteredPosts.length === 0 ? (
-        <div className="text-center py-16 bg-card rounded-lg shadow">
-          <Icons.MyBlogs className="mx-auto h-16 w-16 text-muted-foreground opacity-50" />
-          <h3 className="mt-4 text-xl font-medium text-foreground">No blog posts found</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {searchTerm ? "Try adjusting your search or " : "Get started by "}
-            <Link href="/new-blog" className="text-primary hover:underline">creating a new blog post</Link>.
-          </p>
-        </div>
-      ) : (
-        <div className={viewMode === 'grid' ? "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" : "space-y-4"}>
-          {filteredPosts.map((post) => (
-            viewMode === 'grid' ? (
-              <BlogCard key={post.id} post={post} onDelete={() => handlePostDeleted(post.id)} />
-            ) : (
-              <Card key={post.id} className="p-4 flex justify-between items-center hover:shadow-md transition-shadow rounded-lg">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate">{post.title}</h3>
-                  <p className="text-sm text-muted-foreground">Status: {post.status} | Updated: {new Date(post.updatedAt).toLocaleDateString()}</p>
-                </div>
-                <div className="flex gap-2 ml-4">
-                  <Link href={`/blogs/${post.id}/edit`} passHref>
-                    <Button variant="outline" size="icon" className="h-8 w-8"><Icons.Edit className="h-4 w-4" /></Button>
-                  </Link>
-                   <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="icon" className="h-8 w-8"><Icons.Delete className="h-4 w-4" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete the blog post "{post.title}".
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => { handlePostDeleted(post.id); toast({title: "Blog post deleted"}); }} className="bg-destructive hover:bg-destructive/90">
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </Card>
-            )
-          ))}
-        </div>
-      )}
-    </div>
+    </>
   );
 }

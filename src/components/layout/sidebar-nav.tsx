@@ -26,9 +26,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: "Dashboard" },
+  { href: "/dashboard", label: "Dashboard", icon: "Dashboard" }, // Already pointing to /dashboard, no change needed here based on instruction
   { href: "/new-blog", label: "New Blog", icon: "NewBlog" },
-  { href: "/my-blogs", label: "My Blogs", icon: "MyBlogs" }, 
+  { href: "/my-blogs", label: "My Blogs", icon: "MyBlogs" }, // Already pointing to /my-blogs, no change needed here based on instruction
   { href: "/settings", label: "Settings", icon: "Settings" },
 ];
 

@@ -1,7 +1,7 @@
 
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarRail } from "@/components/ui/sidebar";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button"; // Not used in this diff
 import { Icons } from "@/components/icons";
 import { Suspense } from "react";
 
@@ -11,9 +11,23 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider defaultOpen>
-      <Sidebar variant="sidebar" collapsible="icon" className="border-r">
-        <SidebarNav />
+    <SidebarProvider defaultOpen={true}>
+      <Sidebar
+        variant="sidebar"
+        collapsible="icon"
+        className="border-r flex flex-col"
+      >
+        {/* Logo or App Title could go here */}
+        <div className="p-4 border-b h-14 flex items-center">
+          <Icons.Logo className="h-6 w-6 mr-2" />
+          <span className="text-lg font-semibold">ContentCraft AI</span>
+        </div>
+        <nav className="flex flex-col flex-1 p-2">
+          <SidebarNav />
+        </nav>
+         <div className="mt-auto p-2 border-t">
+            {/* User or other bottom elements could go here */}
+         </div>
         <SidebarRail />
       </Sidebar>
       <SidebarInset className="flex flex-col min-h-screen">
@@ -22,10 +36,10 @@ export default function AppLayout({
           <div className="flex-1">
             {/* App specific header content can go here */}
           </div>
-          <Button variant="ghost" size="icon" className="rounded-full">
+          {/* <Button variant="ghost" size="icon" className="rounded-full"> // Not used in this diff
              <Icons.User className="h-5 w-5" />
              <span className="sr-only">User Profile</span>
-          </Button>
+          </Button> */}
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8 bg-background">
           <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><Icons.Spinner className="h-8 w-8 animate-spin text-primary" /></div>}>
