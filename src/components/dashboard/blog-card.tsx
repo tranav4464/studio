@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
-import NextImage from 'next/image'; // Renamed to avoid conflict with Icons.Image
+import NextImage from 'next/image';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,12 +17,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-// Removed direct import of blogStore from here, delete should be passed as prop
 import { useToast } from '@/hooks/use-toast';
 
 interface BlogCardProps {
   post: BlogPost;
-  onDelete?: (id: string) => void; // Make onDelete optional if not always provided
+  onDelete?: (id: string) => void;
 }
 
 export function BlogCard({ post, onDelete }: BlogCardProps) {
@@ -45,7 +44,7 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
   };
 
   return (
-    <Card className="flex flex-col h-full shadow-lg rounded-lg overflow-hidden transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+    <Card className="flex flex-col h-full shadow-lg rounded-lg overflow-hidden transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
       {post.heroImageUrl && (
         <div className="relative h-48 w-full">
           <NextImage
@@ -75,7 +74,7 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
               <DropdownMenuItem onClick={() => toast({title: "Export feature coming soon."})} className="cursor-pointer">
                 <Icons.Export className="mr-2 h-4 w-4" /> Export
               </DropdownMenuItem>
-              {onDelete && ( // Only show delete if onDelete is provided
+              {onDelete && (
                 <>
                   <DropdownMenuSeparator />
                   <AlertDialog>
