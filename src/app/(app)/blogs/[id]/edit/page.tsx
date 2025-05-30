@@ -42,6 +42,10 @@ export default function BlogEditPage() {
   const [repurposedContent, setRepurposedContent] = useState<RepurposedContent | null>(null);
   const [isRepurposing, setIsRepurposing] = useState(false);
 
+  const [metaTitle, setMetaTitle] = useState('');
+  const [metaDescription, setMetaDescription] = useState('');
+
+
   useEffect(() => {
     if (blogId) {
       const fetchedPost = blogStore.getPostById(blogId);
@@ -53,6 +57,10 @@ export default function BlogEditPage() {
         setHeroImageCaption(fetchedPost.heroImageCaption || '');
         setHeroImageAltText(fetchedPost.heroImageAltText || '');
         setGeneratedHeroImageUrl(fetchedPost.heroImageUrl || null);
+        // Assuming meta fields could be part of BlogPost in the future or stored alongside
+        // For now, we'll initialize them if they are part of the post, or default to empty
+        setMetaTitle((fetchedPost as any).metaTitle || '');
+        setMetaDescription((fetchedPost as any).metaDescription || '');
       } else {
         toast({ title: "Blog post not found", variant: "destructive" });
         router.push('/dashboard');
@@ -70,9 +78,22 @@ export default function BlogEditPage() {
       heroImageUrl: generatedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
-      heroImagePrompt 
+      heroImagePrompt,
+      // Persist meta fields if they were part of the BlogPost type
+      // For now, this is a mock save; actual persistence would require type update
+      metaTitle, 
+      metaDescription 
     });
-    setPost(prev => prev ? ({...prev, content, heroImageUrl: generatedHeroImageUrl || undefined, heroImageCaption, heroImageAltText, heroImagePrompt}) : null);
+    setPost(prev => prev ? ({
+      ...prev, 
+      content, 
+      heroImageUrl: generatedHeroImageUrl || undefined, 
+      heroImageCaption, 
+      heroImageAltText, 
+      heroImagePrompt,
+      metaTitle,
+      metaDescription
+    }) : null);
     setIsSaving(false);
     toast({ title: "Blog post saved!", description: `"${post.title}" has been updated.` });
   };
@@ -154,10 +175,12 @@ export default function BlogEditPage() {
             <CardContent>
               <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={25} className="text-base p-4 border rounded-md shadow-inner focus:ring-primary focus:border-primary" placeholder="Start writing..."/>
             </CardContent>
-            <CardFooter className="flex gap-2">
+            <CardFooter className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Improve' feature coming soon!" })}><Icons.Improve className="mr-2 h-4 w-4"/>Improve</Button>
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Expand' feature coming soon!" })}><Icons.Expand className="mr-2 h-4 w-4"/>Expand</Button>
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Simplify' feature coming soon!" })}><Icons.Simplify className="mr-2 h-4 w-4"/>Simplify</Button>
+                <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Depth Boost' feature coming soon!" })}><Icons.Sparkles className="mr-2 h-4 w-4"/>Depth Boost</Button> {/* Placeholder Icon */}
+                <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Visualize' feature coming soon!" })}><Icons.Image className="mr-2 h-4 w-4"/>Visualize</Button> {/* Placeholder Icon */}
             </CardFooter>
           </Card>
 
@@ -223,6 +246,22 @@ export default function BlogEditPage() {
           </Card>
           
           <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+            <CardHeader><CardTitle>SEO Metadata</CardTitle><CardDescription>Optimize your post for search engines.</CardDescription></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <Label htmlFor="metaTitle">Meta Title</Label>
+                <Input id="metaTitle" value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder="e.g., Your Catchy Blog Post Title | SiteName" />
+                <p className="text-xs text-muted-foreground">Recommended: 50-60 characters.</p>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="metaDescription">Meta Description</Label>
+                <Textarea id="metaDescription" value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder="A brief summary of your post to attract readers from search results." rows={3} />
+                <p className="text-xs text-muted-foreground">Recommended: 150-160 characters.</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
             <CardHeader><CardTitle>Optimization Panel</CardTitle><CardDescription>SEO scores and content analysis.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               <Tabs defaultValue="seo" className="w-full">
@@ -236,7 +275,7 @@ export default function BlogEditPage() {
                           {scoreType === 'Readability' ? post.seoScore?.readability || 70 : scoreType === 'Keyword Density' ? post.seoScore?.keywordDensity || 55 : post.seoScore?.quality || 78}%
                         </span>
                       </div>
-                      <Progress value={scoreType === 'Readability' ? post.seoScore?.readability || 70 : scoreType === 'Keyword Density' ? post.seoScore?.keywordDensity || 55 : post.seoScore?.quality || 78} aria-label={`${scoreType} score`} />
+                      <Progress value={scoreType === 'Readability' ? post.seoScore?.readability || 70 : scoreType === 'Keyword Density' ? post.seoScore?.keywordDensity || 55 : scoreType === 'Overall Quality' ? post.seoScore?.quality || 78 : 0} aria-label={`${scoreType} score`} />
                     </div>
                   ))}
                   <Separator />
@@ -264,3 +303,5 @@ export default function BlogEditPage() {
     </div>
   );
 }
+
+  
