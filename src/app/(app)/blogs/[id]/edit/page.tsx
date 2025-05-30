@@ -220,7 +220,7 @@ export default function BlogEditPage() {
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Improve' feature coming soon!" })}><Icons.Improve className="mr-2 h-4 w-4"/>Improve</Button>
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Expand' feature coming soon!" })}><Icons.Expand className="mr-2 h-4 w-4"/>Expand</Button>
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Simplify' feature coming soon!" })}><Icons.Simplify className="mr-2 h-4 w-4"/>Simplify</Button>
-                <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Depth Boost' feature coming soon!" })}><Icons.Sparkles className="mr-2 h-4 w-4"/>Depth Boost</Button>
+                <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Depth Boost' feature coming soon!" })}><Icons.Improve className="mr-2 h-4 w-4"/>Depth Boost</Button>
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Visualize' feature coming soon!" })}><Icons.Image className="mr-2 h-4 w-4"/>Visualize</Button>
             </CardFooter>
           </Card>
@@ -344,11 +344,11 @@ export default function BlogEditPage() {
                       <div className="flex justify-between mb-1">
                         <Label className="text-sm">{scoreType}</Label>
                         <span className="text-sm font-medium">
-                          {scoreType === 'Readability' ? post.seoScore?.readability || 70 : scoreType === 'Keyword Density' ? post.seoScore?.keywordDensity || 55 : post.seoScore?.quality || 78}%
+                          {scoreType === 'Readability' ? (post.seoScore?.readability || 70) : scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity || 55) : (post.seoScore?.quality || 78)}%
                         </span>
                       </div>
                       <Progress
-                        value={50} // Simplified for testing
+                        value={scoreType === 'Readability' ? (post.seoScore?.readability || 70) : scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity || 55) : (post.seoScore?.quality || 78)}
                         aria-label={`${scoreType} score`} />
                     </div>
                   ))}
