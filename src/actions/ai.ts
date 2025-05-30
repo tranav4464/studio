@@ -51,3 +51,25 @@ This concludes our ${params.length} exploration of ${params.topic}. We hope this
   `;
   return { content: generatedContent };
 }
+
+
+// Mock action for suggesting a blog title
+export async function generateBlogTitleSuggestionAction(params: { currentContent: string; originalTopic: string }): Promise<{ suggestedTitle: string }> {
+  console.log("Mock generateBlogTitleSuggestionAction called with:", params.originalTopic, params.currentContent.substring(0,50) + "...");
+  await new Promise(resolve => setTimeout(resolve, 1200)); 
+  return { suggestedTitle: `AI Suggested Title for: ${params.originalTopic}` };
+}
+
+// Mock action for generating a meta title
+export async function generateMetaTitleAction(params: { blogTitle: string; blogContent: string }): Promise<{ suggestedMetaTitle: string }> {
+  console.log("Mock generateMetaTitleAction called with:", params.blogTitle, params.blogContent.substring(0,50) + "...");
+  await new Promise(resolve => setTimeout(resolve, 1000)); 
+  return { suggestedMetaTitle: `Meta Title: ${params.blogTitle} | AI Optimized` };
+}
+
+// Mock action for generating a meta description
+export async function generateMetaDescriptionAction(params: { blogTitle: string; blogContent: string }): Promise<{ suggestedMetaDescription: string }> {
+  console.log("Mock generateMetaDescriptionAction called with:", params.blogTitle, params.blogContent.substring(0,50) + "...");
+  await new Promise(resolve => setTimeout(resolve, 1500)); 
+  return { suggestedMetaDescription: `This is an AI-generated meta description for the blog post titled "${params.blogTitle}". It summarizes the key points from the content.` };
+}

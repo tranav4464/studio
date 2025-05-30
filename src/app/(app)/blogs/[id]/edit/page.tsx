@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { PageHeader } from '@/components/shared/page-header';
 import { useToast } from '@/hooks/use-toast';
-import { generateHeroImageAction, repurposeContentAction } from '@/actions/ai';
+import { generateHeroImageAction, repurposeContentAction, generateBlogTitleSuggestionAction, generateMetaTitleAction, generateMetaDescriptionAction } from '@/actions/ai';
 import NextImage from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
@@ -30,6 +30,7 @@ export default function BlogEditPage() {
   const blogId = params.id as string;
 
   const [post, setPost] = useState<BlogPost | null>(null);
+  const [editableTitle, setEditableTitle] = useState('');
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -52,12 +53,17 @@ export default function BlogEditPage() {
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
 
+  const [isSuggestingBlogTitle, setIsSuggestingBlogTitle] = useState(false);
+  const [isSuggestingMetaTitle, setIsSuggestingMetaTitle] = useState(false);
+  const [isSuggestingMetaDescription, setIsSuggestingMetaDescription] = useState(false);
+
 
   useEffect(() => {
     if (blogId) {
       const fetchedPost = blogStore.getPostById(blogId);
       if (fetchedPost) {
         setPost(fetchedPost);
+        setEditableTitle(fetchedPost.title);
         setContent(fetchedPost.content);
         setHeroImagePrompt(fetchedPost.heroImagePrompt || fetchedPost.title);
         setHeroImageTone(fetchedPost.tone || 'cinematic');
@@ -65,8 +71,8 @@ export default function BlogEditPage() {
         setSelectedHeroImageUrl(fetchedPost.heroImageUrl || null);
         setHeroImageCaption(fetchedPost.heroImageCaption || '');
         setHeroImageAltText(fetchedPost.heroImageAltText || '');
-        setMetaTitle(fetchedPost.metaTitle || '');
-        setMetaDescription(fetchedPost.metaDescription || '');
+        setMetaTitle(fetchedPost.metaTitle || `Meta title for ${fetchedPost.title}`);
+        setMetaDescription(fetchedPost.metaDescription || `Meta description for ${fetchedPost.title}`);
       } else {
         toast({ title: "Blog post not found", variant: "destructive" });
         router.push('/dashboard');
@@ -80,17 +86,19 @@ export default function BlogEditPage() {
     setIsSaving(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
     blogStore.updatePost(post.id, {
+      title: editableTitle,
       content,
       heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
       heroImagePrompt,
-      heroImageTheme, // Save theme
+      heroImageTheme,
       metaTitle,
       metaDescription,
     });
     setPost(prev => prev ? ({
       ...prev,
+      title: editableTitle,
       content,
       heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
@@ -101,7 +109,7 @@ export default function BlogEditPage() {
       metaDescription,
     }) : null);
     setIsSaving(false);
-    toast({ title: "Blog post saved!", description: `"${post.title}" has been updated.` });
+    toast({ title: "Blog post saved!", description: `"${editableTitle}" has been updated.` });
   };
 
   const handleGenerateHeroImage = async () => {
@@ -117,14 +125,14 @@ export default function BlogEditPage() {
       const result = await generateHeroImageAction({ blogTitle: heroImagePrompt, tone: heroImageTone, theme: heroImageTheme });
       setGeneratedHeroImageUrls(result.imageUrls);
       if (result.imageUrls && result.imageUrls.length > 0) {
-        setSelectedHeroImageUrl(result.imageUrls[0]); // Select the first image by default
+        setSelectedHeroImageUrl(result.imageUrls[0]); 
         toast({ title: "Hero images generated!", description: "Select your favorite variant below." });
       } else {
         toast({ title: "No images generated", description: "The AI could not generate images for this prompt.", variant: "destructive" });
       }
     } catch (error: any) {
       toast({ title: "Error generating images", description: error.message, variant: "destructive" });
-      setGeneratedHeroImageUrls([`https://placehold.co/600x300.png?text=Error`]); // Fallback placeholder
+      setGeneratedHeroImageUrls([`https://placehold.co/600x300.png?text=Error`]);
     }
     setIsGeneratingHeroImage(false);
     setGenerationStatus('');
@@ -136,8 +144,7 @@ export default function BlogEditPage() {
       return;
     }
     if (!selectedHeroImageUrl.startsWith('data:image')) {
-      toast({ title: "Export Error", description: "Selected image is not a data URI and cannot be directly downloaded. This might be a placeholder or an external URL.", variant: "destructive" });
-      console.warn("Attempted to download non-data URI:", selectedHeroImageUrl);
+      toast({ title: "Export Error", description: "Selected image is not a data URI and cannot be directly downloaded.", variant: "destructive" });
       return;
     }
     try {
@@ -182,6 +189,54 @@ export default function BlogEditPage() {
     }
   };
 
+  const handleSuggestBlogTitle = async () => {
+    if (!content || !post?.topic) {
+      toast({ title: "Content and Topic needed", description: "Blog content and original topic are needed to suggest a title.", variant: "destructive"});
+      return;
+    }
+    setIsSuggestingBlogTitle(true);
+    try {
+      const result = await generateBlogTitleSuggestionAction({ currentContent: content, originalTopic: post.topic });
+      setEditableTitle(result.suggestedTitle);
+      toast({ title: "Blog title suggested!", description: "Review and edit the new title."});
+    } catch (error: any) {
+      toast({ title: "Error suggesting title", description: error.message, variant: "destructive" });
+    }
+    setIsSuggestingBlogTitle(false);
+  };
+
+  const handleSuggestMetaTitle = async () => {
+    if (!editableTitle || !content) {
+      toast({ title: "Title and Content needed", description: "Blog title and content are needed to suggest a meta title.", variant: "destructive"});
+      return;
+    }
+    setIsSuggestingMetaTitle(true);
+    try {
+      const result = await generateMetaTitleAction({ blogTitle: editableTitle, blogContent: content });
+      setMetaTitle(result.suggestedMetaTitle);
+      toast({ title: "Meta title suggested!", description: "Review and edit the new meta title."});
+    } catch (error: any) {
+      toast({ title: "Error suggesting meta title", description: error.message, variant: "destructive" });
+    }
+    setIsSuggestingMetaTitle(false);
+  };
+
+  const handleSuggestMetaDescription = async () => {
+     if (!editableTitle || !content) {
+      toast({ title: "Title and Content needed", description: "Blog title and content are needed to suggest a meta description.", variant: "destructive"});
+      return;
+    }
+    setIsSuggestingMetaDescription(true);
+    try {
+      const result = await generateMetaDescriptionAction({ blogTitle: editableTitle, blogContent: content });
+      setMetaDescription(result.suggestedMetaDescription);
+      toast({ title: "Meta description suggested!", description: "Review and edit the new meta description."});
+    } catch (error: any) {
+      toast({ title: "Error suggesting meta description", description: error.message, variant: "destructive" });
+    }
+    setIsSuggestingMetaDescription(false);
+  };
+
 
   if (isLoading) {
     return <div className="flex h-full w-full items-center justify-center"><Icons.Spinner className="h-10 w-10 animate-spin text-primary" /></div>;
@@ -190,11 +245,11 @@ export default function BlogEditPage() {
   if (!post) {
     return <div className="text-center py-10">Blog post not found.</div>;
   }
-
+  
   return (
     <div className="container mx-auto">
       <PageHeader
-        title={`Edit: ${post.title}`}
+        title={`Edit: ${editableTitle || 'Untitled Post'}`}
         description={`Topic: ${post.topic} | Tone: ${post.tone} | Style: ${post.style} | Length: ${post.length}`}
         actions={
           <div className="flex gap-2">
@@ -211,6 +266,25 @@ export default function BlogEditPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+            <CardHeader>
+              <CardTitle>Blog Post Details</CardTitle>
+              <CardDescription>Edit the core details of your blog post.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <Label htmlFor="editableTitle">Blog Title</Label>
+                <div className="flex gap-2 items-center">
+                  <Input id="editableTitle" value={editableTitle} onChange={(e) => setEditableTitle(e.target.value)} placeholder="Your Awesome Blog Title" className="flex-grow"/>
+                  <Button variant="outline" size="sm" onClick={handleSuggestBlogTitle} disabled={isSuggestingBlogTitle}>
+                    {isSuggestingBlogTitle ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Improve className="mr-2 h-4 w-4" />}
+                    Suggest
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader><CardTitle>Blog Content Editor</CardTitle><CardDescription>Edit your blog post. Use AI tools for assistance.</CardDescription></CardHeader>
             <CardContent>
@@ -322,12 +396,24 @@ export default function BlogEditPage() {
             <CardContent className="space-y-4">
               <div className="space-y-1">
                 <Label htmlFor="metaTitle">Meta Title</Label>
-                <Input id="metaTitle" value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder="e.g., Your Catchy Blog Post Title | SiteName" />
+                 <div className="flex gap-2 items-center">
+                    <Input id="metaTitle" value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder="e.g., Your Catchy Blog Post Title | SiteName" className="flex-grow"/>
+                    <Button variant="outline" size="sm" onClick={handleSuggestMetaTitle} disabled={isSuggestingMetaTitle}>
+                        {isSuggestingMetaTitle ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Improve className="mr-2 h-4 w-4" />}
+                        Suggest
+                    </Button>
+                 </div>
                 <p className="text-xs text-muted-foreground">Recommended: 50-60 characters.</p>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="metaDescription">Meta Description</Label>
-                <Textarea id="metaDescription" value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder="A brief summary of your post to attract readers from search results." rows={3} />
+                <div className="flex gap-2 items-start"> {/* Use items-start for Textarea alignment */}
+                    <Textarea id="metaDescription" value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder="A brief summary of your post to attract readers from search results." rows={3} className="flex-grow"/>
+                    <Button variant="outline" size="sm" onClick={handleSuggestMetaDescription} disabled={isSuggestingMetaDescription} className="mt-[1px]"> {/* Slight top margin for alignment */}
+                        {isSuggestingMetaDescription ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Improve className="mr-2 h-4 w-4" />}
+                        Suggest
+                    </Button>
+                </div>
                 <p className="text-xs text-muted-foreground">Recommended: 150-160 characters.</p>
               </div>
             </CardContent>
