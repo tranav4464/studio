@@ -17,9 +17,9 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
         published:
-          "border-transparent bg-[#4CAF50] text-white hover:bg-[#4CAF50]/80", // Green for published
+          "border-transparent bg-[#388e3c] text-white hover:bg-[#388e3c]/90", // Darker Green for published
         draft:
-          "border-transparent bg-[#FF9800] text-black hover:bg-[#FF9800]/80", // Orange for draft, black text for contrast
+          "border-transparent bg-[#fb8c00] text-black hover:bg-[#fb8c00]/90", // Vibrant Orange for draft, black text for contrast
       },
     },
     defaultVariants: {
