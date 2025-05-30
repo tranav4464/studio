@@ -298,23 +298,6 @@ export default function SettingsPage() {
           </CardFooter>
         </Card>
 
-        <Card className="md:col-span-1 lg:col-span-3 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl border-destructive/50">
-          <CardHeader>
-            <CardTitle>Danger Zone</CardTitle>
-            <CardDescription>Be careful with actions in this section.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              variant="destructive" 
-              className="w-full sm:w-auto"
-              onClick={() => toast({title: "Delete Account", description: "Account deletion is a critical action and is not yet implemented.", variant: "destructive"})}
-            >
-              <Icons.Delete className="mr-2 h-4 w-4" /> Delete Account
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2">This action is irreversible and will permanently delete all your data.</p>
-          </CardContent>
-        </Card>
-
       </div>
     </div>
   );
