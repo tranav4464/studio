@@ -19,6 +19,11 @@ const tones: BlogTone[] = ["formal", "casual", "informative", "persuasive", "hum
 const styles: BlogStyle[] = ["academic", "journalistic", "storytelling", "technical"];
 const lengths: BlogLength[] = ["short", "medium", "long"];
 
+interface OutlineItem {
+  id: string;
+  value: string;
+}
+
 export default function NewBlogPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -27,8 +32,8 @@ export default function NewBlogPage() {
   const [tone, setTone] = useState<BlogTone>('informative');
   const [style, setStyle] = useState<BlogStyle>('journalistic');
   const [length, setLength] = useState<BlogLength>('medium');
-  const [referenceText, setReferenceText] = useState(''); 
-  const [generatedOutline, setGeneratedOutline] = useState<string[] | null>(null);
+  const [referenceText, setReferenceText] = useState('');
+  const [generatedOutline, setGeneratedOutline] = useState<OutlineItem[] | null>(null);
   const [isLoadingOutline, setIsLoadingOutline] = useState(false);
   const [isLoadingPost, setIsLoadingPost] = useState(false);
 
@@ -40,19 +45,31 @@ export default function NewBlogPage() {
     setIsLoadingOutline(true);
     await new Promise(resolve => setTimeout(resolve, 1000)); // Mock AI call
     setGeneratedOutline([
-      `Introduction to ${topic}`,
-      `Key aspect 1 of ${topic}`,
-      `Exploring ${topic} further`,
-      `Challenges and opportunities with ${topic}`,
-      `Conclusion about ${topic}`,
+      { id: Date.now().toString() + '1', value: `Introduction to ${topic}`},
+      { id: Date.now().toString() + '2', value: `Key aspect 1 of ${topic}`},
+      { id: Date.now().toString() + '3', value: `Exploring ${topic} further`},
+      { id: Date.now().toString() + '4', value: `Challenges and opportunities with ${topic}`},
+      { id: Date.now().toString() + '5', value: `Conclusion about ${topic}`},
     ]);
     setIsLoadingOutline(false);
     toast({ title: "Outline Generated", description: "Review and customize the outline below." });
   };
 
+  const handleAddOutlineSection = () => {
+    setGeneratedOutline(prev => prev ? [...prev, {id: Date.now().toString(), value: "New Section"}] : [{id: Date.now().toString(), value: "New Section"}]);
+  };
+
+  const handleRemoveOutlineSection = (idToRemove: string) => {
+    setGeneratedOutline(prev => prev ? prev.filter(item => item.id !== idToRemove) : null);
+  };
+
+  const handleOutlineItemChange = (id: string, newValue: string) => {
+    setGeneratedOutline(prev => prev ? prev.map(item => item.id === id ? {...item, value: newValue} : item) : null);
+  }
+
   const handleGeneratePost = async () => {
-    if (!topic || !generatedOutline) {
-      toast({ title: "Topic and Outline Required", description: "Please generate an outline first.", variant: "destructive" });
+    if (!topic || !generatedOutline || generatedOutline.length === 0) {
+      toast({ title: "Topic and Outline Required", description: "Please generate and define an outline first.", variant: "destructive" });
       return;
     }
     if (!title) {
@@ -62,6 +79,8 @@ export default function NewBlogPage() {
     setIsLoadingPost(true);
     await new Promise(resolve => setTimeout(resolve, 1500)); // Mock creating post
     
+    const outlineStrings = generatedOutline.map(item => item.value);
+
     const newPost = blogStore.addPost({
         title,
         topic,
@@ -69,8 +88,8 @@ export default function NewBlogPage() {
         style,
         length,
     });
-    // The outline in blogStore.addPost is a generic one, we could update it here with generatedOutline
-    blogStore.updatePost(newPost.id, { outline: generatedOutline });
+    
+    blogStore.updatePost(newPost.id, { outline: outlineStrings });
 
     setIsLoadingPost(false);
     toast({ title: "Blog Post Created!", description: "Redirecting to the editor..." });
@@ -149,25 +168,36 @@ export default function NewBlogPage() {
             <CardTitle>Blog Outline</CardTitle>
             <CardDescription>Generated outline will appear here. You can customize it before generating the full post.</CardDescription>
           </CardHeader>
-          <CardContent className="min-h-[200px]">
+          <CardContent className="min-h-[200px] space-y-3">
             {isLoadingOutline && (
               <div className="flex items-center justify-center p-8"><Icons.Spinner className="h-8 w-8 animate-spin text-primary" /></div>
             )}
             {generatedOutline && !isLoadingOutline && (
-              <div className="space-y-3">
-                {generatedOutline.map((item, index) => (
-                  <div key={index} className="flex items-center">
-                    <Input defaultValue={item} className="flex-grow" onChange={(e) => { const newOutline = [...generatedOutline]; newOutline[index] = e.target.value; setGeneratedOutline(newOutline); }}/>
+              <>
+                {generatedOutline.map((item) => (
+                  <div key={item.id} className="flex items-center gap-2">
+                    <Input 
+                      value={item.value} 
+                      className="flex-grow" 
+                      onChange={(e) => handleOutlineItemChange(item.id, e.target.value)}
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveOutlineSection(item.id)} className="text-destructive hover:bg-destructive/10 h-8 w-8">
+                      <Icons.Delete className="h-4 w-4" />
+                      <span className="sr-only">Remove section</span>
+                    </Button>
                   </div>
                 ))}
-                <Textarea placeholder="Add custom notes or instructions for the AI regarding the outline..." rows={3}/>
-              </div>
+                 <Button variant="outline" size="sm" onClick={handleAddOutlineSection} className="w-full mt-2">
+                  <Icons.FilePlus className="mr-2 h-4 w-4" /> Add Section
+                </Button>
+                <Textarea placeholder="Add custom notes or instructions for the AI regarding the outline..." rows={3} className="mt-4"/>
+              </>
             )}
             {!generatedOutline && !isLoadingOutline && (
               <p className="text-sm text-muted-foreground text-center py-8">Click "Generate Outline" to start.</p>
             )}
           </CardContent>
-          {generatedOutline && (
+          {generatedOutline && generatedOutline.length > 0 && (
             <CardFooter>
               <Button onClick={handleGeneratePost} disabled={isLoadingPost || isLoadingOutline} className="w-full">
                 {isLoadingPost && <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />}
