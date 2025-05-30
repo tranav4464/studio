@@ -101,7 +101,7 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
       )}
       {!post.heroImageUrl && (
          <div className="relative h-48 w-full bg-muted flex items-center justify-center">
-            <Icons.PlaceholderImage className="h-16 w-16 text-muted-foreground/50" />
+            <Icons.Logo className="h-16 w-16 text-muted-foreground/30" />
             <Button
               variant="ghost"
               size="icon"
