@@ -57,8 +57,8 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
     const newFavoriteState = !isFavorited;
     setIsFavorited(newFavoriteState);
     toast({ 
-      title: "Favorite Toggled!", 
-      description: `"${post.title}" is now ${newFavoriteState ? 'favorited' : 'unfavorited'}. (UI demonstration)` 
+      title: !newFavoriteState ? "Removed from Favorites" : "Added to Favorites!", 
+      description: `"${post.title}" has been ${newFavoriteState ? 'added to' : 'removed from'} favorites.` 
     });
   };
 
@@ -75,13 +75,6 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
     }
   };
 
-  const renderImagePlaceholder = () => (
-    <div className="relative h-48 w-full bg-muted flex items-center justify-center">
-      <Icons.Logo className="h-16 w-16 text-muted-foreground/30" />
-      {renderFavoriteButton()}
-    </div>
-  );
-
   const renderFavoriteButton = () => (
      <Button
         variant="ghost"
@@ -95,16 +88,28 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
             "h-4 w-4 transition-all duration-150",
             isFavorited 
               ? "text-yellow-500 fill-yellow-400" 
-              : "text-muted-foreground group-hover:text-primary fill-none"
+              : "text-muted-foreground group-hover:text-yellow-500 fill-none"
           )}
           strokeWidth={isFavorited ? 1.5 : 2}
         />
       </Button>
   );
 
+  const renderImagePlaceholder = () => (
+    <div className="relative h-48 w-full bg-muted flex items-center justify-center">
+      <Icons.Logo className="h-16 w-16 text-muted-foreground/30" />
+      {renderFavoriteButton()}
+    </div>
+  );
+
+
   return (
-    <Card className="flex flex-col h-full shadow-lg rounded-lg overflow-hidden transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
-      {post.heroImageUrl && !imageError ? (
+    <Card className={cn(
+      "flex flex-col h-full rounded-lg overflow-hidden transition-all duration-200 ease-in-out",
+      "shadow-sm dark:shadow-none", // Conditional base shadow
+      "hover:scale-[1.01] hover:shadow-xl" // Hover effects
+    )}>
+      {(post.heroImageUrl && !imageError) ? (
         <div className="relative h-48 w-full">
           <NextImage
             src={post.heroImageUrl}
@@ -188,3 +193,4 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
     </Card>
   );
 }
+
