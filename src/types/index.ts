@@ -21,6 +21,8 @@ export interface BlogPost {
     keywordDensity: number; // 0-100
     quality: number; // 0-100
   };
+  metaTitle?: string; // Added for SEO
+  metaDescription?: string; // Added for SEO
 }
 
 export type BlogStatus = "draft" | "published" | "archived";
@@ -43,4 +45,9 @@ export interface Settings {
     useDiagramsInHowTo: boolean;
   };
   stylePresets: Array<{ name: string; tone: BlogTone; style: BlogStyle }>;
+  userProfile?: { // Added for account settings
+    name: string;
+    email: string;
+  };
 }
+

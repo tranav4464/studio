@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { PageHeader } from '@/components/shared/page-header';
 import type { Settings, BlogTone, BlogStyle, BlogLength } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea'; // Added for feedback form
 
 const tones: BlogTone[] = ["formal", "casual", "informative", "persuasive", "humorous"];
 const styles: BlogStyle[] = ["academic", "journalistic", "storytelling", "technical"];
@@ -31,27 +32,36 @@ const defaultSettings: Settings = {
     { name: "Quick Update", tone: "casual", style: "storytelling" },
     { name: "Deep Dive Tech", tone: "formal", style: "technical" },
   ],
+  userProfile: { // Added for account settings
+    name: "Demo User",
+    email: "user@example.com"
+  }
 };
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
   
   useEffect(() => {
     const savedSettings = localStorage.getItem('contentCraftAISettings');
     if (savedSettings) {
       try {
         const parsedSettings = JSON.parse(savedSettings);
-        // Ensure parsed settings have the correct structure
+        // Ensure parsed settings have the correct structure including new userProfile
         if (parsedSettings.rules && parsedSettings.stylePresets) {
-            setSettings(parsedSettings);
+            const completeSettings = { ...defaultSettings, ...parsedSettings };
+            if (!completeSettings.userProfile) {
+                completeSettings.userProfile = defaultSettings.userProfile;
+            }
+            setSettings(completeSettings);
         } else {
-            localStorage.setItem('contentCraftAISettings', JSON.stringify(defaultSettings)); // Reset if structure is old/invalid
+            localStorage.setItem('contentCraftAISettings', JSON.stringify(defaultSettings)); 
         }
       } catch (e) {
         console.error("Failed to parse settings from localStorage", e);
-        localStorage.setItem('contentCraftAISettings', JSON.stringify(defaultSettings)); // Reset on parse error
+        localStorage.setItem('contentCraftAISettings', JSON.stringify(defaultSettings)); 
       }
     }
   }, []);
@@ -93,6 +103,17 @@ export default function SettingsPage() {
         stylePresets: prev.stylePresets.filter((_, index) => index !== indexToRemove)
     }));
     toast({title: "Preset removed"});
+  };
+
+  const handleSubmitFeedback = () => {
+    if (!feedbackText.trim()) {
+        toast({title: "Feedback cannot be empty", variant: "destructive"});
+        return;
+    }
+    // In a real app, this would submit to a backend
+    console.log("Feedback submitted:", feedbackText);
+    toast({title: "Feedback Submitted", description: "Thank you for your feedback!"});
+    setFeedbackText("");
   };
 
   return (
@@ -155,7 +176,6 @@ export default function SettingsPage() {
               </Label>
               <Switch id="useDiagrams" checked={settings.rules.useDiagramsInHowTo} onCheckedChange={(value) => handleRuleChange('useDiagramsInHowTo', value)}/>
             </div>
-            {/* Example of another rule placeholder */}
             <div className="flex items-center justify-between space-x-2 p-4 border rounded-lg opacity-50 cursor-not-allowed">
               <Label htmlFor="autoSeo" className="flex flex-col space-y-1">
                 <span>Auto-optimize for SEO keywords</span>
@@ -200,7 +220,47 @@ export default function SettingsPage() {
                 </div>
             </CardContent>
         </Card>
+
+        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+          <CardHeader><CardTitle>Account Settings</CardTitle><CardDescription>Manage your account details.</CardDescription></CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="accountName">Name</Label>
+              <Input id="accountName" value={settings.userProfile?.name || ''} disabled placeholder="Your Name" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="accountEmail">Email</Label>
+              <Input id="accountEmail" type="email" value={settings.userProfile?.email || ''} disabled placeholder="your@email.com" />
+            </div>
+            <Button variant="outline" onClick={() => toast({title: "Password Change", description: "Password change functionality is not yet implemented."})}>
+              Change Password
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+          <CardHeader><CardTitle>Feedback & Support</CardTitle><CardDescription>Report a bug or send us your feedback.</CardDescription></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="feedbackText">Your Message</Label>
+              <Textarea 
+                id="feedbackText" 
+                value={feedbackText} 
+                onChange={(e) => setFeedbackText(e.target.value)} 
+                placeholder="Tell us what you think or describe the issue..." 
+                rows={5} 
+              />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={handleSubmitFeedback}>
+              Submit Feedback
+            </Button>
+          </CardFooter>
+        </Card>
+
       </div>
     </div>
   );
 }
+
