@@ -45,7 +45,7 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
   };
 
   return (
-    <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden">
+    <Card className="flex flex-col h-full shadow-lg rounded-lg overflow-hidden transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
       {post.heroImageUrl && (
         <div className="relative h-48 w-full">
           <NextImage

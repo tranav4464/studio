@@ -149,7 +149,7 @@ export default function BlogEditPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card className="shadow-lg">
+          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
             <CardHeader><CardTitle>Blog Content Editor</CardTitle><CardDescription>Edit your blog post. Use AI tools for assistance.</CardDescription></CardHeader>
             <CardContent>
               <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={25} className="text-base p-4 border rounded-md shadow-inner focus:ring-primary focus:border-primary" placeholder="Start writing..."/>
@@ -161,7 +161,7 @@ export default function BlogEditPage() {
             </CardFooter>
           </Card>
 
-          <Card className="shadow-lg">
+          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
             <CardHeader><CardTitle>Content Repurposing</CardTitle><CardDescription>Generate social media snippets and summaries.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-end gap-4">
@@ -197,7 +197,7 @@ export default function BlogEditPage() {
         </div>
 
         <div className="lg:col-span-1 space-y-6">
-          <Card className="shadow-lg">
+          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
             <CardHeader><CardTitle>Hero Image Generator</CardTitle><CardDescription>Create a hero image for your post.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1"><Label htmlFor="heroPrompt">Image Prompt</Label><Input id="heroPrompt" value={heroImagePrompt} onChange={(e) => setHeroImagePrompt(e.target.value)} placeholder="e.g., Futuristic cityscape" /></div>
@@ -222,7 +222,7 @@ export default function BlogEditPage() {
             </CardContent>
           </Card>
           
-          <Card className="shadow-lg">
+          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
             <CardHeader><CardTitle>Optimization Panel</CardTitle><CardDescription>SEO scores and content analysis.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               <Tabs defaultValue="seo" className="w-full">
@@ -264,4 +264,3 @@ export default function BlogEditPage() {
     </div>
   );
 }
-

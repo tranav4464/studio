@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -61,7 +62,7 @@ export default function MyBlogsPage() {
       {loading ? (
         <p>Loading blogs...</p>
       ) : blogs.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center p-8 text-center">
+        <Card className="flex flex-col items-center justify-center p-8 text-center transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-lg">
           <CardHeader>
             <CardTitle>You haven't written any blogs yet.</CardTitle>
           </CardHeader>
@@ -78,7 +79,7 @@ export default function MyBlogsPage() {
         // Replace with a proper table or grid component
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {blogs.map((blog: any) => ( // Use actual blog type
-            <Card key={blog.id}>
+            <Card key={blog.id} className="transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-lg">
               <CardHeader>
                 <CardTitle>{blog.title}</CardTitle>
               </CardHeader>

@@ -42,7 +42,7 @@ export default function DashboardPage() {
         {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-y-auto">
           {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-primary to-accent text-white p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between animate-gradient-shift">
+          <div className="bg-gradient-to-r from-primary to-accent text-white p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between animate-gradient-shift transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-2xl">
             <div>
               <h1 className="text-4xl font-extrabold tracking-tight">Hi {userName}, ready to create?</h1>
               <p className="text-lg opacity-90 mt-2">Turn your ideas into full content in minutes with AI.</p>
@@ -61,7 +61,7 @@ export default function DashboardPage() {
           />
 
           {recentPosts.length === 0 ? (
-            <div className="text-center py-10 bg-card rounded-lg shadow-inner border border-dashed border-muted-foreground/20 flex flex-col items-center justify-center animate-fade-in">
+            <div className="text-center py-10 bg-card rounded-lg shadow-inner border border-dashed border-muted-foreground/20 flex flex-col items-center justify-center animate-fade-in transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-lg">
                <p className="text-muted-foreground mb-4">No recent blogs to display.</p>
               <Link href="/new-blog" passHref>
                 <Button>
@@ -72,14 +72,14 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8"> {/* Added margin-bottom to separate from button */}
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
                 {recentPosts.map((post) => (
                   <BlogCard key={post.id} post={post} onDelete={(id) => blogStore.deletePost(id)} />
                 ))}
-              </div> {/* Closing the grid div */}
+              </div>
               {/* Load More Button */}
               {recentPosts.length < blogStore.getPosts().length && (
-                <div className="text-center"> {/* Removed extra margin-top */}
+                <div className="text-center">
                   <Button onClick={loadMorePosts}>Load More</Button>
                 </div>
               )}

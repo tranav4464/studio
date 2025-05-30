@@ -84,7 +84,7 @@ export default function NewBlogPage() {
         description="Define your blog's topic, tone, and style to get started."
       />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <Card className="md:col-span-2 shadow-lg">
+        <Card className="md:col-span-2 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
           <CardHeader>
             <CardTitle>Blog Details</CardTitle>
             <CardDescription>Fill in the specifics for your new blog post.</CardDescription>
@@ -144,7 +144,7 @@ export default function NewBlogPage() {
           </CardFooter>
         </Card>
 
-        <Card className="md:col-span-1 shadow-lg">
+        <Card className="md:col-span-1 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
           <CardHeader>
             <CardTitle>Blog Outline</CardTitle>
             <CardDescription>Generated outline will appear here. You can customize it before generating the full post.</CardDescription>

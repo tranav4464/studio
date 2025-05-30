@@ -61,7 +61,7 @@ export default function HomePage() {
             </div>
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {features.map((feature, index) => (
-                <div key={index} className="flex flex-col items-center space-y-4 p-6 bg-gray-50 rounded-lg">
+                <div key={index} className="flex flex-col items-center space-y-4 p-6 bg-gray-50 rounded-lg transition-all duration-200 ease-in-out hover:scale-[1.03] hover:shadow-lg">
                   {feature.icon}
                   <h3 className="text-xl font-bold">{feature.title}</h3>
                   <p className="text-gray-500">{feature.description}</p>
