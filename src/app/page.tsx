@@ -40,7 +40,7 @@ export default function HomePage() {
               ContentCraft AI helps you create, optimize, and repurpose your blog content with the power of AI.
             </p>
             <Link
-              href="/login"
+              href="/dashboard"
               className="inline-flex h-12 items-center justify-center rounded-md bg-primary-foreground px-8 text-base font-medium text-primary shadow transition-colors hover:bg-primary-foreground/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
             >
               Start Creating
