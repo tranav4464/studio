@@ -37,6 +37,10 @@ import {
   Save,
   Check, // Added Check icon
   HelpCircle, // Added HelpCircle icon
+  KeyRound, // For password input
+  LogIn, // For login action
+  LogOut, // For logout action
+  UserPlus, // For signup action
   type LucideProps,
 } from 'lucide-react';
 
@@ -91,7 +95,11 @@ export const Icons = {
   Image: LucideImage,
   Save: Save,
   Check: Check,
-  HelpCircle: HelpCircle, // Added HelpCircle
+  HelpCircle: HelpCircle,
+  KeyRound: KeyRound,
+  LogIn: LogIn,
+  LogOut: LogOut,
+  UserPlus: UserPlus,
 };
 
 export type IconName = keyof typeof Icons;

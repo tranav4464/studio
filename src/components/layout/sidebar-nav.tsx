@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation"; // Added useRouter
 import { Icons, type IconName } from "@/components/icons";
 import {
   SidebarMenu,
@@ -23,7 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { useToast } from "@/hooks/use-toast";
 
 interface NavItem {
   href?: string;
@@ -31,10 +31,10 @@ interface NavItem {
   icon: IconName;
   badge?: string;
   disabled?: boolean;
-  action?: () => void; // For items that trigger an action instead of navigation
+  action?: () => void; 
+  isBottom?: boolean; // To identify logout button
 }
 
-// Mock user data (replace with actual data source if available)
 const mockUser = {
   name: "Demo User",
   email: "user@example.com",
@@ -45,9 +45,16 @@ const mockUser = {
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { toast } = useToast(); // Initialize useToast
+  const router = useRouter(); // Added useRouter
+  const { toast } = useToast();
   const [isProfilePopoverOpen, setIsProfilePopoverOpen] = React.useState(false);
   const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleLogout = () => {
+    // In a real app, you'd clear the session/token here
+    toast({ title: "Logged Out", description: "You have been successfully logged out." });
+    router.push('/login'); // Redirect to login page
+  };
 
   const navItems: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: "Dashboard" },
@@ -59,6 +66,10 @@ export function SidebarNav() {
       icon: "HelpCircle", 
       action: () => toast({ title: "Help & Guides", description: "In-app guides and tips are coming soon!" }) 
     },
+  ];
+
+  const bottomNavItems: NavItem[] = [
+    { label: "Logout", icon: "LogOut", action: handleLogout, isBottom: true },
   ];
   
 
@@ -73,8 +84,41 @@ export function SidebarNav() {
   const handleMouseLeaveProfile = () => {
     hoverTimeoutRef.current = setTimeout(() => {
       setIsProfilePopoverOpen(false);
-    }, 200); // Small delay to allow moving cursor to popover
+    }, 200); 
   };
+
+  const renderNavItem = (item: NavItem) => (
+    <SidebarMenuItem key={item.label}>
+      {item.href ? (
+        <Link href={item.href} passHref legacyBehavior>
+          <SidebarMenuButton
+            isActive={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))}
+            tooltip={item.label}
+            disabled={item.disabled}
+            className="w-full justify-start hover:scale-[1.03] transition-transform duration-150"
+          >
+            <IconComponent name={item.icon} />
+            <span>{item.label}</span>
+            {item.badge && <Badge variant="secondary" className="ml-auto">{item.badge}</Badge>}
+          </SidebarMenuButton>
+        </Link>
+      ) : (
+          <SidebarMenuButton
+            onClick={item.action}
+            tooltip={item.label}
+            disabled={item.disabled}
+            className={cn(
+                "w-full justify-start hover:scale-[1.03] transition-transform duration-150",
+                item.isBottom && "text-destructive hover:bg-destructive/10 hover:text-destructive"
+            )}
+          >
+            <IconComponent name={item.icon} />
+            <span>{item.label}</span>
+            {item.badge && <Badge variant="secondary" className="ml-auto">{item.badge}</Badge>}
+          </SidebarMenuButton>
+      )}
+    </SidebarMenuItem>
+  );
 
   return (
     <>
@@ -84,40 +128,16 @@ export function SidebarNav() {
           <h1 className="text-xl font-semibold text-foreground">ContentCraft AI</h1>
         </Link>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="flex flex-col justify-between">
         <SidebarMenu>
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.label}>
-              {item.href ? (
-                <Link href={item.href} passHref legacyBehavior>
-                  <SidebarMenuButton
-                    isActive={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))}
-                    tooltip={item.label}
-                    disabled={item.disabled}
-                    className="w-full justify-start hover:scale-[1.03] transition-transform duration-150"
-                  >
-                    <IconComponent name={item.icon} />
-                    <span>{item.label}</span>
-                    {item.badge && <Badge variant="secondary" className="ml-auto">{item.badge}</Badge>}
-                  </SidebarMenuButton>
-                </Link>
-              ) : (
-                 <SidebarMenuButton
-                    onClick={item.action}
-                    tooltip={item.label}
-                    disabled={item.disabled}
-                    className="w-full justify-start hover:scale-[1.03] transition-transform duration-150"
-                  >
-                    <IconComponent name={item.icon} />
-                    <span>{item.label}</span>
-                    {item.badge && <Badge variant="secondary" className="ml-auto">{item.badge}</Badge>}
-                  </SidebarMenuButton>
-              )}
-            </SidebarMenuItem>
-          ))}
+          {navItems.map(renderNavItem)}
+        </SidebarMenu>
+        <SidebarMenu className="mt-auto"> {/* For items at the bottom */}
+          <Separator className="my-2"/>
+           {bottomNavItems.map(renderNavItem)}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="p-4 mt-auto">
+      <SidebarFooter className="p-4">
         <Separator className="my-2"/>
         <Popover open={isProfilePopoverOpen} onOpenChange={setIsProfilePopoverOpen}>
           <PopoverTrigger asChild>

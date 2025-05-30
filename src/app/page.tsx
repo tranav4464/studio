@@ -28,9 +28,9 @@ const features = [
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
       {/* Hero Section */}
-      <section className="relative w-full py-20 md:py-32 lg:py-40 bg-gradient-to-r from-blue-600 to-purple-600 text-white flex items-center justify-center text-center">
+      <section className="relative w-full py-20 md:py-32 lg:py-40 bg-gradient-to-r from-primary to-accent text-primary-foreground flex items-center justify-center text-center transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
         <div className="container z-10 px-4 md:px-6">
           <div className="max-w-3xl mx-auto space-y-6">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
@@ -40,8 +40,8 @@ export default function HomePage() {
               ContentCraft AI helps you create, optimize, and repurpose your blog content with the power of AI.
             </p>
             <Link
-              href="/dashboard"
-              className="inline-flex h-12 items-center justify-center rounded-md bg-white px-8 text-base font-medium text-blue-600 shadow transition-colors hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 disabled:pointer-events-none disabled:opacity-50"
+              href="/login"
+              className="inline-flex h-12 items-center justify-center rounded-md bg-primary-foreground px-8 text-base font-medium text-primary shadow transition-colors hover:bg-primary-foreground/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
             >
               Start Creating
             </Link>
@@ -50,21 +50,21 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="w-full py-20 md:py-32 bg-white">
+      <section className="w-full py-20 md:py-32 bg-card">
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center justify-center space-y-10 text-center">
             <div className="space-y-2">
               <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Powerful Features to Boost Your Content</h2>
-              <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                 ContentCraft AI provides a suite of tools to streamline your content creation workflow.
               </p>
             </div>
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {features.map((feature, index) => (
-                <div key={index} className="flex flex-col items-center space-y-4 p-6 bg-gray-50 rounded-lg transition-all duration-200 ease-in-out hover:scale-[1.03] hover:shadow-lg">
+                <div key={index} className="flex flex-col items-center space-y-4 p-6 bg-background rounded-lg shadow-md transition-all duration-200 ease-in-out hover:scale-[1.03] hover:shadow-lg">
                   {feature.icon}
                   <h3 className="text-xl font-bold">{feature.title}</h3>
-                  <p className="text-gray-500">{feature.description}</p>
+                  <p className="text-muted-foreground">{feature.description}</p>
                 </div>
               ))}
             </div>
@@ -73,37 +73,37 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials Section (Optional Placeholder) */}
-      <section className="w-full py-20 md:py-32 bg-gray-200 flex items-center justify-center text-center">
+      <section className="w-full py-20 md:py-32 bg-secondary flex items-center justify-center text-center">
          <div className="container px-4 md:px-6">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">What Our Users Say</h2>
-            <p className="max-w-[700px] mx-auto mt-4 text-gray-600 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+            <p className="max-w-[700px] mx-auto mt-4 text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                (Testimonials Coming Soon!)
             </p>
          </div>
       </section>
 
       {/* Footer */}
-      <footer className="w-full py-8 bg-gray-800 text-white text-center">
+      <footer className="w-full py-8 bg-muted text-muted-foreground text-center">
         <div className="container px-4 md:px-6 flex flex-col md:flex-row items-center justify-between">
-          <p className="text-sm mb-4 md:mb-0">&copy; 2023 ContentCraft AI. All rights reserved.</p>
+          <p className="text-sm mb-4 md:mb-0">&copy; {new Date().getFullYear()} ContentCraft AI. All rights reserved.</p>
           <nav className="flex space-x-4">
-            <Link href="#" className="text-sm hover:underline">
+            <Link href="#" className="text-sm hover:underline hover:text-primary">
               Privacy Policy
             </Link>
-            <Link href="#" className="text-sm hover:underline">
+            <Link href="#" className="text-sm hover:underline hover:text-primary">
               Terms of Use
             </Link>
-            <Link href="#" className="text-sm hover:underline">
+            <Link href="#" className="text-sm hover:underline hover:text-primary">
               Contact
             </Link>
           </nav>
           {/* Social Links */}
           <div className="flex space-x-4 mt-4 md:mt-0">
-            <Link href="#" className="text-gray-400 hover:text-white">
-              <FaTwitter className="w-6 h-6" />
+            <Link href="#" className="text-muted-foreground hover:text-primary">
+              <FaTwitter className="w-5 h-5" />
             </Link>
-            <Link href="#" className="text-gray-400 hover:text-white">
-              <FaLinkedin className="w-6 h-6" />
+            <Link href="#" className="text-muted-foreground hover:text-primary">
+              <FaLinkedin className="w-5 h-5" />
             </Link>
           </div>
         </div>
