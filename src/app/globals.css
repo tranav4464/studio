@@ -14,33 +14,33 @@ code, pre, kbd, samp {
 
 @layer base {
   :root {
-    --background: 0 0% 96.1%; /* Light Gray #F5F5F5 */
-    --foreground: 0 0% 0%; /* Black */
+    --background: 0 0% 100%; /* Lightest #FFFFFF */
+    --foreground: 171 68% 7%; /* Darkest #061D1C */
 
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 0 0% 0%; /* Black */
+    --card: 0 0% 100%; /* Lightest #FFFFFF */
+    --card-foreground: 171 68% 7%; /* Darkest #061D1C */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%; /* Black */
+    --popover: 0 0% 100%; /* Lightest #FFFFFF */
+    --popover-foreground: 171 68% 7%; /* Darkest #061D1C */
 
-    --primary: 180 100% 25%; /* Teal #008080 */
-    --primary-foreground: 0 0% 98%; /* White/Light text */
+    --primary: 174 84% 32%; /* Brand #0D9488 */
+    --primary-foreground: 0 0% 100%; /* Lightest #FFFFFF */
 
-    --secondary: 0 0% 92%; /* Lighter gray for secondary elements */
-    --secondary-foreground: 0 0% 0%; /* Black */
+    --secondary: 170 44% 86%; /* Light #BAE1DB */
+    --secondary-foreground: 171 68% 7%; /* Darkest #061D1C */
 
-    --muted: 0 0% 90%; /* Muted gray */
-    --muted-foreground: 0 0% 0%; /* Black */
+    --muted: 0 0% 96.1%; /* Original Light Gray #F5F5F5 for less prominent backgrounds */
+    --muted-foreground: 177 45% 19%; /* Dark #1A4644 for muted text */
 
-    --accent: 45 100% 51.4%; /* Yellow #FFC107 */
-    --accent-foreground: 240 10% 3.9%; /* Dark text on Yellow */
+    --accent: 170 44% 86%; /* Light #BAE1DB */
+    --accent-foreground: 171 68% 7%; /* Darkest #061D1C */
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%; /* Keeping original destructive red */
+    --destructive-foreground: 0 0% 98%; /* Keeping original */
 
-    --border: 0 0% 89.8%; /* Light gray border, was 89.8, slightly lighter */
-    --input: 0 0% 89.8%;
-    --ring: 180 100% 25%; /* Teal for ring */
+    --border: 165 19% 64%; /* Mid #8BADA8 */
+    --input: 165 19% 64%; /* Mid #8BADA8 */
+    --ring: 174 84% 32%; /* Brand #0D9488 for ring */
 
     --radius: 0.5rem;
 
@@ -52,14 +52,14 @@ code, pre, kbd, samp {
     --chart-5: 27 87% 67%;
 
     /* Sidebar specific colors */
-    --sidebar-background: 0 0% 100%; /* White sidebar */
-    --sidebar-foreground: 0 0% 0%; /* Black */
-    --sidebar-primary: 180 100% 25%; /* Teal */
-    --sidebar-primary-foreground: 0 0% 98%; /* White text */
-    --sidebar-accent: 45 100% 51.4%; /* Yellow */
-    --sidebar-accent-foreground: 240 10% 3.9%; /* Dark text */
-    --sidebar-border: 0 0% 89.8%;
-    --sidebar-ring: 180 100% 25%;
+    --sidebar-background: 0 0% 100%; /* Lightest #FFFFFF */
+    --sidebar-foreground: 171 68% 7%; /* Darkest #061D1C */
+    --sidebar-primary: 174 84% 32%; /* Brand #0D9488 */
+    --sidebar-primary-foreground: 0 0% 100%; /* Lightest #FFFFFF */
+    --sidebar-accent: 170 44% 86%; /* Light #BAE1DB */
+    --sidebar-accent-foreground: 171 68% 7%; /* Darkest #061D1C */
+    --sidebar-border: 165 19% 64%; /* Mid #8BADA8 */
+    --sidebar-ring: 174 84% 32%; /* Brand #0D9488 */
   }
 
   .dark {
