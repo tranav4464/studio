@@ -14,33 +14,33 @@ code, pre, kbd, samp {
 
 @layer base {
   :root {
-    --background: 0 0% 100%; /* Lightest #FFFFFF */
-    --foreground: 171 68% 7%; /* Darkest #061D1C */
+    --background: 180 25% 94%; /* Azure Web #EAF4F4 */
+    --foreground: 150 10% 20%; /* Darkened Viridian-like #2E3834 */
 
-    --card: 0 0% 100%; /* Lightest #FFFFFF */
-    --card-foreground: 171 68% 7%; /* Darkest #061D1C */
+    --card: 165 33% 85%; /* Mint Green #CCE3DE */
+    --card-foreground: 150 10% 20%; /* Darkened Viridian-like #2E3834 */
 
-    --popover: 0 0% 100%; /* Lightest #FFFFFF */
-    --popover-foreground: 171 68% 7%; /* Darkest #061D1C */
+    --popover: 130 100% 98%; /* Mint Cream #F6FFF8 */
+    --popover-foreground: 150 10% 20%; /* Darkened Viridian-like #2E3834 */
 
-    --primary: 174 84% 32%; /* Brand #0D9488 */
-    --primary-foreground: 0 0% 100%; /* Lightest #FFFFFF */
+    --primary: 150 15% 49%; /* Viridian #6B9080 */
+    --primary-foreground: 130 100% 98%; /* Mint Cream #F6FFF8 */
 
-    --secondary: 170 44% 86%; /* Light #BAE1DB */
-    --secondary-foreground: 171 68% 7%; /* Darkest #061D1C */
+    --secondary: 150 25% 71%; /* Cambridge Blue #A4C3B2 */
+    --secondary-foreground: 150 10% 20%; /* Darkened Viridian-like #2E3834 */
 
-    --muted: 0 0% 96.1%; /* Original Light Gray #F5F5F5 for less prominent backgrounds */
-    --muted-foreground: 177 45% 19%; /* Dark #1A4644 for muted text */
+    --muted: 165 33% 85%; /* Mint Green #CCE3DE - for less prominent backgrounds */
+    --muted-foreground: 150 10% 40%; /* Medium-Dark Green #5C6F68 for muted text */
 
-    --accent: 170 44% 86%; /* Light #BAE1DB */
-    --accent-foreground: 171 68% 7%; /* Darkest #061D1C */
+    --accent: 165 33% 85%; /* Mint Green #CCE3DE */
+    --accent-foreground: 150 10% 20%; /* Darkened Viridian-like #2E3834 */
 
     --destructive: 0 84.2% 60.2%; /* Keeping original destructive red */
     --destructive-foreground: 0 0% 98%; /* Keeping original */
 
-    --border: 165 19% 64%; /* Mid #8BADA8 */
-    --input: 165 19% 64%; /* Mid #8BADA8 */
-    --ring: 174 84% 32%; /* Brand #0D9488 for ring */
+    --border: 150 25% 71%; /* Cambridge Blue #A4C3B2 */
+    --input: 150 25% 71%; /* Cambridge Blue #A4C3B2 for border, background is bg-background */
+    --ring: 150 15% 49%; /* Viridian #6B9080 for ring */
 
     --radius: 0.5rem;
 
@@ -52,14 +52,14 @@ code, pre, kbd, samp {
     --chart-5: 27 87% 67%;
 
     /* Sidebar specific colors */
-    --sidebar-background: 0 0% 100%; /* Lightest #FFFFFF */
-    --sidebar-foreground: 171 68% 7%; /* Darkest #061D1C */
-    --sidebar-primary: 174 84% 32%; /* Brand #0D9488 */
-    --sidebar-primary-foreground: 0 0% 100%; /* Lightest #FFFFFF */
-    --sidebar-accent: 170 44% 86%; /* Light #BAE1DB */
-    --sidebar-accent-foreground: 171 68% 7%; /* Darkest #061D1C */
-    --sidebar-border: 165 19% 64%; /* Mid #8BADA8 */
-    --sidebar-ring: 174 84% 32%; /* Brand #0D9488 */
+    --sidebar-background: 130 100% 98%; /* Mint Cream #F6FFF8 */
+    --sidebar-foreground: 150 10% 20%; /* Darkened Viridian-like #2E3834 */
+    --sidebar-primary: 150 15% 49%; /* Viridian #6B9080 */
+    --sidebar-primary-foreground: 130 100% 98%; /* Mint Cream #F6FFF8 */
+    --sidebar-accent: 165 33% 85%; /* Mint Green #CCE3DE */
+    --sidebar-accent-foreground: 150 10% 20%; /* Darkened Viridian-like #2E3834 */
+    --sidebar-border: 150 25% 71%; /* Cambridge Blue #A4C3B2 */
+    --sidebar-ring: 150 15% 49%; /* Viridian #6B9080 */
   }
 
   .dark {
