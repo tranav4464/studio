@@ -3,6 +3,7 @@
 
 import { generateHeroImage, type GenerateHeroImageInput, type GenerateHeroImageOutput } from '@/ai/flows/generate-hero-image';
 import { repurposeContent, type RepurposeContentInput, type RepurposeContentOutput } from '@/ai/flows/repurpose-content';
+import { generateBlogOutline, type GenerateBlogOutlineInput, type GenerateBlogOutlineOutput } from '@/ai/flows/generate-blog-outline-flow';
 
 export async function generateHeroImageAction(input: GenerateHeroImageInput): Promise<GenerateHeroImageOutput> {
   try {
@@ -32,6 +33,25 @@ export async function repurposeContentAction(input: RepurposeContentInput): Prom
     throw new Error("Failed to repurpose content. Please try again.");
   }
 }
+
+export async function generateBlogOutlineAction(input: GenerateBlogOutlineInput): Promise<GenerateBlogOutlineOutput> {
+  try {
+    // Simulate a short delay for UX, Genkit itself handles the AI call.
+    await new Promise(resolve => setTimeout(resolve, 500)); 
+    const result = await generateBlogOutline(input);
+    if (!result.outline || result.outline.length === 0) {
+        // This case should ideally be handled within the flow's fallback,
+        // but as an extra safety net:
+        return { outline: [`Introduction to ${input.topic}`, `Exploring ${input.topic}`, `Conclusion on ${input.topic}`] };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error generating blog outline:", error);
+    // Provide a generic fallback outline on error
+    return { outline: [`Failed to generate outline for ${input.topic}`, `Please try again or manually create sections.`] };
+  }
+}
+
 
 // Mock action for blog generation
 export async function generateFullBlogAction(params: { topic: string, outline: string[], tone: string, style: string, length: string }): Promise<{ content: string }> {

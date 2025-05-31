@@ -15,6 +15,7 @@ import type { BlogTone, BlogStyle, BlogLength } from '@/types';
 import { blogStore } from '@/lib/blog-store';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { generateBlogOutlineAction } from '@/actions/ai'; // Import the new action
 
 const tones: BlogTone[] = ["formal", "casual", "informative", "persuasive", "humorous"];
 const styles: BlogStyle[] = ["academic", "journalistic", "storytelling", "technical"];
@@ -43,16 +44,38 @@ export default function NewBlogPage() {
       return;
     }
     setIsLoadingOutline(true);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Mock AI call
-    setGeneratedOutline([
-      { id: Date.now().toString() + '1', value: `Introduction to ${topic}`},
-      { id: Date.now().toString() + '2', value: `Key aspect 1 of ${topic}`},
-      { id: Date.now().toString() + '3', value: `Exploring ${topic} further`},
-      { id: Date.now().toString() + '4', value: `Challenges and opportunities with ${topic}`},
-      { id: Date.now().toString() + '5', value: `Conclusion about ${topic}`},
-    ]);
-    setIsLoadingOutline(false);
-    toast({ title: "Outline Generated", description: "Review and customize the outline below." });
+    setGeneratedOutline(null); // Clear previous outline
+
+    try {
+      const result = await generateBlogOutlineAction({
+        topic,
+        tone,
+        style,
+        length,
+        referenceText: referenceText || undefined,
+      });
+
+      if (result.outline && result.outline.length > 0) {
+        setGeneratedOutline(result.outline.map((item, index) => ({ id: Date.now().toString() + index, value: item })));
+        toast({ title: "Outline Generated", description: "Review and customize the outline below." });
+      } else {
+        toast({ title: "Outline Generation Failed", description: "Could not generate an outline. Please try again or create one manually.", variant: "destructive" });
+        // Provide a default manual outline structure
+        setGeneratedOutline([
+          { id: Date.now().toString() + '1', value: `Introduction to ${topic}`},
+          { id: Date.now().toString() + '2', value: `Key aspect 1 of ${topic}`},
+          { id: Date.now().toString() + '3', value: `Conclusion about ${topic}`},
+        ]);
+      }
+    } catch (error: any) {
+      toast({ title: "Error Generating Outline", description: error.message || "An unexpected error occurred.", variant: "destructive" });
+       setGeneratedOutline([
+          { id: Date.now().toString() + '1', value: `Error: Could not generate outline for ${topic}`},
+          { id: Date.now().toString() + '2', value: `Please try again or manually create sections.`},
+        ]);
+    } finally {
+      setIsLoadingOutline(false);
+    }
   };
 
   const handleAddOutlineSection = () => {
@@ -214,7 +237,7 @@ export default function NewBlogPage() {
                 <p className="text-sm text-muted-foreground text-center py-8">Click "Generate Outline" to start.</p>
               )}
             </CardContent>
-            {generatedOutline && generatedOutline.length > 0 && (
+            {generatedOutline && generatedOutline.length > 0 && !isLoadingOutline && (
               <CardFooter>
                 <Button onClick={handleGeneratePost} disabled={isLoadingPost || isLoadingOutline} className="w-full">
                   {isLoadingPost && <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />}
