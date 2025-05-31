@@ -48,13 +48,13 @@ export default function DashboardPage() {
           <div className="bg-[#061d1c] dark:bg-[#5BC0BE] p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-2xl">
             <div className="text-white dark:text-white">
               <h1 className="text-4xl font-extrabold tracking-tight text-primary dark:text-white">Hi {userName}, ready to create?</h1>
-              <p className="text-lg opacity-90 mt-2 text-white dark:text-white">Turn your ideas into full content in minutes with AI.</p>
+              <p className="text-lg opacity-90 mt-2">Turn your ideas into full content in minutes with AI.</p>
             </div>
             <Link href="/new-blog" passHref>
               <Button
                 size="lg"
                 className="mt-6 sm:mt-0 shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-xl 
-                           bg-[#BAE1DB] text-primary hover:bg-[#a7ccc6] 
+                           bg-accent text-primary hover:bg-accent/90 
                            dark:bg-[#0B2C39] dark:text-white dark:hover:bg-[#1D3F4E]"
               >
                 <Icons.NewBlog className="mr-2 h-5 w-5 animate-pulse" />
@@ -108,4 +108,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
