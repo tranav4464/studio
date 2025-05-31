@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, type ChangeEvent } from 'react'; // Added ChangeEvent
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ import type { BlogTone, BlogStyle, BlogLength } from '@/types';
 import { blogStore } from '@/lib/blog-store';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { generateBlogOutlineAction, generateFullBlogAction } from '@/actions/ai'; // Import the new action
+import { generateBlogOutlineAction, generateFullBlogAction } from '@/actions/ai';
 
 const tones: BlogTone[] = ["formal", "casual", "informative", "persuasive", "humorous"];
 const styles: BlogStyle[] = ["academic", "journalistic", "storytelling", "technical"];
@@ -34,11 +34,36 @@ export default function NewBlogPage() {
   const [style, setStyle] = useState<BlogStyle>('journalistic');
   const [length, setLength] = useState<BlogLength>('medium');
   const [referenceText, setReferenceText] = useState('');
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null); // State for uploaded file name
   const [generatedOutline, setGeneratedOutline] = useState<OutlineItem[] | null>(null);
   const [isLoadingOutline, setIsLoadingOutline] = useState(false);
   const [isLoadingPost, setIsLoadingPost] = useState(false);
   const [customInstructions, setCustomInstructions] = useState('');
 
+
+  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type === "text/plain") {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          setReferenceText(content);
+          setUploadedFileName(file.name);
+          toast({ title: "File Uploaded", description: `${file.name} content loaded into reference text.` });
+        };
+        reader.onerror = () => {
+          toast({ title: "File Read Error", description: "Could not read the selected file.", variant: "destructive" });
+          setUploadedFileName(null);
+        };
+        reader.readAsText(file);
+      } else {
+        toast({ title: "Invalid File Type", description: "Only .txt files are currently supported for direct content extraction. PDF/DOCX support coming soon.", variant: "destructive" });
+        setUploadedFileName(null);
+        event.target.value = ""; // Reset file input
+      }
+    }
+  };
 
   const handleGenerateOutline = async () => {
     if (!topic) {
@@ -46,7 +71,7 @@ export default function NewBlogPage() {
       return;
     }
     setIsLoadingOutline(true);
-    setGeneratedOutline(null); // Clear previous outline
+    setGeneratedOutline(null);
 
     try {
       const result = await generateBlogOutlineAction({
@@ -62,7 +87,6 @@ export default function NewBlogPage() {
         toast({ title: "Outline Generated", description: "Review and customize the outline below." });
       } else {
         toast({ title: "Outline Generation Failed", description: "Could not generate an outline. Please try again or create one manually.", variant: "destructive" });
-        // Provide a default manual outline structure
         setGeneratedOutline([
           { id: Date.now().toString() + '1', value: `Introduction to ${topic}`},
           { id: Date.now().toString() + '2', value: `Key aspect 1 of ${topic}`},
@@ -108,7 +132,7 @@ export default function NewBlogPage() {
         style,
         length,
         outline: outlineStrings,
-        referenceText: customInstructions || referenceText || undefined, // Prioritize custom instructions for generation
+        referenceText: customInstructions || referenceText || undefined,
       });
 
       const newPost = blogStore.addPost({
@@ -122,7 +146,6 @@ export default function NewBlogPage() {
       blogStore.updatePost(newPost.id, { 
         content: result.blogContent,
         outline: outlineStrings,
-        // If referenceText was used for generation, maybe store it or a flag? For now, it's implicitly used.
       });
 
       toast({ title: "Blog Post Generated!", description: "Redirecting to the editor..." });
@@ -193,24 +216,33 @@ export default function NewBlogPage() {
                     <TooltipTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
                     </TooltipTrigger>
-                    <TooltipContent side="top"><p>Paste any existing text, notes, or key points for the AI to consider for outline generation.</p></TooltipContent>
+                    <TooltipContent side="top"><p>Paste any existing text, notes, or key points for the AI to consider for outline generation. This will be replaced if you upload a .txt file.</p></TooltipContent>
                   </Tooltip>
                 </div>
-                <Textarea id="referenceText" placeholder="Paste any reference material or key points here..." value={referenceText} onChange={(e) => setReferenceText(e.target.value)} rows={5} />
+                <Textarea id="referenceText" placeholder="Paste any reference material or key points here, or upload a .txt file below..." value={referenceText} onChange={(e) => setReferenceText(e.target.value)} rows={5} />
               </div>
               
               <div className="space-y-2">
                   <div className="flex items-center gap-1">
-                    <Label htmlFor="reference-files">Reference Files (Optional)</Label>
+                    <Label htmlFor="reference-files">Upload Reference File (Optional)</Label>
                     <Tooltip>
                         <TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
                         </TooltipTrigger>
-                        <TooltipContent side="top"><p>Upload documents (PDF, DOCX, TXT) for the AI to use as reference. (Coming Soon)</p></TooltipContent>
+                        <TooltipContent side="top" className="max-w-xs"><p>Upload a .txt file. Its content will replace the text in the 'Initial Reference Text' box above. Support for PDF/DOCX coming soon.</p></TooltipContent>
                     </Tooltip>
                   </div>
-                  <Input id="reference-files" type="file" disabled className="cursor-not-allowed file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
-                  <p className="text-xs text-muted-foreground">File upload functionality is currently disabled.</p>
+                  <Input 
+                    id="reference-files" 
+                    type="file" 
+                    accept=".txt" // To guide user, actual check is in handler
+                    onChange={handleFileUpload}
+                    className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" 
+                  />
+                  {uploadedFileName && <p className="text-xs text-muted-foreground">Uploaded: {uploadedFileName}</p>}
+                  <p className="text-xs text-muted-foreground">
+                    Currently, only .txt files are directly processed. For PDF/DOCX, please paste content into the 'Initial Reference Text' box above. Full PDF/DOCX upload support coming soon.
+                  </p>
               </div>
 
             </CardContent>
@@ -289,3 +321,4 @@ export default function NewBlogPage() {
     </TooltipProvider>
   );
 }
+
