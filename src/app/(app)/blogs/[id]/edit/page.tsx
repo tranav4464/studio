@@ -592,8 +592,11 @@ export default function BlogEditPage() {
               {isSaving ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Save className="mr-2 h-4 w-4" />}
               Save Post
             </Button>
-            {isSaving && <span className="text-xs text-muted-foreground ml-2">Saving...</span>}
-            {!isSaving && <span className="text-xs text-muted-foreground ml-2">(Auto-Save Enabled - Mock)</span>}
+            {isSaving ? (
+                <span className="text-xs text-muted-foreground ml-2">Saving...</span>
+            ) : (
+                <span className="text-xs text-muted-foreground ml-2">(Auto-Save Enabled - Mock)</span>
+            )}
           </div>
         }
       />
@@ -934,3 +937,4 @@ export default function BlogEditPage() {
     </TooltipProvider>
   );
 }
+
