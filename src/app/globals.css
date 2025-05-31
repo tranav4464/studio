@@ -66,7 +66,7 @@ code, pre, kbd, samp {
     --background: 0 0% 7.5%; /* #131313 */
     --foreground: 0 0% 100%; /* White */
 
-    --card: 63 13% 68% / 0.15; /* #B9BAA3 with 15% opacity (85% transparent) */
+    --card: 63 13% 68% / 0.15; /* #B9BAA3 with 85% transparency */
     --card-foreground: 0 0% 100%; /* White */
 
     --popover: 0 0% 7.5%; /* #131313 */
@@ -118,4 +118,3 @@ code, pre, kbd, samp {
     @apply bg-background text-foreground;
   }
 }
-
