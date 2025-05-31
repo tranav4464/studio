@@ -4,6 +4,7 @@
 import { generateHeroImage, type GenerateHeroImageInput, type GenerateHeroImageOutput } from '@/ai/flows/generate-hero-image';
 import { repurposeContent, type RepurposeContentInput, type RepurposeContentOutput } from '@/ai/flows/repurpose-content';
 import { generateBlogOutline, type GenerateBlogOutlineInput, type GenerateBlogOutlineOutput } from '@/ai/flows/generate-blog-outline-flow';
+import { generateFullBlog, type GenerateFullBlogInput, type GenerateFullBlogOutput } from '@/ai/flows/generate-full-blog-flow'; // Import the new flow
 
 export async function generateHeroImageAction(input: GenerateHeroImageInput): Promise<GenerateHeroImageOutput> {
   try {
@@ -52,24 +53,23 @@ export async function generateBlogOutlineAction(input: GenerateBlogOutlineInput)
   }
 }
 
-
-// Mock action for blog generation
-export async function generateFullBlogAction(params: { topic: string, outline: string[], tone: string, style: string, length: string }): Promise<{ content: string }> {
-  console.log("Mock generateFullBlogAction called with:", params);
-  await new Promise(resolve => setTimeout(resolve, 2000)); 
-  
-  const generatedContent = `
-# ${params.topic} - A ${params.style} take with a ${params.tone} tone (${params.length})
-
-## Introduction
-This is an AI generated blog post about ${params.topic}. The chosen tone is ${params.tone}, style is ${params.style}, and preferred length is ${params.length}.
-
-${params.outline.map(item => `### ${item}\nSome placeholder content for this section. We should elaborate on this point with relevant details, examples, and insights to create a comprehensive and engaging piece for the readers. This part is crucial for developing the core message related to '${item}'.\n`).join('\n')}
-
-## Conclusion
-This concludes our ${params.length} exploration of ${params.topic}. We hope this provides valuable insights and encourages further discussion.
-  `;
-  return { content: generatedContent };
+// Replaced mock with actual AI-powered blog generation
+export async function generateFullBlogAction(input: GenerateFullBlogInput): Promise<GenerateFullBlogOutput> {
+  console.log("generateFullBlogAction called with:", input);
+  try {
+    // Simulate a short delay for UX, Genkit itself handles the AI call.
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const result = await generateFullBlog(input);
+    if (!result.blogContent) {
+      // Fallback, though the flow itself should handle this
+      return { blogContent: `# ${input.topic}\n\nError: AI failed to generate blog content. Please try again.` };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error generating full blog:", error);
+    // Provide a generic fallback content on error
+    return { blogContent: `# ${input.topic}\n\nAn error occurred while generating the blog content. Please try again or write manually.` };
+  }
 }
 
 

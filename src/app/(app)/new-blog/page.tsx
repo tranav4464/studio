@@ -15,7 +15,7 @@ import type { BlogTone, BlogStyle, BlogLength } from '@/types';
 import { blogStore } from '@/lib/blog-store';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { generateBlogOutlineAction } from '@/actions/ai'; // Import the new action
+import { generateBlogOutlineAction, generateFullBlogAction } from '@/actions/ai'; // Import the new action
 
 const tones: BlogTone[] = ["formal", "casual", "informative", "persuasive", "humorous"];
 const styles: BlogStyle[] = ["academic", "journalistic", "storytelling", "technical"];
@@ -37,6 +37,8 @@ export default function NewBlogPage() {
   const [generatedOutline, setGeneratedOutline] = useState<OutlineItem[] | null>(null);
   const [isLoadingOutline, setIsLoadingOutline] = useState(false);
   const [isLoadingPost, setIsLoadingPost] = useState(false);
+  const [customInstructions, setCustomInstructions] = useState('');
+
 
   const handleGenerateOutline = async () => {
     if (!topic) {
@@ -96,23 +98,41 @@ export default function NewBlogPage() {
       return;
     }
     setIsLoadingPost(true);
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Mock creating post
     
     const outlineStrings = generatedOutline.map(item => item.value);
 
-    const newPost = blogStore.addPost({
-        title: topic, 
+    try {
+      const result = await generateFullBlogAction({
         topic,
         tone,
         style,
         length,
-    });
-    
-    blogStore.updatePost(newPost.id, { outline: outlineStrings });
+        outline: outlineStrings,
+        referenceText: customInstructions || referenceText || undefined, // Prioritize custom instructions for generation
+      });
 
-    setIsLoadingPost(false);
-    toast({ title: "Blog Post Created!", description: "Redirecting to the editor..." });
-    router.push(`/blogs/${newPost.id}/edit`);
+      const newPost = blogStore.addPost({
+          title: topic, 
+          topic,
+          tone,
+          style,
+          length,
+      });
+      
+      blogStore.updatePost(newPost.id, { 
+        content: result.blogContent,
+        outline: outlineStrings,
+        // If referenceText was used for generation, maybe store it or a flag? For now, it's implicitly used.
+      });
+
+      toast({ title: "Blog Post Generated!", description: "Redirecting to the editor..." });
+      router.push(`/blogs/${newPost.id}/edit`);
+
+    } catch (error: any) {
+      toast({ title: "Error Generating Blog Post", description: error.message || "An unexpected error occurred.", variant: "destructive" });
+    } finally {
+      setIsLoadingPost(false);
+    }
   };
 
   return (
@@ -168,16 +188,15 @@ export default function NewBlogPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center gap-1">
-                  <Label htmlFor="referenceText">Reference Text (Optional)</Label>
+                  <Label htmlFor="referenceText">Initial Reference Text / Notes (Optional)</Label>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
                     </TooltipTrigger>
-                    <TooltipContent side="top"><p>Paste any existing text, notes, or key points for the AI to consider.</p></TooltipContent>
+                    <TooltipContent side="top"><p>Paste any existing text, notes, or key points for the AI to consider for outline generation.</p></TooltipContent>
                   </Tooltip>
                 </div>
                 <Textarea id="referenceText" placeholder="Paste any reference material or key points here..." value={referenceText} onChange={(e) => setReferenceText(e.target.value)} rows={5} />
-                <p className="text-xs text-muted-foreground">You can also upload reference files (feature coming soon).</p>
               </div>
               
               <div className="space-y-2">
@@ -205,8 +224,8 @@ export default function NewBlogPage() {
 
           <Card className="md:col-span-1 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
             <CardHeader>
-              <CardTitle>Blog Outline</CardTitle>
-              <CardDescription>Generated outline will appear here. You can customize it before generating the full post.</CardDescription>
+              <CardTitle>Blog Outline & Instructions</CardTitle>
+              <CardDescription>Customize the AI-generated outline and add specific instructions for the full blog post generation.</CardDescription>
             </CardHeader>
             <CardContent className="min-h-[200px] space-y-3">
               {isLoadingOutline && (
@@ -214,6 +233,7 @@ export default function NewBlogPage() {
               )}
               {generatedOutline && !isLoadingOutline && (
                 <>
+                  <Label className="font-medium">Generated Outline:</Label>
                   {generatedOutline.map((item) => (
                     <div key={item.id} className="flex items-center gap-2">
                       <Input 
@@ -230,7 +250,25 @@ export default function NewBlogPage() {
                    <Button variant="outline" size="sm" onClick={handleAddOutlineSection} className="w-full mt-2">
                     <Icons.FilePlus className="mr-2 h-4 w-4" /> Add Section
                   </Button>
-                  <Textarea placeholder="Add custom notes or instructions for the AI regarding the outline..." rows={3} className="mt-4"/>
+                  <div className="pt-4 space-y-2">
+                    <div className="flex items-center gap-1">
+                        <Label htmlFor="customInstructions">Additional Instructions for Full Blog (Optional)</Label>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs"><p>Provide specific instructions for the AI for the full blog generation stage (e.g., "Focus on practical examples in section 2", "Maintain a very optimistic tone throughout"). This will be combined with or override the initial reference text for this step.</p></TooltipContent>
+                        </Tooltip>
+                    </div>
+                    <Textarea 
+                        id="customInstructions"
+                        placeholder="e.g., Emphasize the impact on small businesses. Include a call to action to visit our website." 
+                        value={customInstructions}
+                        onChange={(e) => setCustomInstructions(e.target.value)}
+                        rows={3} 
+                        className="mt-1"
+                    />
+                  </div>
                 </>
               )}
               {!generatedOutline && !isLoadingOutline && (
