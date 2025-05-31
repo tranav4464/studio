@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { PageHeader } from '@/components/shared/page-header';
 import { useToast } from '@/hooks/use-toast';
-import { generateHeroImageAction, repurposeContentAction, generateBlogTitleSuggestionAction, generateMetaTitleAction, generateMetaDescriptionAction, improveBlogContentAction } from '@/actions/ai';
+import { generateHeroImageAction, repurposeContentAction, generateBlogTitleSuggestionAction, generateMetaTitleAction, generateMetaDescriptionAction, improveBlogContentAction, simplifyBlogContentAction } from '@/actions/ai';
 import NextImage from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
@@ -60,6 +60,7 @@ export default function BlogEditPage() {
   const [isSuggestingMetaTitle, setIsSuggestingMetaTitle] = useState(false);
   const [isSuggestingMetaDescription, setIsSuggestingMetaDescription] = useState(false);
   const [isImprovingContent, setIsImprovingContent] = useState(false);
+  const [isSimplifyingContent, setIsSimplifyingContent] = useState(false);
 
 
   useEffect(() => {
@@ -279,6 +280,27 @@ export default function BlogEditPage() {
     setIsImprovingContent(false);
   };
 
+  const handleSimplifyContent = async () => {
+    if (!post || !content) {
+      toast({ title: "Content is empty", description: "Please write some content before trying to simplify it.", variant: "destructive"});
+      return;
+    }
+    setIsSimplifyingContent(true);
+    try {
+      const result = await simplifyBlogContentAction({
+        blogContent: content,
+        topic: post.topic,
+        originalTone: post.tone,
+        originalStyle: post.style,
+      });
+      setContent(result.simplifiedContent);
+      toast({ title: "Content Simplified!", description: "The AI has simplified your blog post."});
+    } catch (error: any) {
+      toast({ title: "Error Simplifying Content", description: error.message, variant: "destructive" });
+    }
+    setIsSimplifyingContent(false);
+  };
+
 
   if (isLoading) {
     return <div className="flex h-full w-full items-center justify-center"><Icons.Spinner className="h-10 w-10 animate-spin text-primary" /></div>;
@@ -353,12 +375,15 @@ export default function BlogEditPage() {
               <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={25} className="text-base p-4 border rounded-md shadow-inner focus:ring-primary focus:border-primary" placeholder="Start writing..."/>
             </CardContent>
             <CardFooter className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={handleImproveContent} disabled={isImprovingContent || !content}>
+                <Button variant="outline" size="sm" onClick={handleImproveContent} disabled={isImprovingContent || isSimplifyingContent || !content}>
                   {isImprovingContent ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Improve className="mr-2 h-4 w-4" />}
                   Improve
                 </Button>
+                <Button variant="outline" size="sm" onClick={handleSimplifyContent} disabled={isSimplifyingContent || isImprovingContent || !content}>
+                  {isSimplifyingContent ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Simplify className="mr-2 h-4 w-4" />}
+                  Simplify
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Expand' feature coming soon!" })}><Icons.Expand className="mr-2 h-4 w-4"/>Expand</Button>
-                <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Simplify' feature coming soon!" })}><Icons.Simplify className="mr-2 h-4 w-4"/>Simplify</Button>
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Depth Boost' feature coming soon!" })}><Icons.Improve className="mr-2 h-4 w-4"/>Depth Boost</Button>
                 <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Visualize' feature coming soon!" })}><Icons.Image className="mr-2 h-4 w-4"/>Visualize</Button>
             </CardFooter>

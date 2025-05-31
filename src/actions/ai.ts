@@ -5,7 +5,8 @@ import { generateHeroImage, type GenerateHeroImageInput, type GenerateHeroImageO
 import { repurposeContent, type RepurposeContentInput, type RepurposeContentOutput } from '@/ai/flows/repurpose-content';
 import { generateBlogOutline, type GenerateBlogOutlineInput, type GenerateBlogOutlineOutput } from '@/ai/flows/generate-blog-outline-flow';
 import { generateFullBlog, type GenerateFullBlogInput, type GenerateFullBlogOutput } from '@/ai/flows/generate-full-blog-flow';
-import { improveBlogContent, type ImproveBlogContentInput, type ImproveBlogContentOutput } from '@/ai/flows/improve-blog-content-flow'; // Import the new flow
+import { improveBlogContent, type ImproveBlogContentInput, type ImproveBlogContentOutput } from '@/ai/flows/improve-blog-content-flow';
+import { simplifyBlogContent, type SimplifyBlogContentInput, type SimplifyBlogContentOutput } from '@/ai/flows/simplify-blog-content-flow'; // Import the new flow
 
 export async function generateHeroImageAction(input: GenerateHeroImageInput): Promise<GenerateHeroImageOutput> {
   try {
@@ -84,6 +85,21 @@ export async function improveBlogContentAction(input: ImproveBlogContentInput): 
   } catch (error) {
     console.error("Error improving blog content:", error);
     return { improvedContent: `An error occurred while improving the blog content. Original content preserved.\n\n${input.blogContent}` };
+  }
+}
+
+export async function simplifyBlogContentAction(input: SimplifyBlogContentInput): Promise<SimplifyBlogContentOutput> {
+  console.log("simplifyBlogContentAction called for topic:", input.topic);
+  try {
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+    const result = await simplifyBlogContent(input);
+    if (!result.simplifiedContent) {
+      return { simplifiedContent: `Error: AI failed to simplify blog content. Original content preserved.\n\n${input.blogContent}` };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error simplifying blog content:", error);
+    return { simplifiedContent: `An error occurred while simplifying the blog content. Original content preserved.\n\n${input.blogContent}` };
   }
 }
 
