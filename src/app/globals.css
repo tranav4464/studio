@@ -63,33 +63,33 @@ code, pre, kbd, samp {
   }
 
   .dark {
-    --background: 222 47% 11%; /* #0F172A */
-    --foreground: 215 28% 90%; /* #E2E8F0 */
+    --background: 60 5% 88%; /* #e0e1dd Light Gray for main content background */
+    --foreground: 222 47% 11%; /* Dark Blue text for contrast on light background */
 
-    --card: 222 31% 17%; /* #1E293B */
-    --card-foreground: 215 28% 90%; /* #E2E8F0 */
+    --card: 222 31% 17%; /* #1E293B Dark Blue for cards */
+    --card-foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White text on cards */
 
-    --popover: 222 31% 17%; /* #1E293B */
-    --popover-foreground: 215 28% 90%; /* #E2E8F0 */
+    --popover: 222 31% 17%; /* #1E293B Dark Blue for popovers */
+    --popover-foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White text on popovers */
 
-    --primary: 215 19% 47%; /* #64748B */
-    --primary-foreground: 222 47% 11%; /* #0F172A */
+    --primary: 215 19% 47%; /* #64748B Lighter Blue for primary buttons */
+    --primary-foreground: 222 47% 11%; /* #0F172A Very Dark Blue text on primary buttons */
 
-    --secondary: 220 26% 27%; /* #334155 */
-    --secondary-foreground: 215 28% 90%; /* #E2E8F0 */
+    --secondary: 220 26% 27%; /* #334155 Medium Slate Blue for secondary elements */
+    --secondary-foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White text */
 
-    --muted: 222 31% 17%; /* #1E293B */
-    --muted-foreground: 215 19% 47%; /* #64748B */
+    --muted: 222 31% 17%; /* #1E293B Dark Blue for muted backgrounds */
+    --muted-foreground: 215 19% 47%; /* #64748B Lighter Blue for muted text */
 
-    --accent: 215 19% 47%; /* #64748B */
-    --accent-foreground: 222 47% 11%; /* #0F172A */
+    --accent: 215 19% 47%; /* #64748B Lighter Blue for accents */
+    --accent-foreground: 222 47% 11%; /* #0F172A Very Dark Blue text on accents */
 
     --destructive: 0 84.2% 60.2%; 
     --destructive-foreground: 0 0% 98%; 
 
-    --border: 220 26% 27%; /* #334155 */
-    --input: 80 9% 64%; /* #a5ae9e for input borders */
-    --ring: 215 19% 47%; /* #64748B */
+    --border: 220 26% 27%; /* #334155 Medium Slate Blue for general borders */
+    --input: 60 5% 70%; /* #b1b3af Darker gray for input borders on light input background */
+    --ring: 215 19% 47%; /* #64748B Lighter Blue for focus rings */
     
     /* Chart colors for dark mode - Kept original dark mode chart colors */
     --chart-1: 220 70% 50%;
@@ -99,14 +99,14 @@ code, pre, kbd, samp {
     --chart-5: 340 75% 55%;
 
     /* Sidebar specific colors for dark mode */
-    --sidebar-background: 222 47% 11%; /* #0F172A */
-    --sidebar-foreground: 215 28% 90%; /* #E2E8F0 */
-    --sidebar-primary: 215 19% 47%; /* #64748B */
-    --sidebar-primary-foreground: 222 47% 11%; /* #0F172A */
-    --sidebar-accent: 220 26% 27%; /* #334155 */
-    --sidebar-accent-foreground: 215 28% 90%; /* #E2E8F0 */
-    --sidebar-border: 220 26% 27%; /* #334155 */
-    --sidebar-ring: 215 19% 47%; /* #64748B */
+    --sidebar-background: 222 47% 11%; /* #0F172A Very Dark Blue */
+    --sidebar-foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White */
+    --sidebar-primary: 215 19% 47%; /* #64748B Lighter Blue */
+    --sidebar-primary-foreground: 222 47% 11%; /* #0F172A Very Dark Blue */
+    --sidebar-accent: 220 26% 27%; /* #334155 Medium Slate Blue */
+    --sidebar-accent-foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White */
+    --sidebar-border: 220 26% 27%; /* #334155 Medium Slate Blue */
+    --sidebar-ring: 215 19% 47%; /* #64748B Lighter Blue */
   }
 }
 
@@ -118,3 +118,4 @@ code, pre, kbd, samp {
     @apply bg-background text-foreground;
   }
 }
+
