@@ -155,7 +155,6 @@ export default function BlogEditPage() {
   const handleSave = async () => {
     if (!post) return;
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
     const currentPostData = blogStore.getPostById(post.id); 
     blogStore.updatePost(post.id, {
       title: editableTitle,
@@ -202,7 +201,7 @@ export default function BlogEditPage() {
     setSelectedHeroImageUrl(null); 
     setGenerationStatus("Initializing generation...");
     
-    const streamCallback = (data: any) => { // Mock stream callback
+    const streamCallback = (data: any) => { 
         if (data.custom && data.custom.type === 'status') {
             setGenerationStatus(data.custom.message);
         }
@@ -273,7 +272,7 @@ export default function BlogEditPage() {
   const handleRepurposedFeedback = (type: RepurposedContentType, feedback: 'liked' | 'disliked') => {
     setCurrentRepurposedFeedback(prev => {
       const newFeedback = { ...prev };
-      if (newFeedback[type] === feedback) { // If clicking the same feedback again, clear it
+      if (newFeedback[type] === feedback) { 
         newFeedback[type] = null;
       } else {
         newFeedback[type] = feedback;
@@ -281,7 +280,7 @@ export default function BlogEditPage() {
       return newFeedback;
     });
     const feedbackText = feedback === 'liked' ? 'Liked' : 'Disliked';
-    const contentName = type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()); // e.g. tweetThread -> Tweet Thread
+    const contentName = type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()); 
     toast({ title: "Feedback Submitted", description: `${feedbackText} ${contentName}` });
   };
 
@@ -503,7 +502,7 @@ export default function BlogEditPage() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
-      toast({ title: "Text Exported!", description: `${filename} has been downloaded.` });
+      toast({ title: "Text Exported!", description: `${filename}.txt has been downloaded.` });
       addExportRecord('txt');
     } catch (error) {
       console.error("Error exporting Plain Text:", error);
@@ -857,11 +856,11 @@ export default function BlogEditPage() {
                             </Tooltip>
                         </div>
                         <span className="text-sm font-medium">
-                           {scoreType === 'Readability' ? (post.seoScore?.readability || 70) : scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity || 55) : (post.seoScore?.quality || 78)}%
+                           {scoreType === 'Readability' ? (post.seoScore?.readability ?? 0) : scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity ?? 0) : (post.seoScore?.quality ?? 0)}%
                         </span>
                       </div>
                       <Progress
-                        value={scoreType === 'Readability' ? (post.seoScore?.readability || 70) : scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity || 55) : (post.seoScore?.quality || 78)}
+                        value={scoreType === 'Readability' ? (post.seoScore?.readability ?? 0) : scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity ?? 0) : (post.seoScore?.quality ?? 0)}
                         aria-label={`${scoreType} score`} />
                     </div>
                   ))}
@@ -924,3 +923,5 @@ export default function BlogEditPage() {
   );
 }
 
+
+    
