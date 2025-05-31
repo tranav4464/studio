@@ -20,6 +20,7 @@ import { generateHeroImageAction, repurposeContentAction, generateBlogTitleSugge
 import NextImage from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const imageThemes = ["General", "Dark", "Light", "Pastel", "Vibrant", "Monochrome"];
 const postStatuses: BlogStatus[] = ["draft", "published", "archived"];
@@ -266,6 +267,7 @@ export default function BlogEditPage() {
   }
   
   return (
+    <TooltipProvider>
     <div className="container mx-auto">
       <PageHeader
         title={`Edit: ${editableTitle || 'Untitled Post'}`}
@@ -377,11 +379,35 @@ export default function BlogEditPage() {
           <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader><CardTitle>Hero Image Generator</CardTitle><CardDescription>Create hero images for your post.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-1"><Label htmlFor="heroPrompt">Image Prompt</Label><Input id="heroPrompt" value={heroImagePrompt} onChange={(e) => setHeroImagePrompt(e.target.value)} placeholder="e.g., Futuristic cityscape" /></div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="heroPrompt">Image Prompt</Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger>
+                    <TooltipContent><p>Describe the image you want the AI to generate.</p></TooltipContent>
+                  </Tooltip>
+                </div>
+                <Input id="heroPrompt" value={heroImagePrompt} onChange={(e) => setHeroImagePrompt(e.target.value)} placeholder="e.g., Futuristic cityscape" />
+              </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1"><Label htmlFor="heroTone">Image Tone/Style</Label><Input id="heroTone" value={heroImageTone} onChange={(e) => setHeroImageTone(e.target.value)} placeholder="e.g., cinematic, vibrant" /></div>
                 <div className="space-y-1">
-                  <Label htmlFor="heroTheme">Image Theme</Label>
+                  <div className="flex items-center gap-1">
+                    <Label htmlFor="heroTone">Image Tone/Style</Label>
+                     <Tooltip>
+                        <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger>
+                        <TooltipContent><p>Artistic style, e.g., cinematic, vibrant, minimalist.</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input id="heroTone" value={heroImageTone} onChange={(e) => setHeroImageTone(e.target.value)} placeholder="e.g., cinematic, vibrant" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Label htmlFor="heroTheme">Image Theme</Label>
+                     <Tooltip>
+                        <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger>
+                        <TooltipContent><p>Overall visual theme like Dark, Light, Pastel.</p></TooltipContent>
+                    </Tooltip>
+                  </div>
                   <Select value={heroImageTheme} onValueChange={(value: string) => setHeroImageTheme(value)}>
                     <SelectTrigger id="heroTheme"><SelectValue placeholder="Select theme" /></SelectTrigger>
                     <SelectContent>{imageThemes.map(theme => <SelectItem key={theme} value={theme}>{theme}</SelectItem>)}</SelectContent>
@@ -457,6 +483,30 @@ export default function BlogEditPage() {
               </div>
             </CardContent>
           </Card>
+          
+          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+            <CardHeader><CardTitle>Social Media Preview (Mock)</CardTitle><CardDescription>A glimpse of your post's appearance.</CardDescription></CardHeader>
+            <CardContent className="space-y-3">
+              {selectedHeroImageUrl ? (
+                <div className="relative aspect-video w-full overflow-hidden rounded-md border mb-3">
+                  <NextImage src={selectedHeroImageUrl} alt={heroImageAltText || "Preview hero image"} layout="fill" objectFit="cover" data-ai-hint="preview social"/>
+                </div>
+              ) : (
+                <div className="aspect-video w-full bg-muted flex items-center justify-center rounded-md mb-3">
+                  <Icons.PlaceholderImage className="h-12 w-12 text-muted-foreground" />
+                </div>
+              )}
+              <div>
+                <Label className="text-xs text-muted-foreground">Title Preview</Label>
+                <p className="font-semibold text-sm truncate">{editableTitle || "Your Blog Title"}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Description Preview</Label>
+                <p className="text-xs text-muted-foreground line-clamp-2">{metaDescription || "Your compelling meta description will appear here, attracting readers."}</p>
+              </div>
+            </CardContent>
+          </Card>
+
 
           <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader><CardTitle>Optimization Panel</CardTitle><CardDescription>SEO scores and content analysis.</CardDescription></CardHeader>
@@ -466,8 +516,20 @@ export default function BlogEditPage() {
                 <TabsContent value="seo" forceMount className="mt-4 space-y-3">
                   {(['Readability', 'Keyword Density', 'Overall Quality'] as const).map(scoreType => (
                     <div key={scoreType}>
-                      <div className="flex justify-between mb-1">
-                        <Label className="text-sm">{scoreType}</Label>
+                      <div className="flex justify-between mb-1 items-center">
+                        <div className="flex items-center gap-1">
+                            <Label className="text-sm">{scoreType}</Label>
+                            <Tooltip>
+                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-3 w-3 text-muted-foreground" /></Button></TooltipTrigger>
+                                <TooltipContent side="top">
+                                    <p className="text-xs">
+                                    {scoreType === 'Readability' ? 'Measures how easy your content is to read.' :
+                                    scoreType === 'Keyword Density' ? 'Percentage of target keywords in your content.' :
+                                    'Overall assessment of content quality based on various factors.'}
+                                    </p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
                         <span className="text-sm font-medium">
                            {scoreType === 'Readability' ? (post.seoScore?.readability || 70) : scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity || 55) : (post.seoScore?.quality || 78)}%
                         </span>
@@ -503,5 +565,6 @@ export default function BlogEditPage() {
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }

@@ -15,7 +15,7 @@ code, pre, kbd, samp {
 @layer base {
   :root {
     --background: 0 0% 100%; /* White */
-    --foreground: 160 17% 20%; /* #2E3834 - Darkened Viridian-like HSL: 160, 17%, 20% (original was 160 8% 20%) */
+    --foreground: 160 17% 20%; /* #2E3834 - Darkened Viridian-like HSL: 160, 17%, 20% */
 
     --card: 165 33% 85%; /* Mint Green #CCE3DE HSL: 165, 33%, 85% */
     --card-foreground: 160 17% 20%; /* #2E3834 - Darkened Viridian-like for card text */
@@ -32,7 +32,7 @@ code, pre, kbd, samp {
     --muted: 165 33% 85%; /* Mint Green #CCE3DE - for less prominent backgrounds */
     --muted-foreground: 160 10% 40%; /* Medium-Dark Green #5C6F68 for muted text (derived from Viridian) */
 
-    --accent: 165 33% 85%; /* Mint Green #CCE3DE HSL: 165, 33%, 85% */
+    --accent: 45 100% 51.6%; /* Yellow #FFC107 */
     --accent-foreground: 160 17% 20%; /* #2E3834 - Darkened Viridian-like for accent text */
 
     --destructive: 0 84.2% 60.2%; /* Keeping original destructive red */
@@ -40,7 +40,7 @@ code, pre, kbd, samp {
 
     --border: 150 25% 71%; /* Cambridge Blue #A4C3B2 for borders */
     --input: 80 9% 64%; /* #a5ae9e for input borders */
-    --ring: 160 65% 34%; /* Viridian-like #1A936F for ring, matching old primary */
+    --ring: 180 100% 25%; /* Teal #008080 for ring */
 
     --radius: 0.5rem;
 
@@ -54,42 +54,42 @@ code, pre, kbd, samp {
     /* Sidebar specific colors */
     --sidebar-background: 130 100% 98%; /* Mint Cream #F6FFF8 HSL: 130, 100%, 98% */
     --sidebar-foreground: 160 17% 20%; /* #2E3834 - Darkened Viridian-like */
-    --sidebar-primary: 160 65% 34%; /* Viridian-like #1A936F */
-    --sidebar-primary-foreground: 130 100% 98%; /* Mint Cream #F6FFF8 */
-    --sidebar-accent: 165 33% 85%; /* Mint Green #CCE3DE */
+    --sidebar-primary: 180 100% 25%; /* Teal #008080 */
+    --sidebar-primary-foreground: 0 0% 100%; /* White */
+    --sidebar-accent: 45 100% 51.6%; /* Yellow #FFC107 */
     --sidebar-accent-foreground: 160 17% 20%; /* #2E3834 - Darkened Viridian-like */
     --sidebar-border: 150 25% 71%; /* Cambridge Blue #A4C3B2 */
-    --sidebar-ring: 160 65% 34%; /* Viridian-like #1A936F */
+    --sidebar-ring: 180 100% 30%; /* Brighter Teal */
   }
 
   .dark {
-    --background: 210 50% 11.2%; /* #0d1b2a Dark Blue for main content background */
-    --foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White text for contrast on dark background */
+    --background: 0 0% 7.5%; /* #121212 Charcoal */
+    --foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White text */
 
-    --card: 222 31% 17%; /* #1E293B Dark Blue for cards */
+    --card: 0 0% 10%; /* #1a1a1a Darker Charcoal for cards */
     --card-foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White text on cards */
 
-    --popover: 222 31% 17%; /* #1E293B Dark Blue for popovers */
+    --popover: 0 0% 10%; /* #1a1a1a Darker Charcoal for popovers */
     --popover-foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White text on popovers */
 
-    --primary: 215 19% 47%; /* #64748B Lighter Blue for primary buttons */
-    --primary-foreground: 222 47% 11%; /* #0F172A Very Dark Blue text on primary buttons */
+    --primary: 180 100% 25%; /* Teal #008080 */
+    --primary-foreground: 0 0% 100%; /* White text on primary buttons */
 
-    --secondary: 220 26% 27%; /* #334155 Medium Slate Blue for secondary elements */
-    --secondary-foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White text */
+    --secondary: 180 40% 35%; /* Darker Teal for secondary elements */
+    --secondary-foreground: 0 0% 100%; /* White text on secondary */
 
-    --muted: 222 31% 17%; /* #1E293B Dark Blue for muted backgrounds */
-    --muted-foreground: 215 19% 47%; /* #64748B Lighter Blue for muted text */
+    --muted: 0 0% 12%; /* #1f1f1f Slightly lighter charcoal for muted backgrounds */
+    --muted-foreground: 215 20% 65%; /* #94a3b8 Medium grey for muted text */
 
-    --accent: 215 19% 47%; /* #64748B Lighter Blue for accents */
-    --accent-foreground: 222 47% 11%; /* #0F172A Very Dark Blue text on accents */
+    --accent: 45 100% 51.6%; /* Yellow #FFC107 */
+    --accent-foreground: 0 0% 7.5%; /* #121212 Dark text on yellow accent */
 
     --destructive: 0 84.2% 60.2%; 
     --destructive-foreground: 0 0% 100%; /* White text on destructive */
 
-    --border: 220 26% 27%; /* #334155 Medium Slate Blue for general borders */
-    --input: 220 26% 27%; /* #334155 Medium Slate Blue for input borders (borders the light gray input box) */
-    --ring: 215 19% 47%; /* #64748B Lighter Blue for focus rings */
+    --border: 0 0% 15%; /* #262626 Borders */
+    --input: 0 0% 20%; /* #333333 Input borders (input background is light #e0e1dd) */
+    --ring: 180 100% 35%; /* Brighter Teal for focus rings */
     
     /* Chart colors for dark mode - Kept original dark mode chart colors */
     --chart-1: 220 70% 50%;
@@ -99,14 +99,14 @@ code, pre, kbd, samp {
     --chart-5: 340 75% 55%;
 
     /* Sidebar specific colors for dark mode */
-    --sidebar-background: 222 47% 11%; /* #0F172A Very Dark Blue */
-    --sidebar-foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White */
-    --sidebar-primary: 215 19% 47%; /* #64748B Lighter Blue */
-    --sidebar-primary-foreground: 222 47% 11%; /* #0F172A Very Dark Blue */
-    --sidebar-accent: 220 26% 27%; /* #334155 Medium Slate Blue */
-    --sidebar-accent-foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White */
-    --sidebar-border: 220 26% 27%; /* #334155 Medium Slate Blue */
-    --sidebar-ring: 215 19% 47%; /* #64748B Lighter Blue */
+    --sidebar-background: 0 0% 9%; /* #171717 Slightly off-charcoal */
+    --sidebar-foreground: 215 28% 90%; /* #E2E8F0 */
+    --sidebar-primary: 180 100% 25%; /* Teal #008080 */
+    --sidebar-primary-foreground: 0 0% 100%; /* White */
+    --sidebar-accent: 45 100% 51.6%; /* Yellow #FFC107 */
+    --sidebar-accent-foreground: 0 0% 7.5%; /* #121212 */
+    --sidebar-border: 0 0% 15%; /* #262626 */
+    --sidebar-ring: 180 100% 35%; /* Brighter Teal */
   }
 }
 
@@ -118,4 +118,3 @@ code, pre, kbd, samp {
     @apply bg-background text-foreground;
   }
 }
-
