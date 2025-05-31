@@ -4,7 +4,8 @@
 import { generateHeroImage, type GenerateHeroImageInput, type GenerateHeroImageOutput } from '@/ai/flows/generate-hero-image';
 import { repurposeContent, type RepurposeContentInput, type RepurposeContentOutput } from '@/ai/flows/repurpose-content';
 import { generateBlogOutline, type GenerateBlogOutlineInput, type GenerateBlogOutlineOutput } from '@/ai/flows/generate-blog-outline-flow';
-import { generateFullBlog, type GenerateFullBlogInput, type GenerateFullBlogOutput } from '@/ai/flows/generate-full-blog-flow'; // Import the new flow
+import { generateFullBlog, type GenerateFullBlogInput, type GenerateFullBlogOutput } from '@/ai/flows/generate-full-blog-flow';
+import { improveBlogContent, type ImproveBlogContentInput, type ImproveBlogContentOutput } from '@/ai/flows/improve-blog-content-flow'; // Import the new flow
 
 export async function generateHeroImageAction(input: GenerateHeroImageInput): Promise<GenerateHeroImageOutput> {
   try {
@@ -53,7 +54,6 @@ export async function generateBlogOutlineAction(input: GenerateBlogOutlineInput)
   }
 }
 
-// Replaced mock with actual AI-powered blog generation
 export async function generateFullBlogAction(input: GenerateFullBlogInput): Promise<GenerateFullBlogOutput> {
   console.log("generateFullBlogAction called with:", input);
   try {
@@ -69,6 +69,21 @@ export async function generateFullBlogAction(input: GenerateFullBlogInput): Prom
     console.error("Error generating full blog:", error);
     // Provide a generic fallback content on error
     return { blogContent: `# ${input.topic}\n\nAn error occurred while generating the blog content. Please try again or write manually.` };
+  }
+}
+
+export async function improveBlogContentAction(input: ImproveBlogContentInput): Promise<ImproveBlogContentOutput> {
+  console.log("improveBlogContentAction called for topic:", input.topic);
+  try {
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+    const result = await improveBlogContent(input);
+    if (!result.improvedContent) {
+      return { improvedContent: `Error: AI failed to improve blog content. Original content preserved.\n\n${input.blogContent}` };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error improving blog content:", error);
+    return { improvedContent: `An error occurred while improving the blog content. Original content preserved.\n\n${input.blogContent}` };
   }
 }
 
