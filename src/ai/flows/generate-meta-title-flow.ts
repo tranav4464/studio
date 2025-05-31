@@ -26,9 +26,14 @@ export async function generateMetaTitle(input: GenerateMetaTitleInput): Promise<
   return generateMetaTitleFlow(input);
 }
 
+// Define an internal schema for the prompt that includes the snippet
+const MetaTitlePromptInputSchema = GenerateMetaTitleInputSchema.extend({
+  blogContentSnippet: z.string().describe('A truncated snippet of the blog content for context (max 500 chars).'),
+});
+
 const prompt = ai.definePrompt({
   name: 'generateMetaTitlePrompt',
-  input: {schema: GenerateMetaTitleInputSchema},
+  input: {schema: MetaTitlePromptInputSchema},
   output: {schema: GenerateMetaTitleOutputSchema},
   prompt: `You are an SEO expert. Given the blog post title and its content, generate a concise and compelling meta title.
 The meta title should ideally be between 50 and 60 characters long.
@@ -37,7 +42,7 @@ It must accurately reflect the blog post's main topic and be optimized for searc
 Blog Title: {{{blogTitle}}}
 
 Blog Content Snippet (for context):
-{{{truncate blogContent 500}}}
+{{{blogContentSnippet}}}
 
 Generate the meta title.
 `,
@@ -46,13 +51,20 @@ Generate the meta title.
 const generateMetaTitleFlow = ai.defineFlow(
   {
     name: 'generateMetaTitleFlow',
-    inputSchema: GenerateMetaTitleInputSchema,
+    inputSchema: GenerateMetaTitleInputSchema, // External schema remains the same
     outputSchema: GenerateMetaTitleOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input: GenerateMetaTitleInput) => {
+    const blogContentSnippet = input.blogContent.length > 500
+        ? input.blogContent.substring(0, 500) + '...'
+        : input.blogContent;
+        
+    const {output} = await prompt({
+        ...input, // Pass original blogTitle and full blogContent
+        blogContentSnippet, // Pass the generated snippet
+    });
+
     if (!output || !output.suggestedMetaTitle) {
-      // Fallback in case AI returns empty or malformed output
       return { suggestedMetaTitle: `Meta Title for: ${input.blogTitle.substring(0,40)}` };
     }
     return output;
