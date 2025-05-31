@@ -1,5 +1,5 @@
 
-import type { BlogPost, BlogTone, BlogStyle, BlogLength } from '@/types';
+import type { BlogPost, BlogTone, BlogStyle, BlogLength, RepurposedContentFeedback } from '@/types';
 import { formatISO } from 'date-fns';
 
 let posts: BlogPost[] = [
@@ -20,6 +20,7 @@ let posts: BlogPost[] = [
     heroImageCaption: 'AI assisting a writer',
     heroImageAltText: 'Abstract image of AI and writing tools',
     seoScore: { readability: 75, keywordDensity: 60, quality: 80 },
+    repurposedContentFeedback: { tweetThread: 'liked', linkedInPost: null, instagramPost: 'disliked', emailNewsletterSummary: null},
   },
   {
     id: '2',
@@ -39,6 +40,13 @@ let posts: BlogPost[] = [
 
 let listeners: Array<() => void> = [];
 
+const defaultRepurposedFeedback: RepurposedContentFeedback = {
+  tweetThread: null,
+  linkedInPost: null,
+  instagramPost: null,
+  emailNewsletterSummary: null,
+};
+
 export const blogStore = {
   addPost: (postData: { title: string; topic: string; tone: BlogTone; style: BlogStyle; length: BlogLength }): BlogPost => {
     const newId = String(Date.now());
@@ -51,7 +59,9 @@ export const blogStore = {
       status: 'draft',
       content: `This is the initial draft for "${postData.title}". Start writing here! Explore ideas related to ${postData.topic} using a ${postData.tone} and ${postData.style} approach. Aim for a ${postData.length} piece.`,
       outline: [`Introduction to ${postData.topic}`, 'Key Point 1', 'Key Point 2', 'Conclusion'],
-      seoScore: { readability: 0, keywordDensity: 0, quality: 0 }
+      seoScore: { readability: 0, keywordDensity: 0, quality: 0 },
+      repurposedContentFeedback: { ...defaultRepurposedFeedback },
+      exportHistory: [],
     };
     posts = [...posts, newPost];
     emitChange();

@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import type { BlogPost, RepurposedContent, BlogStatus, ExportRecord } from '@/types';
+import type { BlogPost, RepurposedContent, BlogStatus, ExportRecord, RepurposedContentFeedback } from '@/types';
 import { blogStore } from '@/lib/blog-store';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,6 +23,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO } from 'date-fns';
 import html2canvas from 'html2canvas';
+import { cn } from '@/lib/utils';
 
 const imageThemes = ["General", "Dark", "Light", "Pastel", "Vibrant", "Monochrome"];
 const postStatuses: BlogStatus[] = ["draft", "published", "archived"];
@@ -34,25 +35,23 @@ const htmlTemplateOptions: Array<{value: HtmlExportTemplate, label: string}> = [
   { value: 'styled-article', label: 'Styled Article HTML' },
 ];
 
+type RepurposedContentType = keyof RepurposedContentFeedback;
+
 // Basic Markdown to HTML converter
 function basicMarkdownToHtml(md: string): string {
   let html = md;
-  // Escape HTML characters first to prevent injection if content has them
-  // html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-
   // Headings (from H3 down to H1 for typical blog content within a page)
   html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
   html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>'); // Less common for content part, but included
+  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>'); 
 
   // Bold
   html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
-  html = html.replace(/__(.*?)__/gim, '<strong>$1</strong>'); // Alt bold
+  html = html.replace(/__(.*?)__/gim, '<strong>$1</strong>');
 
   // Italic
   html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
-  html = html.replace(/_(.*?)_/gim, '<em>$1</em>'); // Alt italic
+  html = html.replace(/_(.*?)_/gim, '<em>$1</em>'); 
 
   // Inline code
   html = html.replace(/`(.*?)`/gim, '<code>$1</code>');
@@ -62,20 +61,14 @@ function basicMarkdownToHtml(md: string): string {
   html = html.replace(/^\s*\*\*\*\s*$/gim, '<hr />');
   html = html.replace(/^\s*___\s*$/gim, '<hr />');
   
-  // Paragraphs: wrap blocks of text separated by one or more blank lines.
-  // This is tricky with simple regex, but this handles basic cases.
-  // Avoids re-wrapping existing HTML tags like <h1>, <h2>, <h3>, <hr>, <pre>
   html = html.split(/\n\s*\n/).map(paragraph => {
     const trimmedParagraph = paragraph.trim();
     if (trimmedParagraph === '') return '';
-    // Check if it's already an HTML block element we don't want to wrap in <p>
     if (/^<(h[1-6]|hr|pre|ul|ol|li|blockquote|div|table|thead|tbody|tr|td|th)/i.test(trimmedParagraph)) {
       return trimmedParagraph;
     }
-    // Convert single newlines within a paragraph to <br> for line breaks
     return `<p>${trimmedParagraph.replace(/\n/g, '<br />')}</p>`;
   }).join('\n');
-
 
   return html;
 }
@@ -108,6 +101,8 @@ export default function BlogEditPage() {
   const [repurposeTone, setRepurposeTone] = useState('professional');
   const [repurposedContent, setRepurposedContent] = useState<RepurposedContent | null>(null);
   const [isRepurposing, setIsRepurposing] = useState(false);
+  const [currentRepurposedFeedback, setCurrentRepurposedFeedback] = useState<RepurposedContentFeedback>({});
+
 
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
@@ -139,6 +134,7 @@ export default function BlogEditPage() {
         setMetaTitle(fetchedPost.metaTitle || `Meta title for ${fetchedPost.title}`);
         setMetaDescription(fetchedPost.metaDescription || `Meta description for ${fetchedPost.title}`);
         setExportHistory(fetchedPost.exportHistory || []);
+        setCurrentRepurposedFeedback(fetchedPost.repurposedContentFeedback || { tweetThread: null, linkedInPost: null, instagramPost: null, emailNewsletterSummary: null });
       } else {
         toast({ title: "Blog post not found", variant: "destructive" });
         router.push('/dashboard');
@@ -151,15 +147,15 @@ export default function BlogEditPage() {
     if (!post) return;
     const newRecord: ExportRecord = { format, timestamp: new Date().toISOString() };
     const updatedHistory = [...(post.exportHistory || []), newRecord];
-    blogStore.updatePost(post.id, { exportHistory: updatedHistory });
-    setPost(prev => prev ? { ...prev, exportHistory: updatedHistory } : null);
-    setExportHistory(updatedHistory);
+    blogStore.updatePost(post.id, { exportHistory: updatedHistory }); // Save only this change quickly
+    setPost(prev => prev ? { ...prev, exportHistory: updatedHistory } : null); // Update local state
+    setExportHistory(updatedHistory); // Update specific state for export history display
   };
 
   const handleSave = async () => {
     if (!post) return;
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
     const currentPostData = blogStore.getPostById(post.id); 
     blogStore.updatePost(post.id, {
       title: editableTitle,
@@ -174,6 +170,7 @@ export default function BlogEditPage() {
       metaTitle,
       metaDescription,
       exportHistory: currentPostData?.exportHistory || exportHistory, 
+      repurposedContentFeedback: currentRepurposedFeedback,
     });
     setPost(prev => prev ? ({
       ...prev,
@@ -189,6 +186,7 @@ export default function BlogEditPage() {
       metaTitle,
       metaDescription,
       exportHistory: currentPostData?.exportHistory || exportHistory,
+      repurposedContentFeedback: currentRepurposedFeedback,
     }) : null);
     setIsSaving(false);
     toast({ title: "Blog post saved!", description: `"${editableTitle}" has been updated.` });
@@ -204,15 +202,14 @@ export default function BlogEditPage() {
     setSelectedHeroImageUrl(null); 
     setGenerationStatus("Initializing generation...");
     
-    const streamCallback = (data: any) => {
+    const streamCallback = (data: any) => { // Mock stream callback
         if (data.custom && data.custom.type === 'status') {
             setGenerationStatus(data.custom.message);
         }
     };
     
     streamCallback({custom: {type: 'status', message: 'Sending request to AI... (0/3)'}});
-    await new Promise(resolve => setTimeout(resolve, 500));
-
+    
     try {
       const result = await generateHeroImageAction({ blogTitle: heroImagePrompt, tone: heroImageTone, theme: heroImageTheme });
       setGeneratedHeroImageUrls(result.imageUrls);
@@ -272,6 +269,22 @@ export default function BlogEditPage() {
     }
     setIsRepurposing(false);
   };
+  
+  const handleRepurposedFeedback = (type: RepurposedContentType, feedback: 'liked' | 'disliked') => {
+    setCurrentRepurposedFeedback(prev => {
+      const newFeedback = { ...prev };
+      if (newFeedback[type] === feedback) { // If clicking the same feedback again, clear it
+        newFeedback[type] = null;
+      } else {
+        newFeedback[type] = feedback;
+      }
+      return newFeedback;
+    });
+    const feedbackText = feedback === 'liked' ? 'Liked' : 'Disliked';
+    const contentName = type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()); // e.g. tweetThread -> Tweet Thread
+    toast({ title: "Feedback Submitted", description: `${feedbackText} ${contentName}` });
+  };
+
 
   const copyToClipboard = (text: string, type: string) => {
     if (navigator.clipboard && text) {
@@ -442,7 +455,7 @@ export default function BlogEditPage() {
     p { margin-bottom: 1em; }
     pre { white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; padding: 15px; border-radius: 5px; border: 1px solid #ddd; overflow-x: auto; }
     code { font-family: 'JetBrains Mono', monospace; background-color: #e0e0e0; padding: 2px 4px; border-radius: 3px; }
-    pre code { background-color: transparent; padding: 0; } /* No double background for code in pre */
+    pre code { background-color: transparent; padding: 0; } 
     img { max-width: 100%; height: auto; border-radius: 5px; margin: 10px 0; }
     hr { border: 0; height: 1px; background: #ddd; margin: 2em 0; }
     strong { font-weight: bold; }
@@ -546,6 +559,13 @@ export default function BlogEditPage() {
     return <div className="text-center py-10">Blog post not found.</div>;
   }
   
+  const repurposedContentFields: Array<{key: RepurposedContentType, label: string, icon: React.ReactNode, contentKey: keyof RepurposedContent}> = [
+    { key: 'tweetThread', label: 'Tweet Thread', icon: <Icons.Tweet className="mr-1 h-4 w-4"/>, contentKey: 'tweetThread' },
+    { key: 'linkedInPost', label: 'LinkedIn Post', icon: <Icons.LinkedIn className="mr-1 h-4 w-4"/>, contentKey: 'linkedInPost' },
+    { key: 'instagramPost', label: 'Instagram Post', icon: <Icons.Instagram className="mr-1 h-4 w-4"/>, contentKey: 'instagramPost' },
+    { key: 'emailNewsletterSummary', label: 'Email Summary', icon: <Icons.Email className="mr-1 h-4 w-4"/>, contentKey: 'emailNewsletterSummary' },
+  ];
+
   return (
     <TooltipProvider>
     <div className="container mx-auto">
@@ -639,20 +659,40 @@ export default function BlogEditPage() {
               </div>
               {isRepurposing && <div className="text-center p-4"><Icons.Spinner className="h-6 w-6 animate-spin text-primary" /> <p className="text-sm text-muted-foreground">Generating snippets...</p></div>}
               {repurposedContent && (
-                <Tabs defaultValue="tweet" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="tweet"><Icons.Tweet className="mr-1 h-4 w-4"/>Tweet</TabsTrigger>
-                    <TabsTrigger value="linkedin"><Icons.LinkedIn className="mr-1 h-4 w-4"/>LinkedIn</TabsTrigger>
-                    <TabsTrigger value="instagram"><Icons.Instagram className="mr-1 h-4 w-4"/>Instagram</TabsTrigger>
-                    <TabsTrigger value="email"><Icons.Email className="mr-1 h-4 w-4"/>Email</TabsTrigger>
+                <Tabs defaultValue="tweetThread" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                    {repurposedContentFields.map(field => (
+                       <TabsTrigger key={field.key} value={field.key}>{field.icon}{field.label.split(' ')[0]}</TabsTrigger>
+                    ))}
                   </TabsList>
-                  {(['tweet', 'linkedin', 'instagram', 'email'] as const).map(type => (
-                    <TabsContent key={type} value={type} forceMount className="mt-4">
-                      <Textarea value={repurposedContent[type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : type === 'instagram' ? 'instagramPost' : 'emailNewsletterSummary']}
-                                onChange={(e) => setRepurposedContent(prev => prev ? {...prev, [type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : type === 'instagram' ? 'instagramPost' : 'emailNewsletterSummary']: e.target.value} : null)}
-                                rows={8}
-                                className="text-sm" />
-                      <Button variant="outline" size="sm" className="mt-2" onClick={() => copyToClipboard(repurposedContent[type === 'tweet' ? 'tweetThread' : type === 'linkedin' ? 'linkedInPost' : type === 'instagram' ? 'instagramPost' : 'emailNewsletterSummary'], type)}><Icons.Copy className="mr-2 h-3 w-3"/>Copy</Button>
+                  {repurposedContentFields.map(field => (
+                    <TabsContent key={field.key} value={field.key} forceMount className="mt-4">
+                        <Textarea 
+                            value={repurposedContent[field.contentKey]}
+                            onChange={(e) => setRepurposedContent(prev => prev ? {...prev, [field.contentKey]: e.target.value} : null)}
+                            rows={8}
+                            className="text-sm" />
+                        <div className="mt-2 flex items-center justify-between">
+                            <Button variant="outline" size="sm" onClick={() => copyToClipboard(repurposedContent[field.contentKey], field.label)}><Icons.Copy className="mr-2 h-3 w-3"/>Copy</Button>
+                            <div className="flex gap-1">
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className={cn("h-8 w-8 hover:bg-green-100 dark:hover:bg-green-800/50", currentRepurposedFeedback[field.key] === 'liked' && "bg-green-100 dark:bg-green-800/50 text-green-600 dark:text-green-400")}
+                                    onClick={() => handleRepurposedFeedback(field.key, 'liked')}
+                                >
+                                    <Icons.ThumbsUp className={cn("h-4 w-4", currentRepurposedFeedback[field.key] === 'liked' ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}/>
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className={cn("h-8 w-8 hover:bg-red-100 dark:hover:bg-red-800/50", currentRepurposedFeedback[field.key] === 'disliked' && "bg-red-100 dark:bg-red-800/50 text-red-600 dark:text-red-400")}
+                                    onClick={() => handleRepurposedFeedback(field.key, 'disliked')}
+                                >
+                                    <Icons.ThumbsDown className={cn("h-4 w-4", currentRepurposedFeedback[field.key] === 'disliked' ? "text-red-600 dark:text-red-400" : "text-muted-foreground")}/>
+                                </Button>
+                            </div>
+                        </div>
                     </TabsContent>
                   ))}
                 </Tabs>

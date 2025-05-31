@@ -45,6 +45,8 @@ import {
   Star, // For Favorite
   Lightbulb, // For Product Tour
   Users, // For Team/Collaboration
+  ThumbsUp,
+  ThumbsDown,
   type LucideProps,
 } from 'lucide-react';
 
@@ -109,6 +111,8 @@ export const Icons = {
   UserPlus: UserPlus,
   Favorite: Star, // Icon for Favorite
   Team: Users, // Icon for Team/Collaboration
+  ThumbsUp: ThumbsUp,
+  ThumbsDown: ThumbsDown,
 };
 
 export type IconName = keyof typeof Icons;

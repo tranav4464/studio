@@ -4,6 +4,13 @@ export interface ExportRecord {
   timestamp: string; // ISO date string
 }
 
+export interface RepurposedContentFeedback {
+  tweetThread?: 'liked' | 'disliked' | null;
+  linkedInPost?: 'liked' | 'disliked' | null;
+  instagramPost?: 'liked' | 'disliked' | null;
+  emailNewsletterSummary?: 'liked' | 'disliked' | null;
+}
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -28,7 +35,8 @@ export interface BlogPost {
   };
   metaTitle?: string; 
   metaDescription?: string; 
-  exportHistory?: ExportRecord[]; 
+  exportHistory?: ExportRecord[];
+  repurposedContentFeedback?: RepurposedContentFeedback;
 }
 
 export type BlogStatus = "draft" | "published" | "archived";
