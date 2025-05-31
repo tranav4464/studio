@@ -6,13 +6,12 @@ import { repurposeContent, type RepurposeContentInput, type RepurposeContentOutp
 import { generateBlogOutline, type GenerateBlogOutlineInput, type GenerateBlogOutlineOutput } from '@/ai/flows/generate-blog-outline-flow';
 import { generateFullBlog, type GenerateFullBlogInput, type GenerateFullBlogOutput } from '@/ai/flows/generate-full-blog-flow';
 import { improveBlogContent, type ImproveBlogContentInput, type ImproveBlogContentOutput } from '@/ai/flows/improve-blog-content-flow';
-import { simplifyBlogContent, type SimplifyBlogContentInput, type SimplifyBlogContentOutput } from '@/ai/flows/simplify-blog-content-flow'; // Import the new flow
+import { simplifyBlogContent, type SimplifyBlogContentInput, type SimplifyBlogContentOutput } from '@/ai/flows/simplify-blog-content-flow';
+import { generateMetaTitle, type GenerateMetaTitleInput, type GenerateMetaTitleOutput } from '@/ai/flows/generate-meta-title-flow';
+import { generateMetaDescription, type GenerateMetaDescriptionInput, type GenerateMetaDescriptionOutput } from '@/ai/flows/generate-meta-description-flow';
 
 export async function generateHeroImageAction(input: GenerateHeroImageInput): Promise<GenerateHeroImageOutput> {
   try {
-    // Add a small delay to simulate network latency for better UX feedback
-    // For actual streaming or progress updates, Genkit's streaming capabilities would be used.
-    // The flow itself can use streamingCallback for intermediate updates if needed.
     const result = await generateHeroImage(input);
     
     if (!result.imageUrls || result.imageUrls.length === 0) {
@@ -28,29 +27,31 @@ export async function generateHeroImageAction(input: GenerateHeroImageInput): Pr
 
 export async function repurposeContentAction(input: RepurposeContentInput): Promise<RepurposeContentOutput> {
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay for UX
     const result = await repurposeContent(input);
     return result;
   } catch (error) {
     console.error("Error repurposing content:", error);
-    throw new Error("Failed to repurpose content. Please try again.");
+    // Provide a structured error response matching the expected output type
+    return {
+      tweetThread: "Error: Could not generate Tweet thread.",
+      linkedInPost: "Error: Could not generate LinkedIn post.",
+      instagramPost: "Error: Could not generate Instagram post.",
+      emailNewsletterSummary: "Error: Could not generate email summary."
+    };
   }
 }
 
 export async function generateBlogOutlineAction(input: GenerateBlogOutlineInput): Promise<GenerateBlogOutlineOutput> {
   try {
-    // Simulate a short delay for UX, Genkit itself handles the AI call.
     await new Promise(resolve => setTimeout(resolve, 500)); 
     const result = await generateBlogOutline(input);
     if (!result.outline || result.outline.length === 0) {
-        // This case should ideally be handled within the flow's fallback,
-        // but as an extra safety net:
         return { outline: [`Introduction to ${input.topic}`, `Exploring ${input.topic}`, `Conclusion on ${input.topic}`] };
     }
     return result;
   } catch (error) {
     console.error("Error generating blog outline:", error);
-    // Provide a generic fallback outline on error
     return { outline: [`Failed to generate outline for ${input.topic}`, `Please try again or manually create sections.`] };
   }
 }
@@ -58,17 +59,14 @@ export async function generateBlogOutlineAction(input: GenerateBlogOutlineInput)
 export async function generateFullBlogAction(input: GenerateFullBlogInput): Promise<GenerateFullBlogOutput> {
   console.log("generateFullBlogAction called with:", input);
   try {
-    // Simulate a short delay for UX, Genkit itself handles the AI call.
     await new Promise(resolve => setTimeout(resolve, 500));
     const result = await generateFullBlog(input);
     if (!result.blogContent) {
-      // Fallback, though the flow itself should handle this
       return { blogContent: `# ${input.topic}\n\nError: AI failed to generate blog content. Please try again.` };
     }
     return result;
   } catch (error) {
     console.error("Error generating full blog:", error);
-    // Provide a generic fallback content on error
     return { blogContent: `# ${input.topic}\n\nAn error occurred while generating the blog content. Please try again or write manually.` };
   }
 }
@@ -76,7 +74,7 @@ export async function generateFullBlogAction(input: GenerateFullBlogInput): Prom
 export async function improveBlogContentAction(input: ImproveBlogContentInput): Promise<ImproveBlogContentOutput> {
   console.log("improveBlogContentAction called for topic:", input.topic);
   try {
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 500));
     const result = await improveBlogContent(input);
     if (!result.improvedContent) {
       return { improvedContent: `Error: AI failed to improve blog content. Original content preserved.\n\n${input.blogContent}` };
@@ -91,7 +89,7 @@ export async function improveBlogContentAction(input: ImproveBlogContentInput): 
 export async function simplifyBlogContentAction(input: SimplifyBlogContentInput): Promise<SimplifyBlogContentOutput> {
   console.log("simplifyBlogContentAction called for topic:", input.topic);
   try {
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 500));
     const result = await simplifyBlogContent(input);
     if (!result.simplifiedContent) {
       return { simplifiedContent: `Error: AI failed to simplify blog content. Original content preserved.\n\n${input.blogContent}` };
@@ -103,24 +101,41 @@ export async function simplifyBlogContentAction(input: SimplifyBlogContentInput)
   }
 }
 
-
-// Mock action for suggesting a blog title
+// Action for suggesting a blog title (main title, not meta) - kept as mock for now
 export async function generateBlogTitleSuggestionAction(params: { currentContent: string; originalTopic: string }): Promise<{ suggestedTitle: string }> {
   console.log("Mock generateBlogTitleSuggestionAction called with:", params.originalTopic, params.currentContent.substring(0,50) + "...");
   await new Promise(resolve => setTimeout(resolve, 1200)); 
   return { suggestedTitle: `AI Suggested Title for: ${params.originalTopic}` };
 }
 
-// Mock action for generating a meta title
-export async function generateMetaTitleAction(params: { blogTitle: string; blogContent: string }): Promise<{ suggestedMetaTitle: string }> {
-  console.log("Mock generateMetaTitleAction called with:", params.blogTitle, params.blogContent.substring(0,50) + "...");
-  await new Promise(resolve => setTimeout(resolve, 1000)); 
-  return { suggestedMetaTitle: `Meta Title: ${params.blogTitle} | AI Optimized` };
+// Real action for generating a meta title
+export async function generateMetaTitleAction(input: GenerateMetaTitleInput): Promise<GenerateMetaTitleOutput> {
+  console.log("generateMetaTitleAction called for blog title:", input.blogTitle);
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay for UX
+    const result = await generateMetaTitle(input);
+    if (!result.suggestedMetaTitle) {
+      return { suggestedMetaTitle: `Meta Title Error for: ${input.blogTitle.substring(0,30)}` };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error generating meta title:", error);
+    return { suggestedMetaTitle: `Error: Could not suggest meta title for "${input.blogTitle.substring(0,30)}"` };
+  }
 }
 
-// Mock action for generating a meta description
-export async function generateMetaDescriptionAction(params: { blogTitle: string; blogContent: string }): Promise<{ suggestedMetaDescription: string }> {
-  console.log("Mock generateMetaDescriptionAction called with:", params.blogTitle, params.blogContent.substring(0,50) + "...");
-  await new Promise(resolve => setTimeout(resolve, 1500)); 
-  return { suggestedMetaDescription: `This is an AI-generated meta description for the blog post titled "${params.blogTitle}". It summarizes the key points from the content.` };
+// Real action for generating a meta description
+export async function generateMetaDescriptionAction(input: GenerateMetaDescriptionInput): Promise<GenerateMetaDescriptionOutput> {
+  console.log("generateMetaDescriptionAction called for blog title:", input.blogTitle);
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay for UX
+    const result = await generateMetaDescription(input);
+    if (!result.suggestedMetaDescription) {
+      return { suggestedMetaDescription: `Meta description generation failed for "${input.blogTitle.substring(0,30)}". Please try again.` };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error generating meta description:", error);
+    return { suggestedMetaDescription: `Error: Could not suggest meta description for "${input.blogTitle.substring(0,30)}".` };
+  }
 }
