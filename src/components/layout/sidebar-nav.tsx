@@ -53,7 +53,7 @@ export function SidebarNav() {
   const handleLogout = () => {
     // In a real app, you'd clear the session/token here
     toast({ title: "Logged Out", description: "You have been successfully logged out." });
-    router.push('/dashboard'); // Changed from /login to /dashboard as per user request
+    router.push('/login'); 
   };
 
   const navItems: NavItem[] = [
