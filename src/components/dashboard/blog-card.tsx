@@ -136,10 +136,10 @@ export function BlogCard({ post, onDelete }: BlogCardProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
                 <Link href={`/blogs/${post.id}/edit`} className="flex items-center w-full cursor-pointer">
-                  <Icons.Edit className="mr-2 h-4 w-4" /> Edit
+                  <Icons.Grid /* Placeholder for View icon */ className="mr-2 h-4 w-4" /> View/Edit Details
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => toast({title: "Export feature coming soon."})} className="cursor-pointer">
+              <DropdownMenuItem onClick={() => toast({title: "Export Blog", description: "Please go to the Edit page to find all export options."})} className="cursor-pointer">
                 <Icons.Export className="mr-2 h-4 w-4" /> Export
               </DropdownMenuItem>
               {onDelete && (
