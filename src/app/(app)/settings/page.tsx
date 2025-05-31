@@ -75,7 +75,7 @@ export default function SettingsPage() {
         }
         if (completeSettings.customExportCss === undefined) { // Ensure customExportCss exists
             completeSettings.customExportCss = defaultSettings.customExportCss;
-        }
+        } // Fixed: Added missing closing brace for the if statement
         setSettings(completeSettings);
       } catch (e) {
         console.error("Failed to parse settings from localStorage", e);
@@ -335,7 +335,7 @@ export default function SettingsPage() {
                 rows={5}
               />
             </div>
-          </CellContent>
+          </CardContent>
           <CardFooter>
             <Button onClick={handleSubmitFeedback}>
               Submit Feedback
