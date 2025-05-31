@@ -66,8 +66,8 @@ code, pre, kbd, samp {
     --background: 140 23% 5%; /* #0A100D */
     --foreground: 75 10% 81%; /* #D6D5C9 */
 
-    --card: 63 13% 68%; /* #B9BAA3 */
-    --card-foreground: 140 23% 5%; /* #0A100D */
+    --card: 63 13% 68% / 0.5; /* #B9BAA3 with 50% opacity */
+    --card-foreground: 75 10% 81%; /* #D6D5C9 - to ensure good contrast */
 
     --popover: 140 23% 5%; /* #0A100D */
     --popover-foreground: 75 10% 81%; /* #D6D5C9 */
@@ -99,7 +99,7 @@ code, pre, kbd, samp {
     --chart-5: 340 75% 55%;
 
     /* Sidebar specific colors for dark mode */
-    --sidebar-background: 140 23% 5%; /* #0F172A, but user later provided 0A100D for general dark BG */
+    --sidebar-background: 140 23% 5%; /* #0A100D */
     --sidebar-foreground: 75 10% 81%; /* #D6D5C9 */
     --sidebar-primary: 2 60% 40%; /* #A22C29 */
     --sidebar-primary-foreground: 75 10% 81%; /* #D6D5C9 */
