@@ -63,8 +63,8 @@ code, pre, kbd, samp {
   }
 
   .dark {
-    --background: 60 5% 88%; /* #e0e1dd Light Gray for main content background */
-    --foreground: 222 47% 11%; /* Dark Blue text for contrast on light background */
+    --background: 210 50% 11.2%; /* #0d1b2a Dark Blue for main content background */
+    --foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White text for contrast on dark background */
 
     --card: 222 31% 17%; /* #1E293B Dark Blue for cards */
     --card-foreground: 215 28% 90%; /* #E2E8F0 Light Grey/Off-White text on cards */
@@ -85,10 +85,10 @@ code, pre, kbd, samp {
     --accent-foreground: 222 47% 11%; /* #0F172A Very Dark Blue text on accents */
 
     --destructive: 0 84.2% 60.2%; 
-    --destructive-foreground: 0 0% 98%; 
+    --destructive-foreground: 0 0% 100%; /* White text on destructive */
 
     --border: 220 26% 27%; /* #334155 Medium Slate Blue for general borders */
-    --input: 60 5% 70%; /* #b1b3af Darker gray for input borders on light input background */
+    --input: 220 26% 27%; /* #334155 Medium Slate Blue for input borders (borders the light gray input box) */
     --ring: 215 19% 47%; /* #64748B Lighter Blue for focus rings */
     
     /* Chart colors for dark mode - Kept original dark mode chart colors */
