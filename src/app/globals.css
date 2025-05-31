@@ -14,7 +14,7 @@ code, pre, kbd, samp {
 
 @layer base {
   :root {
-    --background: 43 48% 86%; /* #f0ebd8 */
+    --background: 0 0% 100%; /* Changed from 43 48% 86% to white */
     --foreground: 160 17% 20%; /* #2E3834 - Darkened Viridian-like HSL: 160, 17%, 20% (original was 160 8% 20%) */
 
     --card: 165 33% 85%; /* Mint Green #CCE3DE HSL: 165, 33%, 85% */
@@ -23,7 +23,7 @@ code, pre, kbd, samp {
     --popover: 130 100% 98%; /* Mint Cream #F6FFF8 HSL: 130, 100%, 98% */
     --popover-foreground: 160 17% 20%; /* #2E3834 - Darkened Viridian-like for popover text */
 
-    --primary: 43 48% 86%; /* #f0ebd8 */
+    --primary: 0 0% 100%; /* Changed from 43 48% 86% to white */
     --primary-foreground: 160 17% 20%; /* #2E3834 for text on new light primary */
 
     --secondary: 150 25% 71%; /* Cambridge Blue #A4C3B2 HSL: 150, 25%, 71% */
