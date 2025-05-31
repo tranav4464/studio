@@ -45,8 +45,8 @@ export default function DashboardPage() {
     <>
       <div className="flex h-full">
         <main className="flex-1 p-6 overflow-y-auto">
-          <div className="bg-[#061d1c] dark:bg-[#5BC0BE] p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-2xl">
-            <div className="text-white dark:text-white">
+          <div className="bg-secondary dark:bg-[#5BC0BE] p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-2xl dark:text-white">
+            <div className="text-foreground dark:text-white">
               <h1 className="text-4xl font-extrabold tracking-tight text-primary dark:text-white">Hi {userName}, ready to create?</h1>
               <p className="text-lg opacity-90 mt-2">Turn your ideas into full content in minutes with AI.</p>
             </div>
