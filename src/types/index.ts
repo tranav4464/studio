@@ -1,4 +1,9 @@
 
+export interface ExportRecord {
+  format: 'markdown' | 'html' | 'pdf' | 'image'; // Added image
+  timestamp: string; // ISO date string
+}
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -23,6 +28,7 @@ export interface BlogPost {
   };
   metaTitle?: string; 
   metaDescription?: string; 
+  exportHistory?: ExportRecord[]; // Added export history
 }
 
 export type BlogStatus = "draft" | "published" | "archived";
@@ -51,3 +57,4 @@ export interface Settings {
     email: string;
   };
 }
+

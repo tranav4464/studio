@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import type { BlogPost, RepurposedContent, BlogStatus } from '@/types';
+import type { BlogPost, RepurposedContent, BlogStatus, ExportRecord } from '@/types';
 import { blogStore } from '@/lib/blog-store';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,6 +21,7 @@ import NextImage from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { format, parseISO } from 'date-fns';
 
 const imageThemes = ["General", "Dark", "Light", "Pastel", "Vibrant", "Monochrome"];
 const postStatuses: BlogStatus[] = ["draft", "published", "archived"];
@@ -61,6 +62,7 @@ export default function BlogEditPage() {
   const [isSuggestingMetaDescription, setIsSuggestingMetaDescription] = useState(false);
   const [isImprovingContent, setIsImprovingContent] = useState(false);
   const [isSimplifyingContent, setIsSimplifyingContent] = useState(false);
+  const [exportHistory, setExportHistory] = useState<ExportRecord[]>([]);
 
 
   useEffect(() => {
@@ -79,6 +81,7 @@ export default function BlogEditPage() {
         setHeroImageAltText(fetchedPost.heroImageAltText || '');
         setMetaTitle(fetchedPost.metaTitle || `Meta title for ${fetchedPost.title}`);
         setMetaDescription(fetchedPost.metaDescription || `Meta description for ${fetchedPost.title}`);
+        setExportHistory(fetchedPost.exportHistory || []);
       } else {
         toast({ title: "Blog post not found", variant: "destructive" });
         router.push('/dashboard');
@@ -86,11 +89,21 @@ export default function BlogEditPage() {
       setIsLoading(false);
     }
   }, [blogId, router, toast]);
+  
+  const addExportRecord = (format: ExportRecord['format']) => {
+    if (!post) return;
+    const newRecord: ExportRecord = { format, timestamp: new Date().toISOString() };
+    const updatedHistory = [...(post.exportHistory || []), newRecord];
+    blogStore.updatePost(post.id, { exportHistory: updatedHistory });
+    setPost(prev => prev ? { ...prev, exportHistory: updatedHistory } : null);
+    setExportHistory(updatedHistory);
+  };
 
   const handleSave = async () => {
     if (!post) return;
     setIsSaving(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
+    const currentPostData = blogStore.getPostById(post.id); // Get latest history
     blogStore.updatePost(post.id, {
       title: editableTitle,
       content,
@@ -103,6 +116,7 @@ export default function BlogEditPage() {
       heroImageTheme,
       metaTitle,
       metaDescription,
+      exportHistory: currentPostData?.exportHistory || exportHistory, // Preserve existing history
     });
     setPost(prev => prev ? ({
       ...prev,
@@ -117,6 +131,7 @@ export default function BlogEditPage() {
       heroImageTheme,
       metaTitle,
       metaDescription,
+      exportHistory: currentPostData?.exportHistory || exportHistory,
     }) : null);
     setIsSaving(false);
     toast({ title: "Blog post saved!", description: `"${editableTitle}" has been updated.` });
@@ -160,7 +175,7 @@ export default function BlogEditPage() {
     setGenerationStatus(''); 
   };
 
-  const handleExportImagePng = () => { // Renamed to avoid conflict
+  const handleExportImagePng = () => { 
     if (!selectedHeroImageUrl) {
       toast({ title: "No image selected", description: "Please generate and select an image to export.", variant: "destructive" });
       return;
@@ -178,6 +193,7 @@ export default function BlogEditPage() {
       link.click();
       document.body.removeChild(link);
       toast({ title: "Image downloading...", description: "Check your downloads folder."});
+      // Not recording hero image export in the main exportHistory for now, as it's a separate asset.
     } catch (error) {
       console.error("Error downloading image:", error);
       toast({ title: "Download Failed", description: "Could not download the image.", variant: "destructive" });
@@ -316,6 +332,7 @@ export default function BlogEditPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
       toast({ title: "Markdown Exported!", description: `${filename}.md has been downloaded.` });
+      addExportRecord('markdown');
     } catch (error) {
       console.error("Error exporting Markdown:", error);
       toast({ title: "Export Failed", description: "Could not export as Markdown.", variant: "destructive" });
@@ -357,11 +374,22 @@ export default function BlogEditPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
       toast({ title: "HTML Exported!", description: `${filename}.html has been downloaded.` });
+      addExportRecord('html');
     } catch (error) {
       console.error("Error exporting HTML:", error);
       toast({ title: "Export Failed", description: "Could not export as HTML.", variant: "destructive" });
     }
   };
+
+  const handleExportImageSnapshot = () => {
+    toast({ title: "Export Image Snapshot", description: "Feature coming soon! This will allow you to capture an image of the content preview."});
+    // In a real implementation:
+    // 1. Add html2canvas library.
+    // 2. Target the element to snapshot (e.g., a div wrapping the content preview).
+    // 3. Call html2canvas, then convert canvas to data URL, then trigger download.
+    // addExportRecord('image'); // Call this if snapshot is successful
+  };
+
 
   if (isLoading) {
     return <div className="flex h-full w-full items-center justify-center"><Icons.Spinner className="h-10 w-10 animate-spin text-primary" /></div>;
@@ -668,6 +696,20 @@ export default function BlogEditPage() {
                 <Button variant="outline" className="w-full" onClick={handleExportMarkdown}>Export as Markdown</Button>
                 <Button variant="outline" className="w-full" onClick={handleExportHtml}>Export as HTML</Button>
                 <Button variant="outline" className="w-full" onClick={() => toast({ title: "Export PDF", description:"Coming soon!"})}>Export as PDF</Button>
+                <Button variant="outline" className="w-full" onClick={handleExportImageSnapshot}>Export as Image (Snapshot)</Button>
+                <Separator className="my-2" />
+                <div className="w-full space-y-2">
+                  <Label className="text-xs text-muted-foreground">Export History (Mock):</Label>
+                  {exportHistory.length > 0 ? (
+                    <ul className="text-xs text-muted-foreground list-disc list-inside max-h-20 overflow-y-auto">
+                      {exportHistory.slice(-5).reverse().map((record, index) => (
+                        <li key={index}>{format(parseISO(record.timestamp), "MMM d, HH:mm")} - {record.format.toUpperCase()}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No exports yet.</p>
+                  )}
+                </div>
                 <Separator className="my-2" />
                 <Button variant="outline" className="w-full" onClick={() => toast({ title: "Copy All Content", description:"Feature to copy all kit elements coming soon!"})}>Copy All Kit Content</Button>
                 <Button variant="outline" className="w-full" onClick={() => toast({ title: "Download as ZIP", description:"Feature to download kit as ZIP coming soon!"})}>Download Kit as ZIP</Button>
