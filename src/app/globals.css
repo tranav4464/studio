@@ -23,7 +23,7 @@ code, pre, kbd, samp {
     --popover: 130 100% 98%; /* Mint Cream #F6FFF8 */
     --popover-foreground: 150 10% 20%; /* Darkened Viridian-like #2E3834 */
 
-    --primary: 150 15% 49%; /* Viridian #6B9080 */
+    --primary: 178 63% 7%; /* Darkest #061D1C */
     --primary-foreground: 130 100% 98%; /* Mint Cream #F6FFF8 */
 
     --secondary: 150 25% 71%; /* Cambridge Blue #A4C3B2 */
@@ -40,7 +40,7 @@ code, pre, kbd, samp {
 
     --border: 150 25% 71%; /* Cambridge Blue #A4C3B2 */
     --input: 150 25% 71%; /* Cambridge Blue #A4C3B2 for border, background is bg-background */
-    --ring: 150 15% 49%; /* Viridian #6B9080 for ring */
+    --ring: 178 63% 7%; /* Darkest #061D1C for ring, matching new primary */
 
     --radius: 0.5rem;
 
@@ -54,12 +54,12 @@ code, pre, kbd, samp {
     /* Sidebar specific colors */
     --sidebar-background: 130 100% 98%; /* Mint Cream #F6FFF8 */
     --sidebar-foreground: 150 10% 20%; /* Darkened Viridian-like #2E3834 */
-    --sidebar-primary: 150 15% 49%; /* Viridian #6B9080 */
+    --sidebar-primary: 178 63% 7%; /* Darkest #061D1C */
     --sidebar-primary-foreground: 130 100% 98%; /* Mint Cream #F6FFF8 */
     --sidebar-accent: 165 33% 85%; /* Mint Green #CCE3DE */
     --sidebar-accent-foreground: 150 10% 20%; /* Darkened Viridian-like #2E3834 */
     --sidebar-border: 150 25% 71%; /* Cambridge Blue #A4C3B2 */
-    --sidebar-ring: 150 15% 49%; /* Viridian #6B9080 */
+    --sidebar-ring: 178 63% 7%; /* Darkest #061D1C */
   }
 
   .dark {
