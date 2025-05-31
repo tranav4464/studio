@@ -64,28 +64,28 @@ code, pre, kbd, samp {
 
   .dark {
     --background: 0 0% 7.5%; /* #131313 */
-    --foreground: 75 10% 81%; /* #D6D5C9 */
+    --foreground: 0 0% 100%; /* White */
 
     --card: 63 13% 68% / 0.75; /* #B9BAA3 with 75% opacity (25% transparent) */
-    --card-foreground: 75 10% 81%; /* #D6D5C9 - to ensure good contrast */
+    --card-foreground: 0 0% 100%; /* White */
 
     --popover: 0 0% 7.5%; /* #131313 */
-    --popover-foreground: 75 10% 81%; /* #D6D5C9 */
+    --popover-foreground: 0 0% 100%; /* White */
 
     --primary: 2 60% 40%; /* #A22C29 */
-    --primary-foreground: 75 10% 81%; /* #D6D5C9 */
+    --primary-foreground: 0 0% 100%; /* White */
 
     --secondary: 0 0% 7.5%; /* #131313 */
-    --secondary-foreground: 63 13% 68%; /* #B9BAA3 */
+    --secondary-foreground: 0 0% 100%; /* White */
 
     --muted: 0 0% 7.5%; /* #131313 */
-    --muted-foreground: 63 13% 68%; /* #B9BAA3 */
+    --muted-foreground: 0 0% 100%; /* White */
 
     --accent: 3 58% 35%; /* #902923 */
-    --accent-foreground: 75 10% 81%; /* #D6D5C9 */
+    --accent-foreground: 0 0% 100%; /* White */
 
     --destructive: 2 60% 40%; /* #A22C29 */
-    --destructive-foreground: 75 10% 81%; /* #D6D5C9 */
+    --destructive-foreground: 0 0% 100%; /* White */
 
     --border: 63 13% 68%; /* #B9BAA3 */
     --input: 63 13% 68%; /* #B9BAA3 */
@@ -100,11 +100,11 @@ code, pre, kbd, samp {
 
     /* Sidebar specific colors for dark mode */
     --sidebar-background: 0 0% 7.5%; /* #131313 */
-    --sidebar-foreground: 75 10% 81%; /* #D6D5C9 */
+    --sidebar-foreground: 0 0% 100%; /* White */
     --sidebar-primary: 2 60% 40%; /* #A22C29 */
-    --sidebar-primary-foreground: 75 10% 81%; /* #D6D5C9 */
+    --sidebar-primary-foreground: 0 0% 100%; /* White */
     --sidebar-accent: 3 58% 35%; /* #902923 */
-    --sidebar-accent-foreground: 75 10% 81%; /* #D6D5C9 */
+    --sidebar-accent-foreground: 0 0% 100%; /* White */
     --sidebar-border: 63 13% 68%; /* #B9BAA3 */
     --sidebar-ring: 2 60% 40%; /* #A22C29 */
   }
