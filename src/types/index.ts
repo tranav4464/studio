@@ -1,6 +1,6 @@
 
 export interface ExportRecord {
-  format: 'markdown' | 'html' | 'pdf' | 'image'; 
+  format: 'markdown' | 'html' | 'pdf' | 'image' | 'txt'; 
   timestamp: string; // ISO date string
 }
 
@@ -47,7 +47,7 @@ export interface Settings {
   defaultTone: BlogTone;
   defaultStyle: BlogStyle;
   defaultLength: BlogLength;
-  defaultExportFormat: "markdown" | "html" | "pdf" | "image"; // Added image
+  defaultExportFormat: "markdown" | "html" | "pdf" | "image" | "txt";
   rules: {
     useDiagramsInHowTo: boolean;
   };

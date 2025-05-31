@@ -27,6 +27,59 @@ import html2canvas from 'html2canvas';
 const imageThemes = ["General", "Dark", "Light", "Pastel", "Vibrant", "Monochrome"];
 const postStatuses: BlogStatus[] = ["draft", "published", "archived"];
 const SOCIAL_PREVIEW_CARD_ID = 'social-preview-card-for-snapshot';
+type HtmlExportTemplate = 'basic-pre' | 'styled-article';
+
+const htmlTemplateOptions: Array<{value: HtmlExportTemplate, label: string}> = [
+  { value: 'basic-pre', label: 'Basic HTML (Code Block)' },
+  { value: 'styled-article', label: 'Styled Article HTML' },
+];
+
+// Basic Markdown to HTML converter
+function basicMarkdownToHtml(md: string): string {
+  let html = md;
+  // Escape HTML characters first to prevent injection if content has them
+  // html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+
+  // Headings (from H3 down to H1 for typical blog content within a page)
+  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>'); // Less common for content part, but included
+
+  // Bold
+  html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+  html = html.replace(/__(.*?)__/gim, '<strong>$1</strong>'); // Alt bold
+
+  // Italic
+  html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
+  html = html.replace(/_(.*?)_/gim, '<em>$1</em>'); // Alt italic
+
+  // Inline code
+  html = html.replace(/`(.*?)`/gim, '<code>$1</code>');
+  
+  // Horizontal Rule
+  html = html.replace(/^\s*---\s*$/gim, '<hr />');
+  html = html.replace(/^\s*\*\*\*\s*$/gim, '<hr />');
+  html = html.replace(/^\s*___\s*$/gim, '<hr />');
+  
+  // Paragraphs: wrap blocks of text separated by one or more blank lines.
+  // This is tricky with simple regex, but this handles basic cases.
+  // Avoids re-wrapping existing HTML tags like <h1>, <h2>, <h3>, <hr>, <pre>
+  html = html.split(/\n\s*\n/).map(paragraph => {
+    const trimmedParagraph = paragraph.trim();
+    if (trimmedParagraph === '') return '';
+    // Check if it's already an HTML block element we don't want to wrap in <p>
+    if (/^<(h[1-6]|hr|pre|ul|ol|li|blockquote|div|table|thead|tbody|tr|td|th)/i.test(trimmedParagraph)) {
+      return trimmedParagraph;
+    }
+    // Convert single newlines within a paragraph to <br> for line breaks
+    return `<p>${trimmedParagraph.replace(/\n/g, '<br />')}</p>`;
+  }).join('\n');
+
+
+  return html;
+}
+
 
 export default function BlogEditPage() {
   const params = useParams();
@@ -66,6 +119,7 @@ export default function BlogEditPage() {
   const [isSimplifyingContent, setIsSimplifyingContent] = useState(false);
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([]);
   const [isTakingSnapshot, setIsTakingSnapshot] = useState(false);
+  const [htmlExportTemplate, setHtmlExportTemplate] = useState<HtmlExportTemplate>('basic-pre');
 
 
   useEffect(() => {
@@ -347,41 +401,103 @@ export default function BlogEditPage() {
       return;
     }
     try {
-      const htmlContent = `<!DOCTYPE html>
+      let htmlOutput = '';
+      const blogTitle = editableTitle || 'Blog Post';
+      const blogMarkdown = content;
+
+      if (htmlExportTemplate === 'basic-pre') {
+        htmlOutput = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${editableTitle || 'Blog Post'}</title>
+  <title>${blogTitle}</title>
   <style>
     body { font-family: sans-serif; line-height: 1.6; padding: 20px; margin: 0 auto; max-width: 800px; }
     h1 { color: #333; }
-    pre { white-space: pre-wrap; word-wrap: break-word; background-color: #f4f4f4; padding: 15px; border-radius: 5px; border: 1px solid #ddd; }
+    pre { white-space: pre-wrap; word-wrap: break-word; background-color: #f4f4f4; padding: 15px; border-radius: 5px; border: 1px solid #ddd; overflow-x: auto;}
     img { max-width: 100%; height: auto; } 
   </style>
 </head>
 <body>
-  <h1>${editableTitle || 'Blog Post'}</h1>
+  <h1>${blogTitle}</h1>
   <hr>
-  <pre>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
+  <pre>${blogMarkdown.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
 </body>
 </html>`;
-      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      } else if (htmlExportTemplate === 'styled-article') {
+        const formattedHtml = basicMarkdownToHtml(blogMarkdown);
+        htmlOutput = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${blogTitle}</title>
+  <style>
+    body { font-family: Inter, sans-serif; line-height: 1.6; padding: 20px; margin: 0 auto; max-width: 800px; background-color: #f9f9f9; color: #333; }
+    h1, h2, h3, h4, h5, h6 { color: #1a1a1a; margin-top: 1.5em; margin-bottom: 0.5em; }
+    h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 2em;}
+    h2 { font-size: 1.75em; }
+    h3 { font-size: 1.5em; }
+    p { margin-bottom: 1em; }
+    pre { white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; padding: 15px; border-radius: 5px; border: 1px solid #ddd; overflow-x: auto; }
+    code { font-family: 'JetBrains Mono', monospace; background-color: #e0e0e0; padding: 2px 4px; border-radius: 3px; }
+    pre code { background-color: transparent; padding: 0; } /* No double background for code in pre */
+    img { max-width: 100%; height: auto; border-radius: 5px; margin: 10px 0; }
+    hr { border: 0; height: 1px; background: #ddd; margin: 2em 0; }
+    strong { font-weight: bold; }
+    em { font-style: italic; }
+  </style>
+</head>
+<body>
+  <h1>${blogTitle}</h1>
+  <hr>
+  <div>${formattedHtml}</div>
+</body>
+</html>`;
+      }
+
+      const blob = new Blob([htmlOutput], { type: 'text/html;charset=utf-8' });
       const link = document.createElement('a');
-      const filename = editableTitle.replace(/\s+/g, '-').toLowerCase() || 'blog-post';
+      const filename = (editableTitle.replace(/\s+/g, '-').toLowerCase() || 'blog-post') + `-${htmlExportTemplate}.html`;
       link.href = URL.createObjectURL(blob);
-      link.download = `${filename}.html`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
-      toast({ title: "HTML Exported!", description: `${filename}.html has been downloaded.` });
+      toast({ title: "HTML Exported!", description: `${filename} has been downloaded.` });
       addExportRecord('html');
     } catch (error) {
       console.error("Error exporting HTML:", error);
       toast({ title: "Export Failed", description: "Could not export as HTML.", variant: "destructive" });
     }
   };
+  
+  const handleExportPlainText = () => {
+    if (!post || !content) {
+      toast({ title: "No content to export", description: "Please write some content before exporting.", variant: "destructive" });
+      return;
+    }
+    try {
+      const plainTextContent = `${editableTitle}\n\n${content}`;
+      const blob = new Blob([plainTextContent], { type: 'text/plain;charset=utf-8' });
+      const link = document.createElement('a');
+      const filename = (editableTitle.replace(/\s+/g, '-').toLowerCase() || 'blog-post') + '.txt';
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      toast({ title: "Text Exported!", description: `${filename} has been downloaded.` });
+      addExportRecord('txt');
+    } catch (error) {
+      console.error("Error exporting Plain Text:", error);
+      toast({ title: "Export Failed", description: "Could not export as Plain Text.", variant: "destructive" });
+    }
+  };
+
 
   const handleExportImageSnapshot = async () => {
     const snapshotTarget = document.getElementById(SOCIAL_PREVIEW_CARD_ID);
@@ -395,20 +511,15 @@ export default function BlogEditPage() {
     try {
       const canvas = await html2canvas(snapshotTarget, {
         allowTaint: true,
-        useCORS: true, // Important for external images if any
-        logging: false, // Suppress html2canvas logs
+        useCORS: true, 
+        logging: false, 
          onclone: (document) => {
-            // Attempt to fix potential styling issues in dark mode for the cloned document
             const clonedTarget = document.getElementById(SOCIAL_PREVIEW_CARD_ID);
             if (clonedTarget) {
-                 // This is a workaround. Ideally, html2canvas handles styles correctly.
-                 // If specific styles are missing, they might need to be applied directly here.
-                 // Forcing a light theme on the cloned element if issues persist:
-                 // clonedTarget.classList.remove('dark'); // or apply specific light theme styles
             }
         }
       });
-      const image = canvas.toDataURL('image/png', 0.9); // Use lower quality if files are too large
+      const image = canvas.toDataURL('image/png', 0.9); 
       const link = document.createElement('a');
       const filename = (editableTitle || 'social-preview').replace(/\s+/g, '-').toLowerCase();
       link.download = `${filename}-snapshot.png`;
@@ -730,7 +841,19 @@ export default function BlogEditPage() {
             </CardContent>
              <CardFooter className="flex flex-col gap-2">
                 <Button variant="outline" className="w-full" onClick={handleExportMarkdown}>Export as Markdown</Button>
-                <Button variant="outline" className="w-full" onClick={handleExportHtml}>Export as HTML</Button>
+                
+                <div className="flex w-full gap-2 items-center">
+                    <Select value={htmlExportTemplate} onValueChange={(value: HtmlExportTemplate) => setHtmlExportTemplate(value)} >
+                        <SelectTrigger className="flex-grow h-10"> 
+                            <SelectValue placeholder="HTML Template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {htmlTemplateOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Button variant="outline" onClick={handleExportHtml} className="flex-shrink-0 h-10">Export HTML</Button>
+                </div>
+                <Button variant="outline" className="w-full" onClick={handleExportPlainText}>Export as Plain Text (.txt)</Button>
                 <Button variant="outline" className="w-full" onClick={() => toast({ title: "Export PDF", description:"Coming soon!"})}>Export as PDF</Button>
                 <Button variant="outline" className="w-full" onClick={handleExportImageSnapshot} disabled={isTakingSnapshot}>
                   {isTakingSnapshot ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Image className="mr-2 h-4 w-4" />}
