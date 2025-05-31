@@ -160,7 +160,7 @@ export default function BlogEditPage() {
     setGenerationStatus(''); 
   };
 
-  const handleExportPng = () => {
+  const handleExportImagePng = () => { // Renamed to avoid conflict
     if (!selectedHeroImageUrl) {
       toast({ title: "No image selected", description: "Please generate and select an image to export.", variant: "destructive" });
       return;
@@ -183,7 +183,6 @@ export default function BlogEditPage() {
       toast({ title: "Download Failed", description: "Could not download the image.", variant: "destructive" });
     }
   };
-
 
   const handleRepurposeContent = async () => {
     if (!content) {
@@ -301,6 +300,68 @@ export default function BlogEditPage() {
     setIsSimplifyingContent(false);
   };
 
+  const handleExportMarkdown = () => {
+    if (!post || !content) {
+      toast({ title: "No content to export", description: "Please write some content before exporting.", variant: "destructive" });
+      return;
+    }
+    try {
+      const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+      const link = document.createElement('a');
+      const filename = editableTitle.replace(/\s+/g, '-').toLowerCase() || 'blog-post';
+      link.href = URL.createObjectURL(blob);
+      link.download = `${filename}.md`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      toast({ title: "Markdown Exported!", description: `${filename}.md has been downloaded.` });
+    } catch (error) {
+      console.error("Error exporting Markdown:", error);
+      toast({ title: "Export Failed", description: "Could not export as Markdown.", variant: "destructive" });
+    }
+  };
+
+  const handleExportHtml = () => {
+    if (!post || !content) {
+      toast({ title: "No content to export", description: "Please write some content before exporting.", variant: "destructive" });
+      return;
+    }
+    try {
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${editableTitle || 'Blog Post'}</title>
+  <style>
+    body { font-family: sans-serif; line-height: 1.6; padding: 20px; margin: 0 auto; max-width: 800px; }
+    h1 { color: #333; }
+    pre { white-space: pre-wrap; word-wrap: break-word; background-color: #f4f4f4; padding: 15px; border-radius: 5px; border: 1px solid #ddd; }
+    img { max-width: 100%; height: auto; } /* Basic responsive images */
+  </style>
+</head>
+<body>
+  <h1>${editableTitle || 'Blog Post'}</h1>
+  <hr>
+  <pre>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
+</body>
+</html>`;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const link = document.createElement('a');
+      const filename = editableTitle.replace(/\s+/g, '-').toLowerCase() || 'blog-post';
+      link.href = URL.createObjectURL(blob);
+      link.download = `${filename}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      toast({ title: "HTML Exported!", description: `${filename}.html has been downloaded.` });
+    } catch (error) {
+      console.error("Error exporting HTML:", error);
+      toast({ title: "Export Failed", description: "Could not export as HTML.", variant: "destructive" });
+    }
+  };
 
   if (isLoading) {
     return <div className="flex h-full w-full items-center justify-center"><Icons.Spinner className="h-10 w-10 animate-spin text-primary" /></div>;
@@ -498,7 +559,7 @@ export default function BlogEditPage() {
                   <div className="space-y-1"><Label htmlFor="heroCaption">Caption</Label><Input id="heroCaption" value={heroImageCaption} onChange={(e) => setHeroImageCaption(e.target.value)} placeholder="Image caption" /></div>
                   <div className="space-y-1"><Label htmlFor="heroAltText">Alt Text</Label><Input id="heroAltText" value={heroImageAltText} onChange={(e) => setHeroImageAltText(e.target.value)} placeholder="Accessibility alt text" /></div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleExportPng}>Export PNG</Button>
+                    <Button variant="outline" size="sm" onClick={handleExportImagePng}>Export PNG</Button>
                     <Button variant="outline" size="sm" onClick={() => toast({ title: "Export SVG", description:"SVG export coming soon! Vector generation is complex."})}>Export SVG</Button>
                   </div>
                 </div>
@@ -604,8 +665,8 @@ export default function BlogEditPage() {
               </Tabs>
             </CardContent>
              <CardFooter className="flex flex-col gap-2">
-                <Button variant="outline" className="w-full" onClick={() => toast({ title: "Export Markdown", description:"Coming soon!"})}>Export as Markdown</Button>
-                <Button variant="outline" className="w-full" onClick={() => toast({ title: "Export HTML", description:"Coming soon!"})}>Export as HTML</Button>
+                <Button variant="outline" className="w-full" onClick={handleExportMarkdown}>Export as Markdown</Button>
+                <Button variant="outline" className="w-full" onClick={handleExportHtml}>Export as HTML</Button>
                 <Button variant="outline" className="w-full" onClick={() => toast({ title: "Export PDF", description:"Coming soon!"})}>Export as PDF</Button>
                 <Separator className="my-2" />
                 <Button variant="outline" className="w-full" onClick={() => toast({ title: "Copy All Content", description:"Feature to copy all kit elements coming soon!"})}>Copy All Kit Content</Button>
@@ -618,3 +679,4 @@ export default function BlogEditPage() {
     </TooltipProvider>
   );
 }
+
