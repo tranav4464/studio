@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const GenerateBlogOutlineInputSchema = z.object({
+const GenerateBlogOutlineInputSchema = z.object({
   topic: z.string().describe('The main topic of the blog post.'),
   tone: z.string().describe('The desired tone for the blog post (e.g., formal, casual, informative).'),
   style: z.string().describe('The desired writing style (e.g., academic, journalistic, storytelling).'),
@@ -20,7 +20,7 @@ export const GenerateBlogOutlineInputSchema = z.object({
 });
 export type GenerateBlogOutlineInput = z.infer<typeof GenerateBlogOutlineInputSchema>;
 
-export const GenerateBlogOutlineOutputSchema = z.object({
+const GenerateBlogOutlineOutputSchema = z.object({
   outline: z.array(z.string().describe('A main section or heading for the blog post.')).describe('A list of suggested outline sections for the blog post.'),
 });
 export type GenerateBlogOutlineOutput = z.infer<typeof GenerateBlogOutlineOutputSchema>;
@@ -62,3 +62,4 @@ const generateBlogOutlineFlow = ai.defineFlow(
     return output;
   }
 );
+

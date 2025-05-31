@@ -11,13 +11,13 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const GenerateMetaDescriptionInputSchema = z.object({
+const GenerateMetaDescriptionInputSchema = z.object({
   blogTitle: z.string().describe('The main title of the blog post.'),
   blogContent: z.string().describe('The full content of the blog post (Markdown).'),
 });
 export type GenerateMetaDescriptionInput = z.infer<typeof GenerateMetaDescriptionInputSchema>;
 
-export const GenerateMetaDescriptionOutputSchema = z.object({
+const GenerateMetaDescriptionOutputSchema = z.object({
   suggestedMetaDescription: z.string().describe('The suggested SEO-friendly meta description (target: 150-160 characters), incorporating relevant keywords naturally.'),
 });
 export type GenerateMetaDescriptionOutput = z.infer<typeof GenerateMetaDescriptionOutputSchema>;
@@ -70,3 +70,4 @@ const generateMetaDescriptionFlow = ai.defineFlow(
     return output;
   }
 );
+

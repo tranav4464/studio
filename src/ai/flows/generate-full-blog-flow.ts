@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const GenerateFullBlogInputSchema = z.object({
+const GenerateFullBlogInputSchema = z.object({
   topic: z.string().describe('The main topic of the blog post.'),
   tone: z.string().describe('The desired tone for the blog post (e.g., formal, casual, informative).'),
   style: z.string().describe('The desired writing style (e.g., academic, journalistic, storytelling).'),
@@ -21,7 +21,7 @@ export const GenerateFullBlogInputSchema = z.object({
 });
 export type GenerateFullBlogInput = z.infer<typeof GenerateFullBlogInputSchema>;
 
-export const GenerateFullBlogOutputSchema = z.object({
+const GenerateFullBlogOutputSchema = z.object({
   blogContent: z.string().describe('The full content of the generated blog post, formatted in Markdown.'),
 });
 export type GenerateFullBlogOutput = z.infer<typeof GenerateFullBlogOutputSchema>;
@@ -77,3 +77,4 @@ const generateFullBlogFlow = ai.defineFlow(
     return output;
   }
 );
+

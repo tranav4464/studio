@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const ImproveBlogContentInputSchema = z.object({
+const ImproveBlogContentInputSchema = z.object({
   blogContent: z.string().describe('The current content of the blog post in Markdown format.'),
   topic: z.string().describe('The main topic of the blog post for context.'),
   tone: z.string().describe('The desired tone for the blog post (e.g., formal, casual).'),
@@ -19,7 +19,7 @@ export const ImproveBlogContentInputSchema = z.object({
 });
 export type ImproveBlogContentInput = z.infer<typeof ImproveBlogContentInputSchema>;
 
-export const ImproveBlogContentOutputSchema = z.object({
+const ImproveBlogContentOutputSchema = z.object({
   improvedContent: z.string().describe('The improved blog content in Markdown format.'),
 });
 export type ImproveBlogContentOutput = z.infer<typeof ImproveBlogContentOutputSchema>;
@@ -66,3 +66,4 @@ const improveBlogContentFlow = ai.defineFlow(
     return output;
   }
 );
+
