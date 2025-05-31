@@ -27,12 +27,11 @@ export async function generateHeroImageAction(input: GenerateHeroImageInput): Pr
 
 export async function repurposeContentAction(input: RepurposeContentInput): Promise<RepurposeContentOutput> {
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay for UX
+    // Removed artificial delay
     const result = await repurposeContent(input);
     return result;
   } catch (error) {
     console.error("Error repurposing content:", error);
-    // Provide a structured error response matching the expected output type
     return {
       tweetThread: "Error: Could not generate Tweet thread.",
       linkedInPost: "Error: Could not generate LinkedIn post.",
@@ -44,7 +43,7 @@ export async function repurposeContentAction(input: RepurposeContentInput): Prom
 
 export async function generateBlogOutlineAction(input: GenerateBlogOutlineInput): Promise<GenerateBlogOutlineOutput> {
   try {
-    await new Promise(resolve => setTimeout(resolve, 500)); 
+    // Removed artificial delay 
     const result = await generateBlogOutline(input);
     if (!result.outline || result.outline.length === 0) {
         return { outline: [`Introduction to ${input.topic}`, `Exploring ${input.topic}`, `Conclusion on ${input.topic}`] };
@@ -59,7 +58,7 @@ export async function generateBlogOutlineAction(input: GenerateBlogOutlineInput)
 export async function generateFullBlogAction(input: GenerateFullBlogInput): Promise<GenerateFullBlogOutput> {
   console.log("generateFullBlogAction called with:", input);
   try {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Removed artificial delay
     const result = await generateFullBlog(input);
     if (!result.blogContent) {
       return { blogContent: `# ${input.topic}\n\nError: AI failed to generate blog content. Please try again.` };
@@ -74,7 +73,7 @@ export async function generateFullBlogAction(input: GenerateFullBlogInput): Prom
 export async function improveBlogContentAction(input: ImproveBlogContentInput): Promise<ImproveBlogContentOutput> {
   console.log("improveBlogContentAction called for topic:", input.topic);
   try {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Removed artificial delay
     const result = await improveBlogContent(input);
     if (!result.improvedContent) {
       return { improvedContent: `Error: AI failed to improve blog content. Original content preserved.\n\n${input.blogContent}` };
@@ -89,7 +88,7 @@ export async function improveBlogContentAction(input: ImproveBlogContentInput): 
 export async function simplifyBlogContentAction(input: SimplifyBlogContentInput): Promise<SimplifyBlogContentOutput> {
   console.log("simplifyBlogContentAction called for topic:", input.topic);
   try {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Removed artificial delay
     const result = await simplifyBlogContent(input);
     if (!result.simplifiedContent) {
       return { simplifiedContent: `Error: AI failed to simplify blog content. Original content preserved.\n\n${input.blogContent}` };
@@ -104,7 +103,7 @@ export async function simplifyBlogContentAction(input: SimplifyBlogContentInput)
 // Action for suggesting a blog title (main title, not meta) - kept as mock for now
 export async function generateBlogTitleSuggestionAction(params: { currentContent: string; originalTopic: string }): Promise<{ suggestedTitle: string }> {
   console.log("Mock generateBlogTitleSuggestionAction called with:", params.originalTopic, params.currentContent.substring(0,50) + "...");
-  await new Promise(resolve => setTimeout(resolve, 1200)); 
+  // Removed artificial delay
   return { suggestedTitle: `AI Suggested Title for: ${params.originalTopic}` };
 }
 
@@ -112,7 +111,7 @@ export async function generateBlogTitleSuggestionAction(params: { currentContent
 export async function generateMetaTitleAction(input: GenerateMetaTitleInput): Promise<GenerateMetaTitleOutput> {
   console.log("generateMetaTitleAction called for blog title:", input.blogTitle);
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay for UX
+    // Removed artificial delay
     const result = await generateMetaTitle(input);
     if (!result.suggestedMetaTitle) {
       return { suggestedMetaTitle: `Meta Title Error for: ${input.blogTitle.substring(0,30)}` };
@@ -128,7 +127,7 @@ export async function generateMetaTitleAction(input: GenerateMetaTitleInput): Pr
 export async function generateMetaDescriptionAction(input: GenerateMetaDescriptionInput): Promise<GenerateMetaDescriptionOutput> {
   console.log("generateMetaDescriptionAction called for blog title:", input.blogTitle);
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay for UX
+    // Removed artificial delay
     const result = await generateMetaDescription(input);
     if (!result.suggestedMetaDescription) {
       return { suggestedMetaDescription: `Meta description generation failed for "${input.blogTitle.substring(0,30)}". Please try again.` };
