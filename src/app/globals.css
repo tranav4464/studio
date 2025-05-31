@@ -39,7 +39,7 @@ code, pre, kbd, samp {
     --destructive-foreground: 0 0% 98%; /* Keeping original */
 
     --border: 150 25% 71%; /* Cambridge Blue #A4C3B2 for borders */
-    --input: 150 25% 71%; /* Cambridge Blue #A4C3B2 for input borders, background is bg-background */
+    --input: 80 9% 64%; /* #a5ae9e for input borders */
     --ring: 160 65% 34%; /* Viridian-like #1A936F for ring, matching new primary */
 
     --radius: 0.5rem;
@@ -88,7 +88,7 @@ code, pre, kbd, samp {
     --destructive-foreground: 0 0% 100%; /* White */
 
     --border: 63 13% 68%; /* #B9BAA3 */
-    --input: 63 13% 68%; /* #B9BAA3 */
+    --input: 80 9% 64%; /* #a5ae9e for input borders */
     --ring: 2 60% 40%; /* #A22C29 */
     
     /* Chart colors for dark mode - Kept original dark mode chart colors */
