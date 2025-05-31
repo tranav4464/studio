@@ -1,6 +1,6 @@
 
 export interface ExportRecord {
-  format: 'markdown' | 'html' | 'pdf' | 'image'; // Added image
+  format: 'markdown' | 'html' | 'pdf' | 'image'; 
   timestamp: string; // ISO date string
 }
 
@@ -20,7 +20,7 @@ export interface BlogPost {
   heroImagePrompt?: string;
   heroImageCaption?: string;
   heroImageAltText?: string;
-  heroImageTheme?: string; // Added for theme persistence
+  heroImageTheme?: string; 
   seoScore?: {
     readability: number; // 0-100
     keywordDensity: number; // 0-100
@@ -28,7 +28,7 @@ export interface BlogPost {
   };
   metaTitle?: string; 
   metaDescription?: string; 
-  exportHistory?: ExportRecord[]; // Added export history
+  exportHistory?: ExportRecord[]; 
 }
 
 export type BlogStatus = "draft" | "published" | "archived";
@@ -39,7 +39,7 @@ export type BlogLength = "short" | "medium" | "long";
 export interface RepurposedContent {
   tweetThread: string;
   linkedInPost: string;
-  instagramPost: string; // Added for Instagram
+  instagramPost: string; 
   emailNewsletterSummary: string;
 }
 
@@ -47,7 +47,7 @@ export interface Settings {
   defaultTone: BlogTone;
   defaultStyle: BlogStyle;
   defaultLength: BlogLength;
-  defaultExportFormat: "markdown" | "html" | "pdf";
+  defaultExportFormat: "markdown" | "html" | "pdf" | "image"; // Added image
   rules: {
     useDiagramsInHowTo: boolean;
   };

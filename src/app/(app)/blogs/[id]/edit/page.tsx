@@ -22,9 +22,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO } from 'date-fns';
+import html2canvas from 'html2canvas';
 
 const imageThemes = ["General", "Dark", "Light", "Pastel", "Vibrant", "Monochrome"];
 const postStatuses: BlogStatus[] = ["draft", "published", "archived"];
+const SOCIAL_PREVIEW_CARD_ID = 'social-preview-card-for-snapshot';
 
 export default function BlogEditPage() {
   const params = useParams();
@@ -63,6 +65,7 @@ export default function BlogEditPage() {
   const [isImprovingContent, setIsImprovingContent] = useState(false);
   const [isSimplifyingContent, setIsSimplifyingContent] = useState(false);
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([]);
+  const [isTakingSnapshot, setIsTakingSnapshot] = useState(false);
 
 
   useEffect(() => {
@@ -103,7 +106,7 @@ export default function BlogEditPage() {
     if (!post) return;
     setIsSaving(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
-    const currentPostData = blogStore.getPostById(post.id); // Get latest history
+    const currentPostData = blogStore.getPostById(post.id); 
     blogStore.updatePost(post.id, {
       title: editableTitle,
       content,
@@ -116,7 +119,7 @@ export default function BlogEditPage() {
       heroImageTheme,
       metaTitle,
       metaDescription,
-      exportHistory: currentPostData?.exportHistory || exportHistory, // Preserve existing history
+      exportHistory: currentPostData?.exportHistory || exportHistory, 
     });
     setPost(prev => prev ? ({
       ...prev,
@@ -193,7 +196,6 @@ export default function BlogEditPage() {
       link.click();
       document.body.removeChild(link);
       toast({ title: "Image downloading...", description: "Check your downloads folder."});
-      // Not recording hero image export in the main exportHistory for now, as it's a separate asset.
     } catch (error) {
       console.error("Error downloading image:", error);
       toast({ title: "Download Failed", description: "Could not download the image.", variant: "destructive" });
@@ -355,7 +357,7 @@ export default function BlogEditPage() {
     body { font-family: sans-serif; line-height: 1.6; padding: 20px; margin: 0 auto; max-width: 800px; }
     h1 { color: #333; }
     pre { white-space: pre-wrap; word-wrap: break-word; background-color: #f4f4f4; padding: 15px; border-radius: 5px; border: 1px solid #ddd; }
-    img { max-width: 100%; height: auto; } /* Basic responsive images */
+    img { max-width: 100%; height: auto; } 
   </style>
 </head>
 <body>
@@ -381,13 +383,47 @@ export default function BlogEditPage() {
     }
   };
 
-  const handleExportImageSnapshot = () => {
-    toast({ title: "Export Image Snapshot", description: "Feature coming soon! This will allow you to capture an image of the content preview."});
-    // In a real implementation:
-    // 1. Add html2canvas library.
-    // 2. Target the element to snapshot (e.g., a div wrapping the content preview).
-    // 3. Call html2canvas, then convert canvas to data URL, then trigger download.
-    // addExportRecord('image'); // Call this if snapshot is successful
+  const handleExportImageSnapshot = async () => {
+    const snapshotTarget = document.getElementById(SOCIAL_PREVIEW_CARD_ID);
+    if (!snapshotTarget) {
+      toast({ title: "Snapshot Error", description: "Could not find the preview card element to snapshot.", variant: "destructive" });
+      return;
+    }
+    setIsTakingSnapshot(true);
+    toast({ title: "Generating Snapshot...", description: "Please wait a moment." });
+
+    try {
+      const canvas = await html2canvas(snapshotTarget, {
+        allowTaint: true,
+        useCORS: true, // Important for external images if any
+        logging: false, // Suppress html2canvas logs
+         onclone: (document) => {
+            // Attempt to fix potential styling issues in dark mode for the cloned document
+            const clonedTarget = document.getElementById(SOCIAL_PREVIEW_CARD_ID);
+            if (clonedTarget) {
+                 // This is a workaround. Ideally, html2canvas handles styles correctly.
+                 // If specific styles are missing, they might need to be applied directly here.
+                 // Forcing a light theme on the cloned element if issues persist:
+                 // clonedTarget.classList.remove('dark'); // or apply specific light theme styles
+            }
+        }
+      });
+      const image = canvas.toDataURL('image/png', 0.9); // Use lower quality if files are too large
+      const link = document.createElement('a');
+      const filename = (editableTitle || 'social-preview').replace(/\s+/g, '-').toLowerCase();
+      link.download = `${filename}-snapshot.png`;
+      link.href = image;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({ title: "Snapshot Exported!", description: `${filename}-snapshot.png has been downloaded.` });
+      addExportRecord('image');
+    } catch (error) {
+      console.error("Error generating image snapshot:", error);
+      toast({ title: "Snapshot Failed", description: "Could not generate the image snapshot. See console for details.", variant: "destructive" });
+    } finally {
+      setIsTakingSnapshot(false);
+    }
   };
 
 
@@ -623,9 +659,9 @@ export default function BlogEditPage() {
             </CardContent>
           </Card>
           
-          <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
-            <CardHeader><CardTitle>Social Media Preview (Mock)</CardTitle><CardDescription>A glimpse of your post's appearance.</CardDescription></CardHeader>
-            <CardContent className="space-y-3">
+          <Card id={SOCIAL_PREVIEW_CARD_ID} className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl bg-card text-card-foreground p-0">
+            <CardHeader className="pb-3 pt-4 px-4"><CardTitle className="text-xl">Social Media Preview (Mock)</CardTitle><CardDescription className="text-xs">A glimpse of your post's appearance.</CardDescription></CardHeader>
+            <CardContent className="space-y-3 px-4 pb-4">
               {selectedHeroImageUrl ? (
                 <div className="relative aspect-video w-full overflow-hidden rounded-md border mb-3">
                   <NextImage src={selectedHeroImageUrl} alt={heroImageAltText || "Preview hero image"} layout="fill" objectFit="cover" data-ai-hint="preview social"/>
@@ -637,7 +673,7 @@ export default function BlogEditPage() {
               )}
               <div>
                 <Label className="text-xs text-muted-foreground">Title Preview</Label>
-                <p className="font-semibold text-sm truncate">{editableTitle || "Your Blog Title"}</p>
+                <p className="font-semibold text-sm truncate text-card-foreground">{editableTitle || "Your Blog Title"}</p>
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Description Preview</Label>
@@ -696,10 +732,13 @@ export default function BlogEditPage() {
                 <Button variant="outline" className="w-full" onClick={handleExportMarkdown}>Export as Markdown</Button>
                 <Button variant="outline" className="w-full" onClick={handleExportHtml}>Export as HTML</Button>
                 <Button variant="outline" className="w-full" onClick={() => toast({ title: "Export PDF", description:"Coming soon!"})}>Export as PDF</Button>
-                <Button variant="outline" className="w-full" onClick={handleExportImageSnapshot}>Export as Image (Snapshot)</Button>
+                <Button variant="outline" className="w-full" onClick={handleExportImageSnapshot} disabled={isTakingSnapshot}>
+                  {isTakingSnapshot ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Image className="mr-2 h-4 w-4" />}
+                  Export as Image (Snapshot)
+                </Button>
                 <Separator className="my-2" />
                 <div className="w-full space-y-2">
-                  <Label className="text-xs text-muted-foreground">Export History (Mock):</Label>
+                  <Label className="text-xs text-muted-foreground">Export History:</Label>
                   {exportHistory.length > 0 ? (
                     <ul className="text-xs text-muted-foreground list-disc list-inside max-h-20 overflow-y-auto">
                       {exportHistory.slice(-5).reverse().map((record, index) => (
