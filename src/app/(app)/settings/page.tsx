@@ -21,13 +21,23 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 const tones: BlogTone[] = ["formal", "casual", "informative", "persuasive", "humorous"];
 const styles: BlogStyle[] = ["academic", "journalistic", "storytelling", "technical"];
 const lengths: BlogLength[] = ["short", "medium", "long"];
-const exportFormats = ["markdown", "html", "pdf"] as const;
+const exportFormats = ["markdown", "html", "pdf", "image", "txt"] as const;
+
 
 const defaultSettings: Settings = {
   defaultTone: 'informative',
   defaultStyle: 'journalistic',
   defaultLength: 'medium',
   defaultExportFormat: 'markdown',
+  customExportCss: `/* Custom CSS for 'Styled Article HTML' Export */
+body { font-family: 'Georgia', serif; color: #333; }
+h1, h2, h3 { color: #1a1a1a; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+p { margin-bottom: 1.2em; line-height: 1.7; }
+code { background-color: #f0f0f0; padding: 2px 5px; border-radius: 3px; }
+pre { background-color: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto; }
+pre code { background-color: transparent; padding: 0; }
+img { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+`,
   rules: {
     useDiagramsInHowTo: false,
   },
@@ -57,20 +67,23 @@ export default function SettingsPage() {
         if (!completeSettings.userProfile) {
             completeSettings.userProfile = defaultSettings.userProfile;
         }
-        if (!completeSettings.rules) { // Ensure rules object exists
+        if (!completeSettings.rules) { 
             completeSettings.rules = defaultSettings.rules;
         }
-        if (!completeSettings.stylePresets) { // Ensure stylePresets array exists
+        if (!completeSettings.stylePresets) { 
             completeSettings.stylePresets = defaultSettings.stylePresets;
+        }
+        if (completeSettings.customExportCss === undefined) { // Ensure customExportCss exists
+            completeSettings.customExportCss = defaultSettings.customExportCss;
         }
         setSettings(completeSettings);
       } catch (e) {
         console.error("Failed to parse settings from localStorage", e);
         localStorage.setItem('contentCraftAISettings', JSON.stringify(defaultSettings));
-        setSettings(defaultSettings); // Fallback to default settings
+        setSettings(defaultSettings); 
       }
     } else {
-        setSettings(defaultSettings); // If no saved settings, use defaults
+        setSettings(defaultSettings); 
     }
   }, []);
 
@@ -85,12 +98,24 @@ export default function SettingsPage() {
   const handleInputChange = (field: keyof Settings, value: any) => {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
-
-  const handleRuleChange = (field: keyof Settings['rules'], value: boolean) => {
+  
+  const handleNestedInputChange = <K extends keyof Settings, NK extends keyof NonNullable<Settings[K]>>(
+    parentField: K,
+    nestedField: NK,
+    value: NonNullable<Settings[K]>[NK]
+  ) => {
     setSettings(prev => ({
       ...prev,
-      rules: { ...prev.rules, [field]: value },
+      [parentField]: {
+        ...prev[parentField],
+        [nestedField]: value,
+      },
     }));
+  };
+
+
+  const handleRuleChange = (field: keyof Settings['rules'], value: boolean) => {
+    handleNestedInputChange('rules', field, value);
   };
 
   const [newPresetName, setNewPresetName] = useState("");
@@ -125,7 +150,7 @@ export default function SettingsPage() {
 
   const handleLogout = () => {
     toast({ title: "Logged Out", description: "You have been successfully logged out." });
-    router.push('/dashboard'); // Changed from /login to /dashboard
+    router.push('/dashboard'); 
   };
 
   return (
@@ -254,6 +279,24 @@ export default function SettingsPage() {
             </Button>
           </CardFooter>
         </Card>
+        
+        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+          <CardHeader><CardTitle>Export Template Customization</CardTitle><CardDescription>Add custom CSS for the "Styled Article HTML" export.</CardDescription></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="customExportCss">Custom CSS for Styled HTML Export</Label>
+              <Textarea
+                id="customExportCss"
+                value={settings.customExportCss || ''}
+                onChange={(e) => handleInputChange('customExportCss', e.target.value)}
+                placeholder="/* Your custom CSS styles here... */"
+                rows={10}
+                className="text-xs font-mono"
+              />
+              <p className="text-xs text-muted-foreground">This CSS will be embedded in the &lt;style&gt; tag of 'Styled Article HTML' exports.</p>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
           <CardHeader><CardTitle>Notification Settings</CardTitle><CardDescription>Manage your notification preferences (feature coming soon).</CardDescription></CardHeader>
@@ -292,7 +335,7 @@ export default function SettingsPage() {
                 rows={5}
               />
             </div>
-          </CardContent>
+          </CellContent>
           <CardFooter>
             <Button onClick={handleSubmitFeedback}>
               Submit Feedback

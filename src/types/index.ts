@@ -56,6 +56,7 @@ export interface Settings {
   defaultStyle: BlogStyle;
   defaultLength: BlogLength;
   defaultExportFormat: "markdown" | "html" | "pdf" | "image" | "txt";
+  customExportCss?: string; // Added for custom CSS for HTML export
   rules: {
     useDiagramsInHowTo: boolean;
   };

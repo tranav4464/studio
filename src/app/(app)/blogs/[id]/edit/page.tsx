@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import type { BlogPost, RepurposedContent, BlogStatus, ExportRecord, RepurposedContentFeedback } from '@/types';
+import type { BlogPost, RepurposedContent, BlogStatus, ExportRecord, RepurposedContentFeedback, Settings } from '@/types';
 import { blogStore } from '@/lib/blog-store';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -147,9 +147,9 @@ export default function BlogEditPage() {
     if (!post) return;
     const newRecord: ExportRecord = { format, timestamp: new Date().toISOString() };
     const updatedHistory = [...(post.exportHistory || []), newRecord];
-    blogStore.updatePost(post.id, { exportHistory: updatedHistory }); // Save only this change quickly
-    setPost(prev => prev ? { ...prev, exportHistory: updatedHistory } : null); // Update local state
-    setExportHistory(updatedHistory); // Update specific state for export history display
+    blogStore.updatePost(post.id, { exportHistory: updatedHistory }); 
+    setPost(prev => prev ? { ...prev, exportHistory: updatedHistory } : null); 
+    setExportHistory(updatedHistory); 
   };
 
   const handleSave = async () => {
@@ -417,6 +417,29 @@ export default function BlogEditPage() {
       const blogTitle = editableTitle || 'Blog Post';
       const blogMarkdown = content;
 
+      const savedSettingsString = localStorage.getItem('contentCraftAISettings');
+      let customCss = '';
+      if (savedSettingsString) {
+        const savedSettings: Partial<Settings> = JSON.parse(savedSettingsString);
+        customCss = savedSettings.customExportCss || '';
+      }
+
+      const defaultStyledCss = `
+    body { font-family: Inter, sans-serif; line-height: 1.6; padding: 20px; margin: 0 auto; max-width: 800px; background-color: #f9f9f9; color: #333; }
+    h1, h2, h3, h4, h5, h6 { color: #1a1a1a; margin-top: 1.5em; margin-bottom: 0.5em; }
+    h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 2em;}
+    h2 { font-size: 1.75em; }
+    h3 { font-size: 1.5em; }
+    p { margin-bottom: 1em; }
+    pre { white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; padding: 15px; border-radius: 5px; border: 1px solid #ddd; overflow-x: auto; }
+    code { font-family: 'JetBrains Mono', monospace; background-color: #e0e0e0; padding: 2px 4px; border-radius: 3px; }
+    pre code { background-color: transparent; padding: 0; } 
+    img { max-width: 100%; height: auto; border-radius: 5px; margin: 10px 0; }
+    hr { border: 0; height: 1px; background: #ddd; margin: 2em 0; }
+    strong { font-weight: bold; }
+    em { font-style: italic; }
+      `;
+
       if (htmlExportTemplate === 'basic-pre') {
         htmlOutput = `<!DOCTYPE html>
 <html lang="en">
@@ -439,6 +462,7 @@ export default function BlogEditPage() {
 </html>`;
       } else if (htmlExportTemplate === 'styled-article') {
         const formattedHtml = basicMarkdownToHtml(blogMarkdown);
+        const finalCss = customCss.trim() !== '' ? customCss : defaultStyledCss;
         htmlOutput = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -446,19 +470,7 @@ export default function BlogEditPage() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${blogTitle}</title>
   <style>
-    body { font-family: Inter, sans-serif; line-height: 1.6; padding: 20px; margin: 0 auto; max-width: 800px; background-color: #f9f9f9; color: #333; }
-    h1, h2, h3, h4, h5, h6 { color: #1a1a1a; margin-top: 1.5em; margin-bottom: 0.5em; }
-    h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 2em;}
-    h2 { font-size: 1.75em; }
-    h3 { font-size: 1.5em; }
-    p { margin-bottom: 1em; }
-    pre { white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; padding: 15px; border-radius: 5px; border: 1px solid #ddd; overflow-x: auto; }
-    code { font-family: 'JetBrains Mono', monospace; background-color: #e0e0e0; padding: 2px 4px; border-radius: 3px; }
-    pre code { background-color: transparent; padding: 0; } 
-    img { max-width: 100%; height: auto; border-radius: 5px; margin: 10px 0; }
-    hr { border: 0; height: 1px; background: #ddd; margin: 2em 0; }
-    strong { font-weight: bold; }
-    em { font-style: italic; }
+    ${finalCss}
   </style>
 </head>
 <body>
@@ -856,11 +868,11 @@ export default function BlogEditPage() {
                             </Tooltip>
                         </div>
                         <span className="text-sm font-medium">
-                           {scoreType === 'Readability' ? (post.seoScore?.readability ?? 0) : scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity ?? 0) : (post.seoScore?.quality ?? 0)}%
+                           {(post?.seoScore?.[scoreType.toLowerCase().replace(/\s/g, '') as keyof typeof post.seoScore] ?? 0)}%
                         </span>
                       </div>
                       <Progress
-                        value={scoreType === 'Readability' ? (post.seoScore?.readability ?? 0) : scoreType === 'Keyword Density' ? (post.seoScore?.keywordDensity ?? 0) : (post.seoScore?.quality ?? 0)}
+                        value={(post?.seoScore?.[scoreType.toLowerCase().replace(/\s/g, '') as keyof typeof post.seoScore] ?? 0)}
                         aria-label={`${scoreType} score`} />
                     </div>
                   ))}
@@ -922,6 +934,3 @@ export default function BlogEditPage() {
     </TooltipProvider>
   );
 }
-
-
-    
