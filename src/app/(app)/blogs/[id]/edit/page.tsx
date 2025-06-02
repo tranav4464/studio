@@ -18,14 +18,15 @@ import { PageHeader } from '@/components/shared/page-header';
 import { useToast } from '@/hooks/use-toast';
 import { 
   generateHeroImageAction, 
+  generateInitialHeroImageAction, // New action for automatic initial generation
   repurposeContentAction, 
   generateBlogTitleSuggestionAction, 
   generateMetaTitleAction, 
   generateMetaDescriptionAction, 
   improveBlogContentAction, 
   simplifyBlogContentAction,
-  analyzeBlogSeoAction, // New SEO analysis action
-  type AnalyzeBlogSeoOutput // Type for SEO analysis result
+  analyzeBlogSeoAction, 
+  type AnalyzeBlogSeoOutput
 } from '@/actions/ai';
 import NextImage from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -49,30 +50,19 @@ const htmlTemplateOptions: Array<{value: HtmlExportTemplate, label: string}> = [
 
 type RepurposedContentType = keyof RepurposedContentFeedback;
 
-// Basic Markdown to HTML converter
 function basicMarkdownToHtml(md: string): string {
   let html = md;
-  // Headings (from H3 down to H1 for typical blog content within a page)
   html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
   html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
   html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>'); 
-
-  // Bold
   html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
   html = html.replace(/__(.*?)__/gim, '<strong>$1</strong>');
-
-  // Italic
   html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
   html = html.replace(/_(.*?)_/gim, '<em>$1</em>'); 
-
-  // Inline code
   html = html.replace(/`(.*?)`/gim, '<code>$1</code>');
-  
-  // Horizontal Rule
   html = html.replace(/^\s*---\s*$/gim, '<hr />');
   html = html.replace(/^\s*\*\*\*\s*$/gim, '<hr />');
   html = html.replace(/^\s*___\s*$/gim, '<hr />');
-  
   html = html.split(/\n\s*\n/).map(paragraph => {
     const trimmedParagraph = paragraph.trim();
     if (trimmedParagraph === '') return '';
@@ -81,7 +71,6 @@ function basicMarkdownToHtml(md: string): string {
     }
     return `<p>${trimmedParagraph.replace(/\n/g, '<br />')}</p>`;
   }).join('\n');
-
   return html;
 }
 
@@ -99,14 +88,15 @@ export default function BlogEditPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [heroImagePrompt, setHeroImagePrompt] = useState('');
+  const [heroImagePrompt, setHeroImagePrompt] = useState(''); // For user-initiated prompt
   const [heroImageTone, setHeroImageTone] = useState('cinematic');
   const [heroImageTheme, setHeroImageTheme] = useState('General');
   const [generatedHeroImageUrls, setGeneratedHeroImageUrls] = useState<string[] | null>(null);
   const [selectedHeroImageUrl, setSelectedHeroImageUrl] = useState<string | null>(null);
   const [heroImageCaption, setHeroImageCaption] = useState('');
   const [heroImageAltText, setHeroImageAltText] = useState('');
-  const [isGeneratingHeroImage, setIsGeneratingHeroImage] = useState(false);
+  const [isGeneratingHeroImage, setIsGeneratingHeroImage] = useState(false); // For user-initiated generation
+  const [isAutoGeneratingImage, setIsAutoGeneratingImage] = useState(false); // For automatic initial generation
   const [generationStatus, setGenerationStatus] = useState('');
 
 
@@ -121,8 +111,8 @@ export default function BlogEditPage() {
   const [suggestedUrlSlug, setSuggestedUrlSlug] = useState<string | null>(null);
 
   const [isSuggestingBlogTitle, setIsSuggestingBlogTitle] = useState(false);
-  const [isSuggestingMetaTitle, setIsSuggestingMetaTitle] = useState(false); // Kept for standalone suggestion if needed
-  const [isSuggestingMetaDescription, setIsSuggestingMetaDescription] = useState(false); // Kept for standalone suggestion
+  const [isSuggestingMetaTitle, setIsSuggestingMetaTitle] = useState(false); 
+  const [isSuggestingMetaDescription, setIsSuggestingMetaDescription] = useState(false); 
   const [isImprovingContent, setIsImprovingContent] = useState(false);
   const [isSimplifyingContent, setIsSimplifyingContent] = useState(false);
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([]);
@@ -134,6 +124,38 @@ export default function BlogEditPage() {
   const [seoAnalysisResult, setSeoAnalysisResult] = useState<AnalyzeBlogSeoOutput | null>(null);
 
 
+  const handleAutomaticInitialHeroImage = useCallback(async (blogData: BlogPost) => {
+    if (!blogData.title || !blogData.topic || !blogData.tone || !blogData.style) return;
+
+    setIsAutoGeneratingImage(true);
+    setGenerationStatus("Automatically generating initial hero image...");
+    try {
+      const result = await generateInitialHeroImageAction({
+        blogTitle: blogData.title,
+        blogTopic: blogData.topic,
+        blogTone: blogData.tone,
+        blogStyle: blogData.style,
+        heroImageTheme: blogData.heroImageTheme || 'General',
+      });
+
+      if (result.imageUrls && result.imageUrls.length > 0) {
+        setGeneratedHeroImageUrls(result.imageUrls);
+        setSelectedHeroImageUrl(result.imageUrls[0]);
+        setHeroImageAltText(`AI generated hero image for: ${blogData.title}`);
+        setHeroImageCaption(`Hero image for "${blogData.title}"`);
+        // Do NOT set heroImagePrompt (UI state) here with the AI's internal detailed prompt
+        toast({ title: "Initial hero image generated!", description: "Review the auto-generated image." });
+      } else {
+        toast({ title: "Auto image generation failed", description: "Could not automatically generate an image.", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: "Error in auto image generation", description: error.message, variant: "destructive" });
+    } finally {
+      setIsAutoGeneratingImage(false);
+      setGenerationStatus('');
+    }
+  }, [toast]);
+
   useEffect(() => {
     if (blogId) {
       const fetchedPost = blogStore.getPostById(blogId);
@@ -142,6 +164,7 @@ export default function BlogEditPage() {
         setEditableTitle(fetchedPost.title);
         setContent(fetchedPost.content);
         setCurrentStatus(fetchedPost.status); 
+        // Set heroImagePrompt for user editing, prefill with title if no specific prompt saved
         setHeroImagePrompt(fetchedPost.heroImagePrompt || fetchedPost.title);
         setHeroImageTone(fetchedPost.tone || 'cinematic'); 
         setHeroImageTheme(fetchedPost.heroImageTheme || 'General');
@@ -152,14 +175,20 @@ export default function BlogEditPage() {
         setMetaDescription(fetchedPost.metaDescription || `Meta description for ${fetchedPost.title}`);
         setExportHistory(fetchedPost.exportHistory || []);
         setCurrentRepurposedFeedback(fetchedPost.repurposedContentFeedback || { tweetThread: null, linkedInPost: null, instagramPost: null, emailNewsletterSummary: null });
-        setPrimaryKeyword(fetchedPost.topic); // Default primary keyword to topic
+        setPrimaryKeyword(fetchedPost.topic); 
+
+        // Trigger automatic initial hero image generation if no image exists
+        if (!fetchedPost.heroImageUrl) {
+          handleAutomaticInitialHeroImage(fetchedPost);
+        }
+
       } else {
         toast({ title: "Blog post not found", variant: "destructive" });
         router.push('/dashboard');
       }
       setIsLoading(false);
     }
-  }, [blogId, router, toast]);
+  }, [blogId, router, toast, handleAutomaticInitialHeroImage]);
   
   const addExportRecord = (format: ExportRecord['format']) => {
     if (!post) return;
@@ -174,7 +203,7 @@ export default function BlogEditPage() {
     if (!post) return;
     setIsSaving(true);
     const currentPostData = blogStore.getPostById(post.id); 
-    const updatedSeoScore = { // Ensure seoScore object exists
+    const updatedSeoScore = { 
       readability: post.seoScore?.readability ?? 0,
       keywordDensity: post.seoScore?.keywordDensity ?? 0,
       quality: post.seoScore?.quality ?? 0,
@@ -187,12 +216,12 @@ export default function BlogEditPage() {
       heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
-      heroImagePrompt,
+      heroImagePrompt: heroImagePrompt, // Save the user-editable prompt
       tone: heroImageTone, 
       heroImageTheme,
       metaTitle,
       metaDescription,
-      seoScore: updatedSeoScore, // Save updated scores
+      seoScore: updatedSeoScore, 
       exportHistory: currentPostData?.exportHistory || exportHistory, 
       repurposedContentFeedback: currentRepurposedFeedback,
     });
@@ -204,7 +233,7 @@ export default function BlogEditPage() {
       heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
-      heroImagePrompt,
+      heroImagePrompt: heroImagePrompt,
       tone: heroImageTone,
       heroImageTheme,
       metaTitle,
@@ -217,6 +246,7 @@ export default function BlogEditPage() {
     toast({ title: "Blog post saved!", description: `"${editableTitle}" has been updated.` });
   };
 
+  // User-initiated hero image generation
   const handleGenerateHeroImage = async () => {
     if (!heroImagePrompt) {
       toast({ title: "Prompt required", description: "Please enter a prompt for the hero image.", variant: "destructive" });
@@ -236,7 +266,8 @@ export default function BlogEditPage() {
     streamCallback({custom: {type: 'status', message: 'Sending request to AI... (0/3)'}});
     
     try {
-      const result = await generateHeroImageAction({ blogTitle: heroImagePrompt, tone: heroImageTone, theme: heroImageTheme });
+      // Pass the user's prompt from the UI
+      const result = await generateHeroImageAction({ imagePrompt: heroImagePrompt, tone: heroImageTone, theme: heroImageTheme });
       setGeneratedHeroImageUrls(result.imageUrls);
       if (result.imageUrls && result.imageUrls.length > 0) {
         setSelectedHeroImageUrl(result.imageUrls[0]); 
@@ -260,7 +291,7 @@ export default function BlogEditPage() {
       return;
     }
     if (!selectedHeroImageUrl.startsWith('data:image')) {
-      toast({ title: "Export Error", description: "Selected image is not a data URI and cannot be directly downloaded. AI generated images should be data URIs.", variant: "destructive" });
+      toast({ title: "Export Error", description: "Selected image is not a data URI and cannot be directly downloaded.", variant: "destructive" });
       return;
     }
     try {
@@ -383,20 +414,18 @@ export default function BlogEditPage() {
       });
       setSeoAnalysisResult(result);
 
-      // Update scores in the post state
       setPost(prevPost => {
         if (!prevPost) return null;
         return {
           ...prevPost,
           seoScore: {
             readability: result.readabilityScore,
-            keywordDensity: result.keywordRelevanceScore, // Mapping keyword relevance to density display
+            keywordDensity: result.keywordRelevanceScore, 
             quality: result.overallSeoScore,
           }
         };
       });
 
-      // Update meta tags
       setMetaTitle(result.suggestedMetaTitle);
       setMetaDescription(result.suggestedMetaDescription);
       setSuggestedUrlSlug(result.suggestedUrlSlug);
@@ -788,10 +817,10 @@ export default function BlogEditPage() {
             <CardContent className="space-y-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-1">
-                  <Label htmlFor="heroPrompt">Image Prompt</Label>
+                  <Label htmlFor="heroPrompt">Image Prompt (User Initiated)</Label>
                   <Tooltip>
                     <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger>
-                    <TooltipContent><p>Describe the image you want the AI to generate.</p></TooltipContent>
+                    <TooltipContent><p>Describe the image you want the AI to generate if you dislike the auto-generated one or want variants.</p></TooltipContent>
                   </Tooltip>
                 </div>
                 <Input id="heroPrompt" value={heroImagePrompt} onChange={(e) => setHeroImagePrompt(e.target.value)} placeholder="e.g., Futuristic cityscape" />
@@ -821,12 +850,12 @@ export default function BlogEditPage() {
                   </Select>
                 </div>
               </div>
-              <Button onClick={handleGenerateHeroImage} disabled={isGeneratingHeroImage} className="w-full">
+              <Button onClick={handleGenerateHeroImage} disabled={isGeneratingHeroImage || isAutoGeneratingImage} className="w-full">
                 {isGeneratingHeroImage ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Image className="mr-2 h-4 w-4" />}Generate Images
               </Button>
-              {isGeneratingHeroImage && <div className="text-center p-4"><Icons.Spinner className="h-6 w-6 animate-spin text-primary" /> <p className="text-sm text-muted-foreground">{generationStatus || "Generating images..."}</p></div>}
+              {(isGeneratingHeroImage || isAutoGeneratingImage) && <div className="text-center p-4"><Icons.Spinner className="h-6 w-6 animate-spin text-primary" /> <p className="text-sm text-muted-foreground">{generationStatus || "Working on images..."}</p></div>}
 
-              {generatedHeroImageUrls && generatedHeroImageUrls.length > 0 && !isGeneratingHeroImage && (
+              {generatedHeroImageUrls && generatedHeroImageUrls.length > 0 && !isGeneratingHeroImage && !isAutoGeneratingImage && (
                 <div className="mt-4 space-y-2">
                   <Label>Generated Variants (click to select)</Label>
                   <div className="grid grid-cols-3 gap-2">

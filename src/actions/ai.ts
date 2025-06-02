@@ -11,11 +11,14 @@ import { generateMetaTitle, type GenerateMetaTitleInput, type GenerateMetaTitleO
 import { generateMetaDescription, type GenerateMetaDescriptionInput, type GenerateMetaDescriptionOutput } from '@/ai/flows/generate-meta-description-flow';
 import { generateBlogTitleSuggestion, type GenerateBlogTitleSuggestionInput, type GenerateBlogTitleSuggestionOutput } from '@/ai/flows/generate-blog-title-suggestion-flow';
 import { analyzeBlogSeo, type AnalyzeBlogSeoInput, type AnalyzeBlogSeoOutput } from '@/ai/flows/analyze-blog-seo-flow';
+import { generateImageGenerationPrompt, type GenerateImageGenerationPromptInput, type GenerateImageGenerationPromptOutput } from '@/ai/flows/generate-image-generation-prompt-flow';
 
 
+// User-initiated hero image generation
 export async function generateHeroImageAction(input: GenerateHeroImageInput): Promise<GenerateHeroImageOutput> {
   try {
-    const result = await generateHeroImage(input);
+    // Input now contains imagePrompt, tone, theme
+    const result = await generateHeroImage(input); 
     
     if (!result.imageUrls || result.imageUrls.length === 0) {
       console.warn("AI did not return any image URLs. Input:", input, "Output:", result);
@@ -27,6 +30,50 @@ export async function generateHeroImageAction(input: GenerateHeroImageInput): Pr
     return { imageUrls: [`https://placehold.co/800x400.png?text=Error+Generating+Images`] };
   }
 }
+
+// Automatic initial hero image generation
+export interface GenerateInitialHeroImageActionInput {
+  blogTitle: string;
+  blogTopic: string;
+  blogTone: string;
+  blogStyle: string;
+  heroImageTheme?: string; // Optional theme for initial generation
+}
+
+export async function generateInitialHeroImageAction(input: GenerateInitialHeroImageActionInput): Promise<GenerateHeroImageOutput> {
+  try {
+    // 1. Generate a detailed prompt
+    const promptResult = await generateImageGenerationPrompt({
+      blogTitle: input.blogTitle,
+      blogTopic: input.blogTopic,
+      blogTone: input.blogTone,
+      blogStyle: input.blogStyle,
+    });
+
+    if (!promptResult.detailedImagePrompt) {
+      console.warn("Failed to generate a detailed image prompt.");
+      return { imageUrls: [`https://placehold.co/800x400.png?text=Prompt+Gen+Failed`] };
+    }
+
+    // 2. Generate image using the detailed prompt
+    const imageResult = await generateHeroImage({
+      imagePrompt: promptResult.detailedImagePrompt,
+      tone: input.blogTone, // Pass original tone, can be used by image gen if needed
+      theme: input.heroImageTheme || 'General', // Use provided theme or default
+    });
+
+    if (!imageResult.imageUrls || imageResult.imageUrls.length === 0) {
+      console.warn("AI did not return any image URLs for initial generation. Detailed Prompt:", promptResult.detailedImagePrompt, "Output:", imageResult);
+      return { imageUrls: [`https://placehold.co/800x400.png?text=Auto+Image+Failed`] };
+    }
+    return imageResult;
+
+  } catch (error) {
+    console.error("Error in initial hero image generation:", error);
+    return { imageUrls: [`https://placehold.co/800x400.png?text=Auto+Image+Error`] };
+  }
+}
+
 
 export async function repurposeContentAction(input: RepurposeContentInput): Promise<RepurposeContentOutput> {
   try {
@@ -144,10 +191,9 @@ export async function analyzeBlogSeoAction(input: AnalyzeBlogSeoInput): Promise<
   console.log("analyzeBlogSeoAction called for blog title:", input.blogTitle);
   try {
     const result = await analyzeBlogSeo(input);
-    return result; // The flow itself has a fallback, so we can return result directly
+    return result; 
   } catch (error: any) {
     console.error("Error analyzing blog SEO:", error);
-    // Construct a fallback response that matches the AnalyzeBlogSeoOutput schema
     return {
       overallSeoScore: 5,
       readabilityScore: 10,

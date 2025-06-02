@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview Generates hero images for blog posts based on the title, tone, and theme.
+ * @fileOverview Generates hero images for blog posts based on a detailed prompt, tone, and theme.
  *
  * - generateHeroImage - A function that generates hero images.
  * - GenerateHeroImageInput - The input type for the generateHeroImage function.
@@ -12,8 +12,8 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateHeroImageInputSchema = z.object({
-  blogTitle: z.string().describe('The title of the blog post.'),
-  tone: z.string().describe('The desired tone or style for the image.'),
+  imagePrompt: z.string().describe('The detailed prompt for the image generation model.'),
+  tone: z.string().describe('The desired tone or style for the image (e.g., cinematic, vibrant). This can complement the main prompt.'),
   theme: z.string().describe('The visual theme for the image (e.g., Dark, Light, Pastel, General).').optional(),
 });
 export type GenerateHeroImageInput = z.infer<typeof GenerateHeroImageInputSchema>;
@@ -27,8 +27,6 @@ export async function generateHeroImage(input: GenerateHeroImageInput): Promise<
   return generateHeroImageFlow(input);
 }
 
-// Note: The prompt to the image model is kept simple for clarity.
-// More complex prompting could be used for better theme/style adherence.
 const generateHeroImageFlow = ai.defineFlow(
   {
     name: 'generateHeroImageFlow',
@@ -38,12 +36,17 @@ const generateHeroImageFlow = ai.defineFlow(
   async (input, streamingCallback) => {
     const numImagesToGenerate = 3;
     const imageUrls: string[] = [];
-    let promptText = `Generate a hero image for a blog post titled "${input.blogTitle}" with a ${input.tone} tone.`;
+    
+    let basePromptText = input.imagePrompt;
+    // The tone is already part of the detailed prompt generation usually, 
+    // but we can still append it or the theme for more specific control at the image gen stage.
+    let finalPromptText = basePromptText;
     if (input.theme && input.theme !== 'General') {
-      promptText += ` The desired visual theme is ${input.theme}.`;
+      finalPromptText += ` Visually, the image should have a ${input.theme} theme.`;
     }
+    // The input.tone can also be appended if needed, e.g., ` Style: ${input.tone}.`
+    // For now, assuming the detailed prompt from generateImageGenerationPromptFlow incorporates tone sufficiently.
 
-    // Inform the client that generation is starting
     if (streamingCallback) {
        streamingCallback({
         custom: {
@@ -53,7 +56,6 @@ const generateHeroImageFlow = ai.defineFlow(
       });
     }
     
-
     for (let i = 0; i < numImagesToGenerate; i++) {
        if (streamingCallback && i > 0) {
         streamingCallback({
@@ -66,18 +68,15 @@ const generateHeroImageFlow = ai.defineFlow(
       try {
         const {media} = await ai.generate({
           model: 'googleai/gemini-2.0-flash-exp',
-          prompt: `${promptText} (Variant ${i + 1})`, 
+          prompt: `${finalPromptText} (Variant ${i + 1})`, 
           config: {
             responseModalities: ['TEXT', 'IMAGE'],
-             // Add safety settings if needed, e.g.,
-            // safetySettings: [{ category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' }],
           },
         });
         if (media && media.url) {
           imageUrls.push(media.url);
         } else {
-          // Push a placeholder if a specific image generation fails
-          console.warn(`Image generation failed for variant ${i+1}. Prompt: ${promptText}`);
+          console.warn(`Image generation failed for variant ${i+1}. Prompt: ${finalPromptText}`);
           imageUrls.push(`https://placehold.co/600x300.png?text=Variant+${i+1}+Failed`);
         }
       } catch (error) {
@@ -87,11 +86,9 @@ const generateHeroImageFlow = ai.defineFlow(
     }
     
     if (imageUrls.length === 0) {
-        // Fallback if all generations fail
         imageUrls.push(`https://placehold.co/800x400.png?text=All+Image+Generations+Failed`);
     }
 
     return {imageUrls};
   }
 );
-
