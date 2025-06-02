@@ -18,7 +18,6 @@ import { PageHeader } from '@/components/shared/page-header';
 import { useToast } from '@/hooks/use-toast';
 import { 
   generateHeroImageAction, 
-  generateInitialHeroImageAction,
   repurposeContentAction, 
   generateBlogTitleSuggestionAction, 
   generateMetaTitleAction, 
@@ -100,7 +99,6 @@ export default function BlogEditPage() {
   const [heroImageCaption, setHeroImageCaption] = useState('');
   const [heroImageAltText, setHeroImageAltText] = useState('');
   const [isGeneratingHeroImage, setIsGeneratingHeroImage] = useState(false); 
-  const [isAutoGeneratingImage, setIsAutoGeneratingImage] = useState(false); 
   const [generationStatus, setGenerationStatus] = useState('');
 
   // States for Image Prompt Helper
@@ -139,37 +137,6 @@ export default function BlogEditPage() {
   const [seoAnalysisResult, setSeoAnalysisResult] = useState<AnalyzeBlogSeoOutput | null>(null);
 
 
-  const handleAutomaticInitialHeroImage = useCallback(async (blogData: BlogPost) => {
-    if (!blogData.title || !blogData.topic || !blogData.tone || !blogData.style) return;
-
-    setIsAutoGeneratingImage(true);
-    setGenerationStatus("Automatically generating initial hero image...");
-    try {
-      const result = await generateInitialHeroImageAction({
-        blogTitle: blogData.title,
-        blogTopic: blogData.topic,
-        blogTone: blogData.tone,
-        blogStyle: blogData.style,
-        heroImageTheme: blogData.heroImageTheme || 'General',
-      });
-
-      if (result.imageUrls && result.imageUrls.length > 0) {
-        setGeneratedHeroImageUrls(result.imageUrls);
-        setSelectedHeroImageUrl(result.imageUrls[0]);
-        setHeroImageAltText(`AI generated hero image for: ${blogData.title}`);
-        setHeroImageCaption(`Hero image for "${blogData.title}"`);
-        toast({ title: "Initial hero image generated!", description: "Review the auto-generated image." });
-      } else {
-        toast({ title: "Auto image generation failed", description: "Could not automatically generate an image.", variant: "destructive" });
-      }
-    } catch (error: any) {
-      toast({ title: "Error in auto image generation", description: error.message, variant: "destructive" });
-    } finally {
-      setIsAutoGeneratingImage(false);
-      setGenerationStatus('');
-    }
-  }, [toast]);
-
   useEffect(() => {
     if (blogId) {
       const fetchedPost = blogStore.getPostById(blogId);
@@ -190,17 +157,13 @@ export default function BlogEditPage() {
         setCurrentRepurposedFeedback(fetchedPost.repurposedContentFeedback || { tweetThread: null, linkedInPost: null, instagramPost: null, emailNewsletterSummary: null });
         setPrimaryKeyword(fetchedPost.topic); 
 
-        if (!fetchedPost.heroImageUrl) {
-          handleAutomaticInitialHeroImage(fetchedPost);
-        }
-
       } else {
         toast({ title: "Blog post not found", variant: "destructive" });
         router.push('/dashboard');
       }
       setIsLoading(false);
     }
-  }, [blogId, router, toast, handleAutomaticInitialHeroImage]);
+  }, [blogId, router, toast]);
   
   const addExportRecord = (format: ExportRecord['format']) => {
     if (!post) return;
@@ -1058,12 +1021,12 @@ export default function BlogEditPage() {
                   </Select>
                 </div>
               </div>
-              <Button onClick={handleGenerateHeroImage} disabled={isGeneratingHeroImage || isAutoGeneratingImage} className="w-full">
+              <Button onClick={handleGenerateHeroImage} disabled={isGeneratingHeroImage} className="w-full">
                 {isGeneratingHeroImage ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Image className="mr-2 h-4 w-4" />}Generate Images
               </Button>
-              {(isGeneratingHeroImage || isAutoGeneratingImage) && <div className="text-center p-4"><Icons.Spinner className="h-6 w-6 animate-spin text-primary" /> <p className="text-sm text-muted-foreground">{generationStatus || "Working on images..."}</p></div>}
+              {isGeneratingHeroImage && <div className="text-center p-4"><Icons.Spinner className="h-6 w-6 animate-spin text-primary" /> <p className="text-sm text-muted-foreground">{generationStatus || "Working on images..."}</p></div>}
 
-              {generatedHeroImageUrls && generatedHeroImageUrls.length > 0 && !isGeneratingHeroImage && !isAutoGeneratingImage && (
+              {generatedHeroImageUrls && generatedHeroImageUrls.length > 0 && !isGeneratingHeroImage && (
                 <div className="mt-4 space-y-2">
                   <Label>Generated Variants (click to select)</Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -1302,4 +1265,3 @@ export default function BlogEditPage() {
 }
 
     
-
