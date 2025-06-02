@@ -25,6 +25,9 @@ import {
   generateMetaDescriptionAction, 
   improveBlogContentAction, 
   simplifyBlogContentAction,
+  expandBlogContentAction,
+  depthBoostBlogContentAction,
+  suggestVisualizationAction,
   analyzeBlogSeoAction, 
   type AnalyzeBlogSeoOutput,
   generateImagePromptHelperAction
@@ -124,6 +127,9 @@ export default function BlogEditPage() {
   const [isSuggestingMetaDescription, setIsSuggestingMetaDescription] = useState(false); 
   const [isImprovingContent, setIsImprovingContent] = useState(false);
   const [isSimplifyingContent, setIsSimplifyingContent] = useState(false);
+  const [isExpandingContent, setIsExpandingContent] = useState(false);
+  const [isBoostingDepth, setIsBoostingDepth] = useState(false);
+  const [isSuggestingVisualization, setIsSuggestingVisualization] = useState(false);
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([]);
   const [isTakingSnapshot, setIsTakingSnapshot] = useState(false);
   const [htmlExportTemplate, setHtmlExportTemplate] = useState<HtmlExportTemplate>('basic-pre');
@@ -513,6 +519,79 @@ export default function BlogEditPage() {
     setIsSimplifyingContent(false);
   };
 
+  const handleExpandContent = async () => {
+    if (!post || !content) {
+      toast({ title: "Content is empty", description: "Please write some content before trying to expand it.", variant: "destructive"});
+      return;
+    }
+    setIsExpandingContent(true);
+    try {
+      const result = await expandBlogContentAction({
+        blogContent: content,
+        topic: post.topic,
+        tone: post.tone,
+        style: post.style,
+      });
+      setContent(result.expandedContent);
+      toast({ title: "Content Expanded!", description: "The AI has expanded your blog post."});
+    } catch (error: any) {
+      toast({ title: "Error Expanding Content", description: error.message, variant: "destructive" });
+    }
+    setIsExpandingContent(false);
+  };
+
+  const handleDepthBoostContent = async () => {
+    if (!post || !content) {
+      toast({ title: "Content is empty", description: "Please write some content before trying to boost its depth.", variant: "destructive"});
+      return;
+    }
+    setIsBoostingDepth(true);
+    try {
+      const result = await depthBoostBlogContentAction({
+        blogContent: content,
+        topic: post.topic,
+        tone: post.tone,
+        style: post.style,
+      });
+      setContent(result.boostedContent);
+      toast({ title: "Content Depth Boosted!", description: "The AI has added more depth to your blog post."});
+    } catch (error: any) {
+      toast({ title: "Error Boosting Depth", description: error.message, variant: "destructive" });
+    }
+    setIsBoostingDepth(false);
+  };
+  
+  const handleSuggestVisualization = async () => {
+    if (!post || !content) {
+      toast({ title: "Content is empty", description: "Please write some content for visualization suggestions.", variant: "destructive"});
+      return;
+    }
+    setIsSuggestingVisualization(true);
+    try {
+      const result = await suggestVisualizationAction({
+        blogContent: content,
+        topic: post.topic,
+      });
+      if (result.suggestedVisualDescription) {
+        const placeholderText = `\n\n<!-- AI Suggested Visual for '${result.sectionToVisualize}': ${result.suggestedVisualDescription} -->\n\n`;
+        if (result.insertionMarkerText && content.includes(result.insertionMarkerText)) {
+          const parts = content.split(result.insertionMarkerText);
+          setContent(parts[0] + result.insertionMarkerText + placeholderText + parts.slice(1).join(result.insertionMarkerText));
+          toast({ title: "Visualization Suggestion Added!", description: `A placeholder comment for "${result.suggestedVisualDescription}" has been added to your content.` });
+        } else {
+          setContent(content + placeholderText); // Append if marker not found or not provided
+          toast({ title: "Visualization Suggestion Appended!", description: `Could not find exact insertion point. "${result.suggestedVisualDescription}" placeholder added at the end.` });
+        }
+      } else {
+        toast({ title: "No Visualization Suggested", description: "The AI did not have a specific visual suggestion for this content at the moment." });
+      }
+    } catch (error: any) {
+      toast({ title: "Error Suggesting Visualization", description: error.message, variant: "destructive" });
+    }
+    setIsSuggestingVisualization(false);
+  };
+
+
   const handleExportMarkdown = () => {
     if (!post || !content) {
       toast({ title: "No content to export", description: "Please write some content before exporting.", variant: "destructive" });
@@ -690,6 +769,8 @@ export default function BlogEditPage() {
     }
   };
 
+  const anyContentLoading = isImprovingContent || isSimplifyingContent || isExpandingContent || isBoostingDepth || isSuggestingVisualization;
+
 
   if (isLoading) {
     return <div className="flex h-full w-full items-center justify-center"><Icons.Spinner className="h-10 w-10 animate-spin text-primary" /></div>;
@@ -774,17 +855,26 @@ export default function BlogEditPage() {
               <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={25} className="text-base p-4 border rounded-md shadow-inner focus:ring-primary focus:border-primary" placeholder="Start writing..."/>
             </CardContent>
             <CardFooter className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={handleImproveContent} disabled={isImprovingContent || isSimplifyingContent || !content}>
+                <Button variant="outline" size="sm" onClick={handleImproveContent} disabled={anyContentLoading || !content}>
                   {isImprovingContent ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Improve className="mr-2 h-4 w-4" />}
                   Improve
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleSimplifyContent} disabled={isSimplifyingContent || isImprovingContent || !content}>
+                <Button variant="outline" size="sm" onClick={handleSimplifyContent} disabled={anyContentLoading || !content}>
                   {isSimplifyingContent ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Simplify className="mr-2 h-4 w-4" />}
                   Simplify
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Expand' feature coming soon!" })}><Icons.Expand className="mr-2 h-4 w-4"/>Expand</Button>
-                <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Depth Boost' feature coming soon!" })}><Icons.Improve className="mr-2 h-4 w-4"/>Depth Boost</Button>
-                <Button variant="outline" size="sm" onClick={() => toast({ title: "AI Suggestion", description: "'Visualize' feature coming soon!" })}><Icons.Image className="mr-2 h-4 w-4"/>Visualize</Button>
+                <Button variant="outline" size="sm" onClick={handleExpandContent} disabled={anyContentLoading || !content}>
+                  {isExpandingContent ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Expand className="mr-2 h-4 w-4" />}
+                  Expand
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDepthBoostContent} disabled={anyContentLoading || !content}>
+                  {isBoostingDepth ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Improve className="mr-2 h-4 w-4" />}
+                  Depth Boost
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleSuggestVisualization} disabled={anyContentLoading || !content}>
+                  {isSuggestingVisualization ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Image className="mr-2 h-4 w-4" />}
+                  Visualize
+                </Button>
             </CardFooter>
           </Card>
 
@@ -1172,4 +1262,3 @@ export default function BlogEditPage() {
     </TooltipProvider>
   );
 }
-

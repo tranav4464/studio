@@ -7,6 +7,9 @@ import { generateBlogOutline, type GenerateBlogOutlineInput, type GenerateBlogOu
 import { generateFullBlog, type GenerateFullBlogInput, type GenerateFullBlogOutput } from '@/ai/flows/generate-full-blog-flow';
 import { improveBlogContent, type ImproveBlogContentInput, type ImproveBlogContentOutput } from '@/ai/flows/improve-blog-content-flow';
 import { simplifyBlogContent, type SimplifyBlogContentInput, type SimplifyBlogContentOutput } from '@/ai/flows/simplify-blog-content-flow';
+import { expandBlogContent, type ExpandBlogContentInput, type ExpandBlogContentOutput } from '@/ai/flows/expand-blog-content-flow';
+import { depthBoostBlogContent, type DepthBoostBlogContentInput, type DepthBoostBlogContentOutput } from '@/ai/flows/depth-boost-blog-content-flow';
+import { suggestVisualization, type SuggestVisualizationInput, type SuggestVisualizationOutput } from '@/ai/flows/suggest-visualization-flow';
 import { generateMetaTitle, type GenerateMetaTitleInput, type GenerateMetaTitleOutput } from '@/ai/flows/generate-meta-title-flow';
 import { generateMetaDescription, type GenerateMetaDescriptionInput, type GenerateMetaDescriptionOutput } from '@/ai/flows/generate-meta-description-flow';
 import { generateBlogTitleSuggestion, type GenerateBlogTitleSuggestionInput, type GenerateBlogTitleSuggestionOutput } from '@/ai/flows/generate-blog-title-suggestion-flow';
@@ -159,6 +162,54 @@ export async function simplifyBlogContentAction(input: SimplifyBlogContentInput)
   }
 }
 
+export async function expandBlogContentAction(input: ExpandBlogContentInput): Promise<ExpandBlogContentOutput> {
+  console.log("expandBlogContentAction called for topic:", input.topic);
+  try {
+    const result = await expandBlogContent(input);
+    if (!result.expandedContent) {
+      return { expandedContent: `Error: AI failed to expand blog content. Original content preserved.\n\n${input.blogContent}` };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error expanding blog content:", error);
+    return { expandedContent: `An error occurred while expanding the blog content. Original content preserved.\n\n${input.blogContent}` };
+  }
+}
+
+export async function depthBoostBlogContentAction(input: DepthBoostBlogContentInput): Promise<DepthBoostBlogContentOutput> {
+  console.log("depthBoostBlogContentAction called for topic:", input.topic);
+  try {
+    const result = await depthBoostBlogContent(input);
+    if (!result.boostedContent) {
+      return { boostedContent: `Error: AI failed to boost depth of blog content. Original content preserved.\n\n${input.blogContent}` };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error boosting depth of blog content:", error);
+    return { boostedContent: `An error occurred while boosting depth of the blog content. Original content preserved.\n\n${input.blogContent}` };
+  }
+}
+
+export async function suggestVisualizationAction(input: SuggestVisualizationInput): Promise<SuggestVisualizationOutput> {
+  console.log("suggestVisualizationAction called for topic:", input.topic);
+  try {
+    const result = await suggestVisualization(input);
+    if (!result.suggestedVisualDescription) {
+      return { 
+        sectionToVisualize: "Content Analysis",
+        suggestedVisualDescription: "Error: AI failed to suggest a visualization.",
+      };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error suggesting visualization:", error);
+    return { 
+      sectionToVisualize: "Error State",
+      suggestedVisualDescription: "An error occurred while suggesting a visualization.",
+    };
+  }
+}
+
 export async function generateBlogTitleSuggestionAction(input: GenerateBlogTitleSuggestionInput): Promise<GenerateBlogTitleSuggestionOutput> {
   console.log("generateBlogTitleSuggestionAction called for topic:", input.originalTopic);
   try {
@@ -227,4 +278,3 @@ export async function analyzeBlogSeoAction(input: AnalyzeBlogSeoInput): Promise<
     };
   }
 }
-
