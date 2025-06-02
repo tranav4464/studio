@@ -12,6 +12,7 @@ import { generateMetaDescription, type GenerateMetaDescriptionInput, type Genera
 import { generateBlogTitleSuggestion, type GenerateBlogTitleSuggestionInput, type GenerateBlogTitleSuggestionOutput } from '@/ai/flows/generate-blog-title-suggestion-flow';
 import { analyzeBlogSeo, type AnalyzeBlogSeoInput, type AnalyzeBlogSeoOutput } from '@/ai/flows/analyze-blog-seo-flow';
 import { generateImageGenerationPrompt, type GenerateImageGenerationPromptInput, type GenerateImageGenerationPromptOutput } from '@/ai/flows/generate-image-generation-prompt-flow';
+import { generateImagePromptHelper, type GenerateImagePromptHelperInput, type GenerateImagePromptHelperOutput } from '@/ai/flows/generate-image-prompt-helper-flow';
 
 
 // User-initiated hero image generation
@@ -71,6 +72,19 @@ export async function generateInitialHeroImageAction(input: GenerateInitialHeroI
   } catch (error) {
     console.error("Error in initial hero image generation:", error);
     return { imageUrls: [`https://placehold.co/800x400.png?text=Auto+Image+Error`] };
+  }
+}
+
+export async function generateImagePromptHelperAction(input: GenerateImagePromptHelperInput): Promise<GenerateImagePromptHelperOutput> {
+  try {
+    const result = await generateImagePromptHelper(input);
+    if (!result.suggestedDetailedPrompt) {
+        return { suggestedDetailedPrompt: `Error: AI failed to generate a prompt suggestion based on keywords: ${input.keywords}.` };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error generating image prompt suggestion:", error);
+    return { suggestedDetailedPrompt: `An error occurred while generating the prompt suggestion for keywords: ${input.keywords}.` };
   }
 }
 
@@ -213,3 +227,4 @@ export async function analyzeBlogSeoAction(input: AnalyzeBlogSeoInput): Promise<
     };
   }
 }
+

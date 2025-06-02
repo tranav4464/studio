@@ -18,7 +18,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { useToast } from '@/hooks/use-toast';
 import { 
   generateHeroImageAction, 
-  generateInitialHeroImageAction, // New action for automatic initial generation
+  generateInitialHeroImageAction,
   repurposeContentAction, 
   generateBlogTitleSuggestionAction, 
   generateMetaTitleAction, 
@@ -26,7 +26,8 @@ import {
   improveBlogContentAction, 
   simplifyBlogContentAction,
   analyzeBlogSeoAction, 
-  type AnalyzeBlogSeoOutput
+  type AnalyzeBlogSeoOutput,
+  generateImagePromptHelperAction // New action for prompt helper
 } from '@/actions/ai';
 import NextImage from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -88,16 +89,24 @@ export default function BlogEditPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [heroImagePrompt, setHeroImagePrompt] = useState(''); // For user-initiated prompt
+  const [heroImagePrompt, setHeroImagePrompt] = useState(''); 
   const [heroImageTone, setHeroImageTone] = useState('cinematic');
   const [heroImageTheme, setHeroImageTheme] = useState('General');
   const [generatedHeroImageUrls, setGeneratedHeroImageUrls] = useState<string[] | null>(null);
   const [selectedHeroImageUrl, setSelectedHeroImageUrl] = useState<string | null>(null);
   const [heroImageCaption, setHeroImageCaption] = useState('');
   const [heroImageAltText, setHeroImageAltText] = useState('');
-  const [isGeneratingHeroImage, setIsGeneratingHeroImage] = useState(false); // For user-initiated generation
-  const [isAutoGeneratingImage, setIsAutoGeneratingImage] = useState(false); // For automatic initial generation
+  const [isGeneratingHeroImage, setIsGeneratingHeroImage] = useState(false); 
+  const [isAutoGeneratingImage, setIsAutoGeneratingImage] = useState(false); 
   const [generationStatus, setGenerationStatus] = useState('');
+
+  // States for Image Prompt Helper
+  const [helperKeywords, setHelperKeywords] = useState('');
+  const [helperArtisticStyle, setHelperArtisticStyle] = useState('photorealistic');
+  const [helperMood, setHelperMood] = useState('epic');
+  const [helperAdditionalDetails, setHelperAdditionalDetails] = useState('');
+  const [suggestedHelperPrompt, setSuggestedHelperPrompt] = useState('');
+  const [isGeneratingHelperPrompt, setIsGeneratingHelperPrompt] = useState(false);
 
 
   const [repurposeTone, setRepurposeTone] = useState('professional');
@@ -143,7 +152,6 @@ export default function BlogEditPage() {
         setSelectedHeroImageUrl(result.imageUrls[0]);
         setHeroImageAltText(`AI generated hero image for: ${blogData.title}`);
         setHeroImageCaption(`Hero image for "${blogData.title}"`);
-        // Do NOT set heroImagePrompt (UI state) here with the AI's internal detailed prompt
         toast({ title: "Initial hero image generated!", description: "Review the auto-generated image." });
       } else {
         toast({ title: "Auto image generation failed", description: "Could not automatically generate an image.", variant: "destructive" });
@@ -164,7 +172,6 @@ export default function BlogEditPage() {
         setEditableTitle(fetchedPost.title);
         setContent(fetchedPost.content);
         setCurrentStatus(fetchedPost.status); 
-        // Set heroImagePrompt for user editing, prefill with title if no specific prompt saved
         setHeroImagePrompt(fetchedPost.heroImagePrompt || fetchedPost.title);
         setHeroImageTone(fetchedPost.tone || 'cinematic'); 
         setHeroImageTheme(fetchedPost.heroImageTheme || 'General');
@@ -177,7 +184,6 @@ export default function BlogEditPage() {
         setCurrentRepurposedFeedback(fetchedPost.repurposedContentFeedback || { tweetThread: null, linkedInPost: null, instagramPost: null, emailNewsletterSummary: null });
         setPrimaryKeyword(fetchedPost.topic); 
 
-        // Trigger automatic initial hero image generation if no image exists
         if (!fetchedPost.heroImageUrl) {
           handleAutomaticInitialHeroImage(fetchedPost);
         }
@@ -216,7 +222,7 @@ export default function BlogEditPage() {
       heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
-      heroImagePrompt: heroImagePrompt, // Save the user-editable prompt
+      heroImagePrompt: heroImagePrompt, 
       tone: heroImageTone, 
       heroImageTheme,
       metaTitle,
@@ -246,7 +252,6 @@ export default function BlogEditPage() {
     toast({ title: "Blog post saved!", description: `"${editableTitle}" has been updated.` });
   };
 
-  // User-initiated hero image generation
   const handleGenerateHeroImage = async () => {
     if (!heroImagePrompt) {
       toast({ title: "Prompt required", description: "Please enter a prompt for the hero image.", variant: "destructive" });
@@ -266,7 +271,6 @@ export default function BlogEditPage() {
     streamCallback({custom: {type: 'status', message: 'Sending request to AI... (0/3)'}});
     
     try {
-      // Pass the user's prompt from the UI
       const result = await generateHeroImageAction({ imagePrompt: heroImagePrompt, tone: heroImageTone, theme: heroImageTheme });
       setGeneratedHeroImageUrls(result.imageUrls);
       if (result.imageUrls && result.imageUrls.length > 0) {
@@ -283,6 +287,35 @@ export default function BlogEditPage() {
     }
     setIsGeneratingHeroImage(false);
     setGenerationStatus(''); 
+  };
+
+  const handleGenerateHelperPrompt = async () => {
+    if (!helperKeywords) {
+      toast({ title: "Keywords required", description: "Please enter some keywords for the prompt helper.", variant: "destructive" });
+      return;
+    }
+    setIsGeneratingHelperPrompt(true);
+    setSuggestedHelperPrompt('');
+    try {
+      const result = await generateImagePromptHelperAction({
+        keywords: helperKeywords,
+        artisticStyle: helperArtisticStyle,
+        mood: helperMood,
+        additionalDetails: helperAdditionalDetails || undefined,
+      });
+      setSuggestedHelperPrompt(result.suggestedDetailedPrompt);
+      toast({ title: "Prompt suggestion generated!", description: "Review and copy the suggestion below." });
+    } catch (error: any) {
+      toast({ title: "Error suggesting prompt", description: error.message, variant: "destructive" });
+    }
+    setIsGeneratingHelperPrompt(false);
+  };
+
+  const copyHelperPromptToClipboard = () => {
+    if (suggestedHelperPrompt) {
+      navigator.clipboard.writeText(suggestedHelperPrompt);
+      toast({ title: "Copied to clipboard!", description: "Suggested prompt copied." });
+    }
   };
 
   const handleExportImagePng = () => { 
@@ -815,12 +848,54 @@ export default function BlogEditPage() {
           <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader><CardTitle>Hero Image Generator</CardTitle><CardDescription>Create hero images for your post.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-1">
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="prompt-helper">
+                  <AccordionTrigger className="text-sm hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <Icons.Improve className="h-4 w-4 text-primary" />
+                      Need help writing a prompt?
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4 space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="helperKeywords">Keywords/Subjects</Label>
+                      <Input id="helperKeywords" value={helperKeywords} onChange={(e) => setHelperKeywords(e.target.value)} placeholder="e.g., dragon, mountain, forest" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="helperArtisticStyle">Artistic Style</Label>
+                      <Input id="helperArtisticStyle" value={helperArtisticStyle} onChange={(e) => setHelperArtisticStyle(e.target.value)} placeholder="e.g., photorealistic, watercolor, pixel art" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="helperMood">Mood/Atmosphere</Label>
+                      <Input id="helperMood" value={helperMood} onChange={(e) => setHelperMood(e.target.value)} placeholder="e.g., epic, serene, mysterious" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="helperAdditionalDetails">Additional Details (Optional)</Label>
+                      <Textarea id="helperAdditionalDetails" value={helperAdditionalDetails} onChange={(e) => setHelperAdditionalDetails(e.target.value)} placeholder="e.g., cinematic lighting, wide angle" rows={2}/>
+                    </div>
+                    <Button onClick={handleGenerateHelperPrompt} disabled={isGeneratingHelperPrompt} className="w-full">
+                      {isGeneratingHelperPrompt ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Sparkles className="mr-2 h-4 w-4" />}
+                      Suggest Prompt
+                    </Button>
+                    {suggestedHelperPrompt && (
+                      <div className="mt-3 space-y-2">
+                        <Label>Suggested Prompt:</Label>
+                        <Textarea value={suggestedHelperPrompt} readOnly rows={3} className="bg-muted"/>
+                        <Button variant="outline" size="sm" onClick={copyHelperPromptToClipboard} className="w-full"><Icons.Copy className="mr-2 h-3 w-3"/>Copy Suggestion</Button>
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+              
+              <Separator />
+
+              <div className="space-y-1 pt-2">
                 <div className="flex items-center gap-1">
                   <Label htmlFor="heroPrompt">Image Prompt (User Initiated)</Label>
                   <Tooltip>
                     <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger>
-                    <TooltipContent><p>Describe the image you want the AI to generate if you dislike the auto-generated one or want variants.</p></TooltipContent>
+                    <TooltipContent><p>Describe the image you want. You can use the helper above or write your own.</p></TooltipContent>
                   </Tooltip>
                 </div>
                 <Input id="heroPrompt" value={heroImagePrompt} onChange={(e) => setHeroImagePrompt(e.target.value)} placeholder="e.g., Futuristic cityscape" />
@@ -1097,3 +1172,4 @@ export default function BlogEditPage() {
     </TooltipProvider>
   );
 }
+
