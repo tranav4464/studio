@@ -16,18 +16,18 @@ import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { PageHeader } from '@/components/shared/page-header';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  generateHeroImageAction, 
-  repurposeContentAction, 
-  generateBlogTitleSuggestionAction, 
-  generateMetaTitleAction, 
-  generateMetaDescriptionAction, 
-  improveBlogContentAction, 
+import {
+  generateHeroImageAction,
+  repurposeContentAction,
+  generateBlogTitleSuggestionAction,
+  generateMetaTitleAction,
+  generateMetaDescriptionAction,
+  improveBlogContentAction,
   simplifyBlogContentAction,
   expandBlogContentAction,
   depthBoostBlogContentAction,
   suggestVisualizationAction,
-  analyzeBlogSeoAction, 
+  analyzeBlogSeoAction,
   type AnalyzeBlogSeoOutput,
   generateImagePromptHelperAction
 } from '@/actions/ai';
@@ -57,11 +57,11 @@ function basicMarkdownToHtml(md: string): string {
   let html = md;
   html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
   html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>'); 
+  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
   html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
   html = html.replace(/__(.*?)__/gim, '<strong>$1</strong>');
   html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
-  html = html.replace(/_(.*?)_/gim, '<em>$1</em>'); 
+  html = html.replace(/_(.*?)_/gim, '<em>$1</em>');
   html = html.replace(/`(.*?)`/gim, '<code>$1</code>');
   html = html.replace(new RegExp('^\\s*---\\s*$', 'gim'), '<hr />');
   html = html.replace(/^\s*\*\*\*\s*$/gim, '<hr />');
@@ -79,7 +79,7 @@ function basicMarkdownToHtml(md: string): string {
 
 const scoreDisplayMapping: Array<{
   label: string;
-  key: keyof Pick<NonNullable<BlogPost['seoScore']>, 'readability' | 'keywordDensity' | 'quality'>; // Explicitly pick known keys
+  key: keyof Pick<NonNullable<BlogPost['seoScore']>, 'readability' | 'keywordDensity' | 'quality'>;
   tooltip: string;
 }> = [
   { label: 'Readability', key: 'readability', tooltip: 'Flesch Reading Ease (0-100, higher is better).' },
@@ -101,14 +101,14 @@ export default function BlogEditPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [heroImagePrompt, setHeroImagePrompt] = useState(''); 
+  const [heroImagePrompt, setHeroImagePrompt] = useState('');
   const [heroImageTone, setHeroImageTone] = useState('cinematic');
   const [heroImageTheme, setHeroImageTheme] = useState('General');
   const [generatedHeroImageUrls, setGeneratedHeroImageUrls] = useState<string[] | null>(null);
   const [selectedHeroImageUrl, setSelectedHeroImageUrl] = useState<string | null>(null);
   const [heroImageCaption, setHeroImageCaption] = useState('');
   const [heroImageAltText, setHeroImageAltText] = useState('');
-  const [isGeneratingHeroImage, setIsGeneratingHeroImage] = useState(false); 
+  const [isGeneratingHeroImage, setIsGeneratingHeroImage] = useState(false);
   const [generationStatus, setGenerationStatus] = useState('');
 
   // States for Image Prompt Helper
@@ -131,8 +131,8 @@ export default function BlogEditPage() {
   const [suggestedUrlSlug, setSuggestedUrlSlug] = useState<string | null>(null);
 
   const [isSuggestingBlogTitle, setIsSuggestingBlogTitle] = useState(false);
-  const [isSuggestingMetaTitle, setIsSuggestingMetaTitle] = useState(false); 
-  const [isSuggestingMetaDescription, setIsSuggestingMetaDescription] = useState(false); 
+  const [isSuggestingMetaTitle, setIsSuggestingMetaTitle] = useState(false);
+  const [isSuggestingMetaDescription, setIsSuggestingMetaDescription] = useState(false);
   const [isImprovingContent, setIsImprovingContent] = useState(false);
   const [isSimplifyingContent, setIsSimplifyingContent] = useState(false);
   const [isExpandingContent, setIsExpandingContent] = useState(false);
@@ -154,9 +154,9 @@ export default function BlogEditPage() {
         setPost(fetchedPost);
         setEditableTitle(fetchedPost.title);
         setContent(fetchedPost.content);
-        setCurrentStatus(fetchedPost.status); 
+        setCurrentStatus(fetchedPost.status);
         setHeroImagePrompt(fetchedPost.heroImagePrompt || fetchedPost.title);
-        setHeroImageTone(fetchedPost.tone || 'cinematic'); 
+        setHeroImageTone(fetchedPost.tone || 'cinematic');
         setHeroImageTheme(fetchedPost.heroImageTheme || 'General');
         setSelectedHeroImageUrl(fetchedPost.heroImageUrl || null);
         setHeroImageCaption(fetchedPost.heroImageCaption || '');
@@ -165,7 +165,7 @@ export default function BlogEditPage() {
         setMetaDescription(fetchedPost.metaDescription || `Meta description for ${fetchedPost.title}`);
         setExportHistory(fetchedPost.exportHistory || []);
         setCurrentRepurposedFeedback(fetchedPost.repurposedContentFeedback || { tweetThread: null, linkedInPost: null, instagramPost: null, emailNewsletterSummary: null });
-        setPrimaryKeyword(fetchedPost.topic); 
+        setPrimaryKeyword(fetchedPost.topic);
 
       } else {
         toast({ title: "Blog post not found", variant: "destructive" });
@@ -174,59 +174,59 @@ export default function BlogEditPage() {
       setIsLoading(false);
     }
   }, [blogId, router, toast]);
-  
+
   const addExportRecord = (format: ExportRecord['format']) => {
     if (!post) return;
     const newRecord: ExportRecord = { format, timestamp: new Date().toISOString() };
     const updatedHistory = [...(post.exportHistory || []), newRecord];
-    blogStore.updatePost(post.id, { exportHistory: updatedHistory }); 
-    setPost(prev => prev ? { ...prev, exportHistory: updatedHistory } : null); 
-    setExportHistory(updatedHistory); 
+    blogStore.updatePost(post.id, { exportHistory: updatedHistory });
+    setPost(prev => prev ? { ...prev, exportHistory: updatedHistory } : null);
+    setExportHistory(updatedHistory);
   };
 
   const handleSave = async () => {
     if (!post) return;
     setIsSaving(true);
-    const currentPostData = blogStore.getPostById(post.id); 
-    
+    const currentPostData = blogStore.getPostById(post.id);
+
     // Use existing post.seoScore if available, otherwise use analysis results, or default to 0
     const currentSeoScore = post.seoScore || { readability: 0, keywordDensity: 0, quality: 0 };
-    const analysisSeoScore = seoAnalysisResult 
-        ? { 
-            readability: seoAnalysisResult.readabilityScore, 
-            keywordDensity: seoAnalysisResult.keywordRelevanceScore, 
-            quality: seoAnalysisResult.overallSeoScore 
-          } 
+    const analysisSeoScore = seoAnalysisResult
+        ? {
+            readability: seoAnalysisResult.readabilityScore,
+            keywordDensity: seoAnalysisResult.keywordRelevanceScore,
+            quality: seoAnalysisResult.overallSeoScore
+          }
         : null;
 
-    const updatedSeoScore = { 
-      readability: analysisSeoScore?.readability ?? currentSeoScore.readability,
-      keywordDensity: analysisSeoScore?.keywordDensity ?? currentSeoScore.keywordDensity,
-      quality: analysisSeoScore?.quality ?? currentSeoScore.quality,
+    const updatedSeoScore = {
+      readability: typeof (analysisSeoScore?.readability ?? currentSeoScore.readability) === 'number' ? (analysisSeoScore?.readability ?? currentSeoScore.readability) : 0,
+      keywordDensity: typeof (analysisSeoScore?.keywordDensity ?? currentSeoScore.keywordDensity) === 'number' ? (analysisSeoScore?.keywordDensity ?? currentSeoScore.keywordDensity) : 0,
+      quality: typeof (analysisSeoScore?.quality ?? currentSeoScore.quality) === 'number' ? (analysisSeoScore?.quality ?? currentSeoScore.quality) : 0,
     };
 
 
     blogStore.updatePost(post.id, {
       title: editableTitle,
       content,
-      status: currentStatus, 
+      status: currentStatus,
       heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
-      heroImagePrompt: heroImagePrompt, 
-      tone: heroImageTone, 
+      heroImagePrompt: heroImagePrompt,
+      tone: heroImageTone,
       heroImageTheme,
       metaTitle,
       metaDescription,
-      seoScore: updatedSeoScore, 
-      exportHistory: currentPostData?.exportHistory || exportHistory, 
+      seoScore: updatedSeoScore,
+      exportHistory: currentPostData?.exportHistory || exportHistory,
       repurposedContentFeedback: currentRepurposedFeedback,
     });
     setPost(prev => prev ? ({
       ...prev,
       title: editableTitle,
       content,
-      status: currentStatus, 
+      status: currentStatus,
       heroImageUrl: selectedHeroImageUrl || undefined,
       heroImageCaption,
       heroImageAltText,
@@ -250,22 +250,22 @@ export default function BlogEditPage() {
     }
     setIsGeneratingHeroImage(true);
     setGeneratedHeroImageUrls(null);
-    setSelectedHeroImageUrl(null); 
+    setSelectedHeroImageUrl(null);
     setGenerationStatus("Initializing generation...");
-    
-    const streamCallback = (data: any) => { 
+
+    const streamCallback = (data: any) => {
         if (data.custom && data.custom.type === 'status') {
             setGenerationStatus(data.custom.message);
         }
     };
-    
+
     streamCallback({custom: {type: 'status', message: 'Sending request to AI... (0/3)'}});
-    
+
     try {
       const result = await generateHeroImageAction({ imagePrompt: heroImagePrompt, tone: heroImageTone, theme: heroImageTheme });
       setGeneratedHeroImageUrls(result.imageUrls);
       if (result.imageUrls && result.imageUrls.length > 0) {
-        setSelectedHeroImageUrl(result.imageUrls[0]); 
+        setSelectedHeroImageUrl(result.imageUrls[0]);
         setHeroImageAltText(`AI generated hero image for: ${heroImagePrompt}, style: ${heroImageTone}, theme: ${heroImageTheme}`);
         setHeroImageCaption(`Hero image for "${editableTitle}" - ${heroImageTone} style, ${heroImageTheme} theme`);
         toast({ title: "Hero images generated!", description: "Select your favorite variant below." });
@@ -274,10 +274,10 @@ export default function BlogEditPage() {
       }
     } catch (error: any) {
       toast({ title: "Error generating images", description: error.message, variant: "destructive" });
-      setGeneratedHeroImageUrls([`https://placehold.co/600x300.png?text=Error`]); 
+      setGeneratedHeroImageUrls([`https://placehold.co/600x300.png?text=Error`]);
     }
     setIsGeneratingHeroImage(false);
-    setGenerationStatus(''); 
+    setGenerationStatus('');
   };
 
   const handleGenerateHelperPrompt = async () => {
@@ -309,7 +309,7 @@ export default function BlogEditPage() {
     }
   };
 
-  const handleExportImagePng = () => { 
+  const handleExportImagePng = () => {
     if (!selectedHeroImageUrl) {
       toast({ title: "No image selected", description: "Please generate and select an image to export.", variant: "destructive" });
       return;
@@ -322,7 +322,7 @@ export default function BlogEditPage() {
       const link = document.createElement('a');
       link.href = selectedHeroImageUrl;
       const filename = post?.title ? post.title.replace(/\s+/g, '-').toLowerCase() : 'hero-image';
-      link.download = `${filename}.png`; 
+      link.download = `${filename}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -346,7 +346,7 @@ export default function BlogEditPage() {
         toast({ title: "Content repurposed!", description: "Check the generated snippets."});
     } catch (error: any) {
         toast({ title: "Error repurposing content", description: error.message, variant: "destructive" });
-        setRepurposedContent({ 
+        setRepurposedContent({
             tweetThread: ["Error generating tweets."],
             linkedInPost: "Error generating LinkedIn post.",
             instagramPost: "Error generating Instagram post.",
@@ -355,11 +355,11 @@ export default function BlogEditPage() {
     }
     setIsRepurposing(false);
   };
-  
+
   const handleRepurposedFeedback = (type: RepurposedContentType, feedback: 'liked' | 'disliked') => {
     setCurrentRepurposedFeedback(prev => {
       const newFeedback = { ...prev };
-      if (newFeedback[type] === feedback) { 
+      if (newFeedback[type] === feedback) {
         newFeedback[type] = null;
       } else {
         newFeedback[type] = feedback;
@@ -367,7 +367,7 @@ export default function BlogEditPage() {
       return newFeedback;
     });
     const feedbackText = feedback === 'liked' ? 'Liked' : 'Disliked';
-    const contentName = type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()); 
+    const contentName = type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
     toast({ title: "Feedback Submitted", description: `${feedbackText} ${contentName}` });
   };
 
@@ -383,7 +383,7 @@ export default function BlogEditPage() {
   const copyToClipboard = (text: string | string[], type: string) => {
     let textToCopy: string;
     if (Array.isArray(text)) {
-        textToCopy = text.join('\n\n---\n\n'); 
+        textToCopy = text.join('\n\n---\n\n');
     } else {
         textToCopy = text;
     }
@@ -450,30 +450,38 @@ export default function BlogEditPage() {
       return;
     }
     setIsAnalyzingSeo(true);
-    setSeoAnalysisResult(null); 
+    setSeoAnalysisResult(null);
     try {
-      const result = await analyzeBlogSeoAction({ 
-        blogTitle: editableTitle, 
+      const result = await analyzeBlogSeoAction({
+        blogTitle: editableTitle,
         blogContent: content,
-        primaryKeyword: primaryKeyword || undefined 
+        primaryKeyword: primaryKeyword || undefined
       });
-      setSeoAnalysisResult(result);
+      setSeoAnalysisResult(result); // Store the raw result
 
       setPost(prevPost => {
         if (!prevPost) return null;
+
+        // Defensive check for score types from the result
+        const readability = typeof result.readabilityScore === 'number' ? result.readabilityScore : 0;
+        const keywordDensity = typeof result.keywordRelevanceScore === 'number' ? result.keywordRelevanceScore : 0;
+        const quality = typeof result.overallSeoScore === 'number' ? result.overallSeoScore : 0;
+
         return {
           ...prevPost,
           seoScore: {
-            readability: result.readabilityScore,
-            keywordDensity: result.keywordRelevanceScore, 
-            quality: result.overallSeoScore,
+            readability: readability,
+            keywordDensity: keywordDensity,
+            quality: quality,
           }
         };
       });
 
-      setMetaTitle(result.suggestedMetaTitle);
-      setMetaDescription(result.suggestedMetaDescription);
-      setSuggestedUrlSlug(result.suggestedUrlSlug);
+      // Update meta fields, ensuring they are strings
+      setMetaTitle(result.suggestedMetaTitle || '');
+      setMetaDescription(result.suggestedMetaDescription || '');
+      setSuggestedUrlSlug(result.suggestedUrlSlug || null);
+
 
       toast({ title: "SEO Analysis Complete!", description: "Review the suggestions and scores below."});
     } catch (error: any) {
@@ -484,7 +492,7 @@ export default function BlogEditPage() {
           ...prevPost,
           seoScore: {
             readability: 0,
-            keywordDensity: 0, 
+            keywordDensity: 0,
             quality: 0,
           }
         };
@@ -577,7 +585,7 @@ export default function BlogEditPage() {
     }
     setIsBoostingDepth(false);
   };
-  
+
   const handleSuggestVisualization = async () => {
     if (!post || !content) {
       toast({ title: "Content is empty", description: "Please write some content for visualization suggestions.", variant: "destructive"});
@@ -596,7 +604,7 @@ export default function BlogEditPage() {
           setContent(parts[0] + result.insertionMarkerText + placeholderText + parts.slice(1).join(result.insertionMarkerText));
           toast({ title: "Visualization Suggestion Added!", description: `A placeholder comment for "${result.suggestedVisualDescription}" has been added to your content.` });
         } else {
-          setContent(content + placeholderText); 
+          setContent(content + placeholderText);
           toast({ title: "Visualization Suggestion Appended!", description: `Could not find exact insertion point. "${result.suggestedVisualDescription}" placeholder added at the end.` });
         }
       } else {
@@ -658,7 +666,7 @@ export default function BlogEditPage() {
     p { margin-bottom: 1em; }
     pre { white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; padding: 15px; border-radius: 5px; border: 1px solid #ddd; overflow-x: auto; }
     code { font-family: 'JetBrains Mono', monospace; background-color: #e0e0e0; padding: 2px 4px; border-radius: 3px; }
-    pre code { background-color: transparent; padding: 0; } 
+    pre code { background-color: transparent; padding: 0; }
     img { max-width: 100%; height: auto; border-radius: 5px; margin: 10px 0; }
     hr { border: 0; height: 1px; background: #ddd; margin: 2em 0; }
     strong { font-weight: bold; }
@@ -676,7 +684,7 @@ export default function BlogEditPage() {
     body { font-family: sans-serif; line-height: 1.6; padding: 20px; margin: 0 auto; max-width: 800px; }
     h1 { color: #333; }
     pre { white-space: pre-wrap; word-wrap: break-word; background-color: #f4f4f4; padding: 15px; border-radius: 5px; border: 1px solid #ddd; overflow-x: auto;}
-    img { max-width: 100%; height: auto; } 
+    img { max-width: 100%; height: auto; }
   </style>
 </head>
 <body>
@@ -722,7 +730,7 @@ export default function BlogEditPage() {
       toast({ title: "Export Failed", description: "Could not export as HTML.", variant: "destructive" });
     }
   };
-  
+
   const handleExportPlainText = () => {
     if (!post || !content) {
       toast({ title: "No content to export", description: "Please write some content before exporting.", variant: "destructive" });
@@ -760,15 +768,15 @@ export default function BlogEditPage() {
     try {
       const canvas = await html2canvas(snapshotTarget, {
         allowTaint: true,
-        useCORS: true, 
-        logging: false, 
+        useCORS: true,
+        logging: false,
          onclone: (document) => {
             const clonedTarget = document.getElementById(SOCIAL_PREVIEW_CARD_ID);
             if (clonedTarget) {
             }
         }
       });
-      const image = canvas.toDataURL('image/png', 0.9); 
+      const image = canvas.toDataURL('image/png', 0.9);
       const link = document.createElement('a');
       const filename = (editableTitle || 'social-preview').replace(/\s+/g, '-').toLowerCase();
       link.download = `${filename}-snapshot.png`;
@@ -796,9 +804,9 @@ export default function BlogEditPage() {
   if (!post) {
     return <div className="text-center py-10">Blog post not found.</div>;
   }
-  
+
   const repurposedContentFields: Array<{key: RepurposedContentType, label: string, icon: React.ReactNode, contentKey: keyof Omit<RepurposedContent, 'tweetThread'> | 'tweetThreadArray'}> = [
-    { key: 'tweetThread', label: 'Tweet Thread', icon: <Icons.Tweet className="mr-1 h-4 w-4"/>, contentKey: 'tweetThreadArray' }, 
+    { key: 'tweetThread', label: 'Tweet Thread', icon: <Icons.Tweet className="mr-1 h-4 w-4"/>, contentKey: 'tweetThreadArray' },
     { key: 'linkedInPost', label: 'LinkedIn Post', icon: <Icons.LinkedIn className="mr-1 h-4 w-4"/>, contentKey: 'linkedInPost' },
     { key: 'instagramPost', label: 'Instagram Post', icon: <Icons.Instagram className="mr-1 h-4 w-4"/>, contentKey: 'instagramPost' },
     { key: 'emailNewsletterSummary', label: 'Email Summary', icon: <Icons.Email className="mr-1 h-4 w-4"/>, contentKey: 'emailNewsletterSummary' },
@@ -933,7 +941,7 @@ export default function BlogEditPage() {
                           ))}
                         </div>
                       ) : (
-                        <Textarea 
+                        <Textarea
                             value={repurposedContent[field.contentKey as keyof Omit<RepurposedContent, 'tweetThread'>] || ''}
                             onChange={(e) => setRepurposedContent(prev => prev ? {...prev, [field.contentKey]: e.target.value} : null)}
                             rows={8}
@@ -947,17 +955,17 @@ export default function BlogEditPage() {
                             <Icons.Copy className="mr-2 h-3 w-3"/>Copy
                           </Button>
                           <div className="flex gap-1">
-                              <Button 
-                                  variant="ghost" 
-                                  size="icon" 
+                              <Button
+                                  variant="ghost"
+                                  size="icon"
                                   className={cn("h-8 w-8 hover:bg-green-100 dark:hover:bg-green-800/50", currentRepurposedFeedback[field.key] === 'liked' && "bg-green-100 dark:bg-green-800/50 text-green-600 dark:text-green-400")}
                                   onClick={() => handleRepurposedFeedback(field.key, 'liked')}
                               >
                                   <Icons.ThumbsUp className={cn("h-4 w-4", currentRepurposedFeedback[field.key] === 'liked' ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}/>
                               </Button>
-                              <Button 
-                                  variant="ghost" 
-                                  size="icon" 
+                              <Button
+                                  variant="ghost"
+                                  size="icon"
                                   className={cn("h-8 w-8 hover:bg-red-100 dark:hover:bg-red-800/50", currentRepurposedFeedback[field.key] === 'disliked' && "bg-red-100 dark:bg-red-800/50 text-red-600 dark:text-red-400")}
                                   onClick={() => handleRepurposedFeedback(field.key, 'disliked')}
                               >
@@ -1016,7 +1024,7 @@ export default function BlogEditPage() {
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
-              
+
               <Separator />
 
               <div className="space-y-1 pt-2">
@@ -1112,9 +1120,9 @@ export default function BlogEditPage() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="metaDescriptionInput">Meta Description</Label>
-                <div className="flex gap-2 items-start"> 
+                <div className="flex gap-2 items-start">
                     <Textarea id="metaDescriptionInput" value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder="A brief summary of your post to attract readers from search results." rows={3} className="flex-grow"/>
-                    <Button variant="outline" size="sm" onClick={handleStandaloneSuggestMetaDescription} disabled={isSuggestingMetaDescription || isAnalyzingSeo} className="mt-[1px]"> 
+                    <Button variant="outline" size="sm" onClick={handleStandaloneSuggestMetaDescription} disabled={isSuggestingMetaDescription || isAnalyzingSeo} className="mt-[1px]">
                         {isSuggestingMetaDescription ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Improve className="mr-2 h-4 w-4" />}
                         Suggest
                     </Button>
@@ -1130,10 +1138,10 @@ export default function BlogEditPage() {
               <Separator />
               <div className="space-y-2">
                 <Label htmlFor="primaryKeyword">Target Primary Keyword (Optional)</Label>
-                <Input 
-                  id="primaryKeyword" 
-                  value={primaryKeyword} 
-                  onChange={(e) => setPrimaryKeyword(e.target.value)} 
+                <Input
+                  id="primaryKeyword"
+                  value={primaryKeyword}
+                  onChange={(e) => setPrimaryKeyword(e.target.value)}
                   placeholder="e.g., AI content creation"
                 />
               </div>
@@ -1144,7 +1152,7 @@ export default function BlogEditPage() {
 
             </CardContent>
           </Card>
-          
+
           <Card id={SOCIAL_PREVIEW_CARD_ID} className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl bg-card text-card-foreground p-0">
             <CardHeader className="pb-3 pt-4 px-4"><CardTitle className="text-xl">Social Media Preview (Mock)</CardTitle><CardDescription className="text-xs">A glimpse of your post's appearance.</CardDescription></CardHeader>
             <CardContent className="space-y-3 px-4 pb-4">
@@ -1196,7 +1204,7 @@ export default function BlogEditPage() {
                     );
                   })}
                   <Separator />
-                  
+
                   {isAnalyzingSeo && (
                     <div className="text-center p-4">
                       <Icons.Spinner className="h-6 w-6 animate-spin text-primary mx-auto" />
@@ -1223,7 +1231,7 @@ export default function BlogEditPage() {
                       <AccordionItem value="item-2">
                         <AccordionTrigger>Readability & Structure Feedback</AccordionTrigger>
                         <AccordionContent className="space-y-3 pt-2">
-                          <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm border">
+                           <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm border">
                             <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">READABILITY</CardTitle></CardHeader>
                             <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.readabilityFeedback}</CardContent>
                           </Card>
@@ -1272,7 +1280,7 @@ export default function BlogEditPage() {
                   )}
                 </TabsContent>
                 <TabsContent value="gapAnalysis" className="mt-4">
-                   <Alert>
+                  <Alert>
                     <Icons.SEO className="h-4 w-4" />
                     <AlertTitle>Gap Analysis - Coming Soon!</AlertTitle>
                     <AlertDescription>
@@ -1285,10 +1293,10 @@ export default function BlogEditPage() {
             </CardContent>
              <CardFooter className="flex flex-col gap-2">
                 <Button variant="outline" className="w-full" onClick={handleExportMarkdown}>Export as Markdown</Button>
-                
+
                 <div className="flex w-full gap-2 items-center">
                     <Select value={htmlExportTemplate} onValueChange={(value: HtmlExportTemplate) => setHtmlExportTemplate(value)} >
-                        <SelectTrigger className="flex-grow h-10"> 
+                        <SelectTrigger className="flex-grow h-10">
                             <SelectValue placeholder="HTML Template" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1327,9 +1335,3 @@ export default function BlogEditPage() {
     </TooltipProvider>
   );
 }
-
-    
-
-    
-
-
