@@ -1205,12 +1205,7 @@ export default function BlogEditPage() {
                     </div>
                   ))}
                   <Separator />
-                   <Alert>
-                    <Icons.Plagiarism className="h-4 w-4" />
-                    <AlertTitle>Content Integrity (Mock)</AlertTitle>
-                    <AlertDescription className="text-xs"><p>Repetitions: Low</p><p>Vague Wording: Minimal</p><p>Plagiarism Risk: Not Detected</p></AlertDescription>
-                  </Alert>
-
+                  
                   {isAnalyzingSeo && (
                     <div className="text-center p-4">
                       <Icons.Spinner className="h-6 w-6 animate-spin text-primary mx-auto" />
@@ -1307,3 +1302,4 @@ export default function BlogEditPage() {
 }
 
     
+
