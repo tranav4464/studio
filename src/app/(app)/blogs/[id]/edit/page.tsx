@@ -874,7 +874,7 @@ export default function BlogEditPage() {
                       <Textarea id="helperAdditionalDetails" value={helperAdditionalDetails} onChange={(e) => setHelperAdditionalDetails(e.target.value)} placeholder="e.g., cinematic lighting, wide angle" rows={2}/>
                     </div>
                     <Button onClick={handleGenerateHelperPrompt} disabled={isGeneratingHelperPrompt} className="w-full">
-                      {isGeneratingHelperPrompt ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Sparkles className="mr-2 h-4 w-4" />}
+                      {isGeneratingHelperPrompt ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Improve className="mr-2 h-4 w-4" />}
                       Suggest Prompt
                     </Button>
                     {suggestedHelperPrompt && (
