@@ -79,7 +79,7 @@ function basicMarkdownToHtml(md: string): string {
 
 const scoreDisplayMapping: Array<{
   label: string;
-  key: keyof NonNullable<BlogPost['seoScore']>;
+  key: keyof Pick<NonNullable<BlogPost['seoScore']>, 'readability' | 'keywordDensity' | 'quality'>; // Explicitly pick known keys
   tooltip: string;
 }> = [
   { label: 'Readability', key: 'readability', tooltip: 'Flesch Reading Ease (0-100, higher is better).' },
@@ -188,11 +188,23 @@ export default function BlogEditPage() {
     if (!post) return;
     setIsSaving(true);
     const currentPostData = blogStore.getPostById(post.id); 
+    
+    // Use existing post.seoScore if available, otherwise use analysis results, or default to 0
+    const currentSeoScore = post.seoScore || { readability: 0, keywordDensity: 0, quality: 0 };
+    const analysisSeoScore = seoAnalysisResult 
+        ? { 
+            readability: seoAnalysisResult.readabilityScore, 
+            keywordDensity: seoAnalysisResult.keywordRelevanceScore, 
+            quality: seoAnalysisResult.overallSeoScore 
+          } 
+        : null;
+
     const updatedSeoScore = { 
-      readability: post.seoScore?.readability ?? seoAnalysisResult?.readabilityScore ?? 0,
-      keywordDensity: post.seoScore?.keywordDensity ?? seoAnalysisResult?.keywordRelevanceScore ?? 0,
-      quality: post.seoScore?.quality ?? seoAnalysisResult?.overallSeoScore ?? 0,
+      readability: analysisSeoScore?.readability ?? currentSeoScore.readability,
+      keywordDensity: analysisSeoScore?.keywordDensity ?? currentSeoScore.keywordDensity,
+      quality: analysisSeoScore?.quality ?? currentSeoScore.quality,
     };
+
 
     blogStore.updatePost(post.id, {
       title: editableTitle,
@@ -438,7 +450,7 @@ export default function BlogEditPage() {
       return;
     }
     setIsAnalyzingSeo(true);
-    setSeoAnalysisResult(null); // Clear previous results
+    setSeoAnalysisResult(null); 
     try {
       const result = await analyzeBlogSeoAction({ 
         blogTitle: editableTitle, 
@@ -447,7 +459,6 @@ export default function BlogEditPage() {
       });
       setSeoAnalysisResult(result);
 
-      // Update post state directly with new scores from AI
       setPost(prevPost => {
         if (!prevPost) return null;
         return {
@@ -467,7 +478,6 @@ export default function BlogEditPage() {
       toast({ title: "SEO Analysis Complete!", description: "Review the suggestions and scores below."});
     } catch (error: any) {
       toast({ title: "Error Analyzing SEO", description: error.message, variant: "destructive" });
-       // Reset scores on error to avoid showing stale data
       setPost(prevPost => {
         if (!prevPost) return null;
         return {
@@ -1201,7 +1211,7 @@ export default function BlogEditPage() {
                         <AccordionContent className="space-y-2 pt-2">
                           {seoAnalysisResult.actionableRecommendations.length > 0 ? (
                             seoAnalysisResult.actionableRecommendations.map((rec, index) => (
-                              <Card key={index} className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                              <Card key={index} className="bg-muted/30 dark:bg-muted/10 shadow-sm border">
                                 <CardContent className="p-3 text-sm">
                                   {rec}
                                 </CardContent>
@@ -1213,11 +1223,11 @@ export default function BlogEditPage() {
                       <AccordionItem value="item-2">
                         <AccordionTrigger>Readability & Structure Feedback</AccordionTrigger>
                         <AccordionContent className="space-y-3 pt-2">
-                          <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                          <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm border">
                             <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">READABILITY</CardTitle></CardHeader>
                             <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.readabilityFeedback}</CardContent>
                           </Card>
-                          <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                          <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm border">
                             <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">CONTENT STRUCTURE</CardTitle></CardHeader>
                             <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.contentStructureFeedback}</CardContent>
                           </Card>
@@ -1227,31 +1237,31 @@ export default function BlogEditPage() {
                         <AccordionTrigger>Keyword Analysis Details</AccordionTrigger>
                         <AccordionContent className="space-y-3 pt-2">
                           {seoAnalysisResult.primaryKeywordAnalysis.providedKeyword && (
-                            <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                            <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm border">
                               <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">TARGET KEYWORD</CardTitle></CardHeader>
                               <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.primaryKeywordAnalysis.providedKeyword}</CardContent>
                             </Card>
                           )}
                           {seoAnalysisResult.primaryKeywordAnalysis.suggestedKeywords && seoAnalysisResult.primaryKeywordAnalysis.suggestedKeywords.length > 0 && (
-                             <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                             <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm border">
                               <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">SUGGESTED PRIMARY KEYWORDS</CardTitle></CardHeader>
                               <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.primaryKeywordAnalysis.suggestedKeywords.join(', ')}</CardContent>
                             </Card>
                           )}
                           {seoAnalysisResult.primaryKeywordAnalysis.densityFeedback && (
-                            <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                            <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm border">
                               <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">KEYWORD DENSITY</CardTitle></CardHeader>
                               <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.primaryKeywordAnalysis.densityFeedback}</CardContent>
                             </Card>
                           )}
                            {seoAnalysisResult.primaryKeywordAnalysis.placementFeedback && (
-                            <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                            <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm border">
                               <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">KEYWORD PLACEMENT</CardTitle></CardHeader>
                               <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.primaryKeywordAnalysis.placementFeedback}</CardContent>
                             </Card>
                            )}
                           {seoAnalysisResult.secondaryKeywordSuggestions.length > 0 && (
-                             <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                             <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm border">
                               <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">SECONDARY KEYWORD SUGGESTIONS</CardTitle></CardHeader>
                               <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.secondaryKeywordSuggestions.join(', ')}</CardContent>
                             </Card>
@@ -1321,4 +1331,5 @@ export default function BlogEditPage() {
     
 
     
+
 
