@@ -53,6 +53,26 @@ Ensure the content flows logically, adheres to the specified tone and style, and
 The output should be a single string containing the full blog post in Markdown format.
 Start directly with the content, for example, if the first outline item is "Introduction", start with "## Introduction".
 `,
+  config: { // Added safety settings configuration
+    safetySettings: [
+      {
+        category: 'HARM_CATEGORY_HATE_SPEECH',
+        threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+      },
+      {
+        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+        threshold: 'BLOCK_MEDIUM_AND_ABOVE', // Was BLOCK_ONLY_HIGH, trying medium
+      },
+      {
+        category: 'HARM_CATEGORY_HARASSMENT',
+        threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+      },
+      {
+        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+        threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+      },
+    ],
+  },
 });
 
 const generateFullBlogFlow = ai.defineFlow(
