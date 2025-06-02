@@ -68,6 +68,14 @@ Readability feedback should highlight specific issues (long sentences, passive v
 Content structure feedback should check H1 (should be one, matching title intent), H2-H6 hierarchy, and paragraph lengths.
 Actionable recommendations should be the top 3-5 most impactful changes the user can make.
 `,
+  config: {
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+    ],
+  },
 });
 
 const analyzeBlogSeoFlow = ai.defineFlow(
@@ -93,20 +101,22 @@ const analyzeBlogSeoFlow = ai.defineFlow(
         overallSeoScore: 10,
         readabilityScore: 20,
         keywordRelevanceScore: 15,
-        suggestedMetaTitle: `Error: Could not generate meta title for "${input.blogTitle.substring(0, 30)}"`,
-        suggestedMetaDescription: "Error: Could not generate meta description. Please try again.",
+        suggestedMetaTitle: `Error: AI failed to generate meta title for "${input.blogTitle.substring(0, 30)}"`,
+        suggestedMetaDescription: "Error: AI failed to generate meta description. Analysis might be incomplete. Please try again.",
         suggestedUrlSlug: "error-generating-slug",
         primaryKeywordAnalysis: {
-          suggestedKeywords: ["analysis error"],
-          densityFeedback: "Could not analyze.",
-          placementFeedback: "Could not analyze."
+          providedKeyword: input.primaryKeyword,
+          suggestedKeywords: ["AI analysis error"],
+          densityFeedback: "Could not analyze keyword density.",
+          placementFeedback: "Could not analyze keyword placement."
         },
-        secondaryKeywordSuggestions: ["analysis error"],
-        readabilityFeedback: "Could not analyze readability. Ensure content is substantial.",
-        contentStructureFeedback: "Could not analyze content structure.",
-        actionableRecommendations: ["SEO analysis failed. Please try again with sufficient content."],
+        secondaryKeywordSuggestions: ["AI analysis error"],
+        readabilityFeedback: "Could not analyze readability. Ensure content is substantial or try again.",
+        contentStructureFeedback: "Could not analyze content structure. Ensure content is substantial or try again.",
+        actionableRecommendations: ["SEO analysis may have failed or returned incomplete data. Please check content and try again."],
       };
     }
     return output;
   }
 );
+
