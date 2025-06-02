@@ -27,7 +27,7 @@ import {
   simplifyBlogContentAction,
   analyzeBlogSeoAction, 
   type AnalyzeBlogSeoOutput,
-  generateImagePromptHelperAction // New action for prompt helper
+  generateImagePromptHelperAction
 } from '@/actions/ai';
 import NextImage from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -848,7 +848,7 @@ export default function BlogEditPage() {
           <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader><CardTitle>Hero Image Generator</CardTitle><CardDescription>Create hero images for your post.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
-              <Accordion type="single" collapsible className="w-full">
+              <Accordion type="single" collapsible className="w-full" defaultValue="prompt-helper">
                 <AccordionItem value="prompt-helper">
                   <AccordionTrigger className="text-sm hover:no-underline">
                     <div className="flex items-center gap-2">
