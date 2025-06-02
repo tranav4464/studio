@@ -99,7 +99,7 @@ export async function repurposeContentAction(input: RepurposeContentInput): Prom
   } catch (error) {
     console.error("Error repurposing content:", error);
     return {
-      tweetThread: "Error: Could not generate Tweet thread.",
+      tweetThread: ["Error: Could not generate Tweet thread."],
       linkedInPost: "Error: Could not generate LinkedIn post.",
       instagramPost: "Error: Could not generate Instagram post.",
       emailNewsletterSummary: "Error: Could not generate email summary."

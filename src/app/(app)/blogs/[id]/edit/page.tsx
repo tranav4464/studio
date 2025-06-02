@@ -361,6 +361,12 @@ export default function BlogEditPage() {
         toast({ title: "Content repurposed!", description: "Check the generated snippets."});
     } catch (error: any) {
         toast({ title: "Error repurposing content", description: error.message, variant: "destructive" });
+        setRepurposedContent({ // Set fallback content on error
+            tweetThread: ["Error generating tweets."],
+            linkedInPost: "Error generating LinkedIn post.",
+            instagramPost: "Error generating Instagram post.",
+            emailNewsletterSummary: "Error generating email summary."
+        });
     }
     setIsRepurposing(false);
   };
@@ -380,10 +386,25 @@ export default function BlogEditPage() {
     toast({ title: "Feedback Submitted", description: `${feedbackText} ${contentName}` });
   };
 
+  const handleTweetChange = (index: number, value: string) => {
+    setRepurposedContent(prev => {
+      if (!prev || !prev.tweetThread) return prev;
+      const newTweetThread = [...prev.tweetThread];
+      newTweetThread[index] = value;
+      return { ...prev, tweetThread: newTweetThread };
+    });
+  };
 
-  const copyToClipboard = (text: string, type: string) => {
-    if (navigator.clipboard && text) {
-      navigator.clipboard.writeText(text);
+  const copyToClipboard = (text: string | string[], type: string) => {
+    let textToCopy: string;
+    if (Array.isArray(text)) {
+        textToCopy = text.join('\n\n---\n\n'); // Join tweets with a separator
+    } else {
+        textToCopy = text;
+    }
+
+    if (navigator.clipboard && textToCopy) {
+      navigator.clipboard.writeText(textToCopy);
       toast({ title: "Copied to clipboard!", description: `${type} content copied.` });
     } else {
       toast({ title: "Failed to copy", description: "Content might be empty or clipboard unavailable.", variant: "destructive" });
@@ -780,8 +801,8 @@ export default function BlogEditPage() {
     return <div className="text-center py-10">Blog post not found.</div>;
   }
   
-  const repurposedContentFields: Array<{key: RepurposedContentType, label: string, icon: React.ReactNode, contentKey: keyof RepurposedContent}> = [
-    { key: 'tweetThread', label: 'Tweet Thread', icon: <Icons.Tweet className="mr-1 h-4 w-4"/>, contentKey: 'tweetThread' },
+  const repurposedContentFields: Array<{key: RepurposedContentType, label: string, icon: React.ReactNode, contentKey: keyof Omit<RepurposedContent, 'tweetThread'> | 'tweetThreadArray'}> = [
+    { key: 'tweetThread', label: 'Tweet Thread', icon: <Icons.Tweet className="mr-1 h-4 w-4"/>, contentKey: 'tweetThreadArray' }, // Special handling for tweetThread
     { key: 'linkedInPost', label: 'LinkedIn Post', icon: <Icons.LinkedIn className="mr-1 h-4 w-4"/>, contentKey: 'linkedInPost' },
     { key: 'instagramPost', label: 'Instagram Post', icon: <Icons.Instagram className="mr-1 h-4 w-4"/>, contentKey: 'instagramPost' },
     { key: 'emailNewsletterSummary', label: 'Email Summary', icon: <Icons.Email className="mr-1 h-4 w-4"/>, contentKey: 'emailNewsletterSummary' },
@@ -900,32 +921,54 @@ export default function BlogEditPage() {
                   </TabsList>
                   {repurposedContentFields.map(field => (
                     <TabsContent key={field.key} value={field.key} forceMount className="mt-4">
+                      {field.contentKey === 'tweetThreadArray' ? (
+                        <div className="space-y-3">
+                          {(repurposedContent.tweetThread || []).map((tweet, index) => (
+                            <div key={index} className="space-y-1">
+                              <Label htmlFor={`tweet-${index}`} className="text-xs text-muted-foreground">Tweet {index + 1} of {(repurposedContent.tweetThread || []).length}</Label>
+                              <Textarea
+                                id={`tweet-${index}`}
+                                value={tweet}
+                                onChange={(e) => handleTweetChange(index, e.target.value)}
+                                rows={3}
+                                className="text-sm"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
                         <Textarea 
-                            value={repurposedContent[field.contentKey]}
+                            value={repurposedContent[field.contentKey as keyof Omit<RepurposedContent, 'tweetThread'>] || ''}
                             onChange={(e) => setRepurposedContent(prev => prev ? {...prev, [field.contentKey]: e.target.value} : null)}
                             rows={8}
                             className="text-sm" />
-                        <div className="mt-2 flex items-center justify-between">
-                            <Button variant="outline" size="sm" onClick={() => copyToClipboard(repurposedContent[field.contentKey], field.label)}><Icons.Copy className="mr-2 h-3 w-3"/>Copy</Button>
-                            <div className="flex gap-1">
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className={cn("h-8 w-8 hover:bg-green-100 dark:hover:bg-green-800/50", currentRepurposedFeedback[field.key] === 'liked' && "bg-green-100 dark:bg-green-800/50 text-green-600 dark:text-green-400")}
-                                    onClick={() => handleRepurposedFeedback(field.key, 'liked')}
-                                >
-                                    <Icons.ThumbsUp className={cn("h-4 w-4", currentRepurposedFeedback[field.key] === 'liked' ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}/>
-                                </Button>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className={cn("h-8 w-8 hover:bg-red-100 dark:hover:bg-red-800/50", currentRepurposedFeedback[field.key] === 'disliked' && "bg-red-100 dark:bg-red-800/50 text-red-600 dark:text-red-400")}
-                                    onClick={() => handleRepurposedFeedback(field.key, 'disliked')}
-                                >
-                                    <Icons.ThumbsDown className={cn("h-4 w-4", currentRepurposedFeedback[field.key] === 'disliked' ? "text-red-600 dark:text-red-400" : "text-muted-foreground")}/>
-                                </Button>
-                            </div>
-                        </div>
+                      )}
+                      <div className="mt-2 flex items-center justify-between">
+                          <Button variant="outline" size="sm" onClick={() => copyToClipboard(
+                              field.contentKey === 'tweetThreadArray' ? (repurposedContent.tweetThread || []) : (repurposedContent[field.contentKey as keyof Omit<RepurposedContent, 'tweetThread'>] || ''),
+                              field.label
+                          )}>
+                            <Icons.Copy className="mr-2 h-3 w-3"/>Copy
+                          </Button>
+                          <div className="flex gap-1">
+                              <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className={cn("h-8 w-8 hover:bg-green-100 dark:hover:bg-green-800/50", currentRepurposedFeedback[field.key] === 'liked' && "bg-green-100 dark:bg-green-800/50 text-green-600 dark:text-green-400")}
+                                  onClick={() => handleRepurposedFeedback(field.key, 'liked')}
+                              >
+                                  <Icons.ThumbsUp className={cn("h-4 w-4", currentRepurposedFeedback[field.key] === 'liked' ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}/>
+                              </Button>
+                              <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className={cn("h-8 w-8 hover:bg-red-100 dark:hover:bg-red-800/50", currentRepurposedFeedback[field.key] === 'disliked' && "bg-red-100 dark:bg-red-800/50 text-red-600 dark:text-red-400")}
+                                  onClick={() => handleRepurposedFeedback(field.key, 'disliked')}
+                              >
+                                  <Icons.ThumbsDown className={cn("h-4 w-4", currentRepurposedFeedback[field.key] === 'disliked' ? "text-red-600 dark:text-red-400" : "text-muted-foreground")}/>
+                              </Button>
+                          </div>
+                      </div>
                     </TabsContent>
                   ))}
                 </Tabs>

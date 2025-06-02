@@ -45,7 +45,7 @@ export type BlogStyle = "academic" | "journalistic" | "storytelling" | "technica
 export type BlogLength = "short" | "medium" | "long";
 
 export interface RepurposedContent {
-  tweetThread: string;
+  tweetThread: string[]; // Changed from string to string[]
   linkedInPost: string;
   instagramPost: string; 
   emailNewsletterSummary: string;

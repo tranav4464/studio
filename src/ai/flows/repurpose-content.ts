@@ -19,7 +19,7 @@ const RepurposeContentInputSchema = z.object({
 export type RepurposeContentInput = z.infer<typeof RepurposeContentInputSchema>;
 
 const RepurposeContentOutputSchema = z.object({
-  tweetThread: z.string().describe('A concise and engaging tweet thread (2-5 tweets) generated from the article, suitable for Twitter. Each tweet should be clearly separated if possible (e.g. by "--- TWEET ---" or similar, or just numbered).'),
+  tweetThread: z.array(z.string()).describe('An array of strings, where each string is a concise and engaging tweet (2-5 tweets total) generated from the article, suitable for Twitter.'),
   linkedInPost: z.string().describe('A professional LinkedIn post generated from the article, adapted to the specified tone, suitable for sharing with a business audience. Include relevant hashtags.'),
   instagramPost: z.string().describe('An engaging Instagram post caption generated from the article, optimized for visual storytelling and including relevant hashtags. Keep it concise and compelling for Instagram\'s format.'),
   emailNewsletterSummary: z
@@ -46,7 +46,7 @@ Desired Tone for all Repurposed Content: {{{tone}}}
 
 Please generate the following distinct pieces of content based *only* on the article and tone provided:
 
-1.  **Tweet Thread:** A short, engaging thread (2-5 tweets) that summarizes key points from the article. Ensure it's formatted appropriately for Twitter.
+1.  **Tweet Thread:** Generate an array of 2-5 strings. Each string should be a single tweet for a Twitter thread that summarizes key points from the article.
 2.  **LinkedIn Post:** A professional post for LinkedIn that discusses the article's main themes. Include relevant hashtags.
 3.  **Instagram Post Caption:** A compelling caption for an Instagram post. Make it visually descriptive if appropriate and include relevant hashtags.
 4.  **Email Newsletter Summary:** A brief summary for an email newsletter, highlighting the article's value and encouraging readers to view the full piece.
@@ -66,7 +66,7 @@ const repurposeContentFlow = ai.defineFlow(
     if (!output) {
       // Fallback if AI returns no output
       return {
-        tweetThread: "Error: Could not generate Tweet thread from article.",
+        tweetThread: ["Error: Could not generate Tweet thread from article."],
         linkedInPost: `Error: Could not generate LinkedIn post for article titled (related to): ${input.article.substring(0,30)}...`,
         instagramPost: `Error: Could not generate Instagram caption for article (related to): ${input.article.substring(0,30)}...`,
         emailNewsletterSummary: `Error: Could not generate email summary for article (related to): ${input.article.substring(0,30)}...`,
@@ -74,7 +74,7 @@ const repurposeContentFlow = ai.defineFlow(
     }
     // Ensure all fields are present, even if empty, to match schema
     return {
-        tweetThread: output.tweetThread || "AI failed to generate Tweet thread.",
+        tweetThread: output.tweetThread && output.tweetThread.length > 0 ? output.tweetThread : ["AI failed to generate Tweet thread."],
         linkedInPost: output.linkedInPost || "AI failed to generate LinkedIn post.",
         instagramPost: output.instagramPost || "AI failed to generate Instagram post.",
         emailNewsletterSummary: output.emailNewsletterSummary || "AI failed to generate email summary."
