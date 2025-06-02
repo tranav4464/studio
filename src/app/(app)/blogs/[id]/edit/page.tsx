@@ -63,7 +63,7 @@ function basicMarkdownToHtml(md: string): string {
   html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
   html = html.replace(/_(.*?)_/gim, '<em>$1</em>'); 
   html = html.replace(/`(.*?)`/gim, '<code>$1</code>');
-  html = html.replace(/^\s*---\s*$/gim, '<hr />');
+  html = html.replace(new RegExp('^\\s*---\\s*$', 'gim'), '<hr />');
   html = html.replace(/^\s*\*\*\*\s*$/gim, '<hr />');
   html = html.replace(/^\s*___\s*$/gim, '<hr />');
   html = html.split(/\n\s*\n/).map(paragraph => {
@@ -1198,32 +1198,63 @@ export default function BlogEditPage() {
                     <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
                       <AccordionItem value="item-1">
                         <AccordionTrigger>Actionable Recommendations</AccordionTrigger>
-                        <AccordionContent>
+                        <AccordionContent className="space-y-2 pt-2">
                           {seoAnalysisResult.actionableRecommendations.length > 0 ? (
-                            <ul className="list-disc pl-5 space-y-1 text-sm">
-                              {seoAnalysisResult.actionableRecommendations.map((rec, index) => <li key={index}>{rec}</li>)}
-                            </ul>
-                          ) : <p className="text-sm text-muted-foreground">No specific recommendations at this time.</p>}
+                            seoAnalysisResult.actionableRecommendations.map((rec, index) => (
+                              <Card key={index} className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                                <CardContent className="p-3 text-sm">
+                                  {rec}
+                                </CardContent>
+                              </Card>
+                            ))
+                          ) : <p className="text-sm text-muted-foreground p-3">No specific recommendations at this time.</p>}
                         </AccordionContent>
                       </AccordionItem>
                       <AccordionItem value="item-2">
                         <AccordionTrigger>Readability & Structure Feedback</AccordionTrigger>
-                        <AccordionContent className="space-y-2 text-sm">
-                          <p><strong>Readability:</strong> {seoAnalysisResult.readabilityFeedback}</p>
-                          <p><strong>Structure:</strong> {seoAnalysisResult.contentStructureFeedback}</p>
+                        <AccordionContent className="space-y-3 pt-2">
+                          <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                            <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">READABILITY</CardTitle></CardHeader>
+                            <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.readabilityFeedback}</CardContent>
+                          </Card>
+                          <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                            <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">CONTENT STRUCTURE</CardTitle></CardHeader>
+                            <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.contentStructureFeedback}</CardContent>
+                          </Card>
                         </AccordionContent>
                       </AccordionItem>
                       <AccordionItem value="item-3">
                         <AccordionTrigger>Keyword Analysis Details</AccordionTrigger>
-                        <AccordionContent className="space-y-2 text-sm">
-                          {seoAnalysisResult.primaryKeywordAnalysis.providedKeyword && <p><strong>Target Keyword:</strong> {seoAnalysisResult.primaryKeywordAnalysis.providedKeyword}</p>}
-                          {seoAnalysisResult.primaryKeywordAnalysis.suggestedKeywords && seoAnalysisResult.primaryKeywordAnalysis.suggestedKeywords.length > 0 && (
-                            <p><strong>Suggested Primary Keywords:</strong> {seoAnalysisResult.primaryKeywordAnalysis.suggestedKeywords.join(', ')}</p>
+                        <AccordionContent className="space-y-3 pt-2">
+                          {seoAnalysisResult.primaryKeywordAnalysis.providedKeyword && (
+                            <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                              <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">TARGET KEYWORD</CardTitle></CardHeader>
+                              <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.primaryKeywordAnalysis.providedKeyword}</CardContent>
+                            </Card>
                           )}
-                          {seoAnalysisResult.primaryKeywordAnalysis.densityFeedback && <p><strong>Density:</strong> {seoAnalysisResult.primaryKeywordAnalysis.densityFeedback}</p>}
-                           {seoAnalysisResult.primaryKeywordAnalysis.placementFeedback && <p><strong>Placement:</strong> {seoAnalysisResult.primaryKeywordAnalysis.placementFeedback}</p>}
+                          {seoAnalysisResult.primaryKeywordAnalysis.suggestedKeywords && seoAnalysisResult.primaryKeywordAnalysis.suggestedKeywords.length > 0 && (
+                             <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                              <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">SUGGESTED PRIMARY KEYWORDS</CardTitle></CardHeader>
+                              <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.primaryKeywordAnalysis.suggestedKeywords.join(', ')}</CardContent>
+                            </Card>
+                          )}
+                          {seoAnalysisResult.primaryKeywordAnalysis.densityFeedback && (
+                            <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                              <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">KEYWORD DENSITY</CardTitle></CardHeader>
+                              <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.primaryKeywordAnalysis.densityFeedback}</CardContent>
+                            </Card>
+                          )}
+                           {seoAnalysisResult.primaryKeywordAnalysis.placementFeedback && (
+                            <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                              <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">KEYWORD PLACEMENT</CardTitle></CardHeader>
+                              <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.primaryKeywordAnalysis.placementFeedback}</CardContent>
+                            </Card>
+                           )}
                           {seoAnalysisResult.secondaryKeywordSuggestions.length > 0 && (
-                             <p><strong>Secondary Keyword Suggestions:</strong> {seoAnalysisResult.secondaryKeywordSuggestions.join(', ')}</p>
+                             <Card className="bg-muted/30 dark:bg-muted/10 shadow-sm">
+                              <CardHeader className="pb-1 pt-2 px-3"><CardTitle className="text-xs font-medium text-muted-foreground">SECONDARY KEYWORD SUGGESTIONS</CardTitle></CardHeader>
+                              <CardContent className="p-3 pt-0 text-sm">{seoAnalysisResult.secondaryKeywordSuggestions.join(', ')}</CardContent>
+                            </Card>
                           )}
                         </AccordionContent>
                       </AccordionItem>
@@ -1231,7 +1262,7 @@ export default function BlogEditPage() {
                   )}
                 </TabsContent>
                 <TabsContent value="gapAnalysis" className="mt-4">
-                  <Alert>
+                   <Alert>
                     <Icons.SEO className="h-4 w-4" />
                     <AlertTitle>Gap Analysis - Coming Soon!</AlertTitle>
                     <AlertDescription>
@@ -1290,3 +1321,4 @@ export default function BlogEditPage() {
     
 
     
+
