@@ -77,6 +77,16 @@ function basicMarkdownToHtml(md: string): string {
   return html;
 }
 
+const scoreDisplayMapping: Array<{
+  label: string;
+  key: keyof NonNullable<BlogPost['seoScore']>;
+  tooltip: string;
+}> = [
+  { label: 'Readability', key: 'readability', tooltip: 'Flesch Reading Ease (0-100, higher is better).' },
+  { label: 'Keyword Relevance', key: 'keywordDensity', tooltip: 'Keyword relevance & usage score (0-100).' },
+  { label: 'Overall SEO Score', key: 'quality', tooltip: 'Overall SEO strength based on multiple factors (0-100).' },
+];
+
 
 export default function BlogEditPage() {
   const params = useParams();
@@ -179,9 +189,9 @@ export default function BlogEditPage() {
     setIsSaving(true);
     const currentPostData = blogStore.getPostById(post.id); 
     const updatedSeoScore = { 
-      readability: post.seoScore?.readability ?? 0,
-      keywordDensity: post.seoScore?.keywordDensity ?? 0,
-      quality: post.seoScore?.quality ?? 0,
+      readability: post.seoScore?.readability ?? seoAnalysisResult?.readabilityScore ?? 0,
+      keywordDensity: post.seoScore?.keywordDensity ?? seoAnalysisResult?.keywordRelevanceScore ?? 0,
+      quality: post.seoScore?.quality ?? seoAnalysisResult?.overallSeoScore ?? 0,
     };
 
     blogStore.updatePost(post.id, {
@@ -428,7 +438,7 @@ export default function BlogEditPage() {
       return;
     }
     setIsAnalyzingSeo(true);
-    setSeoAnalysisResult(null);
+    setSeoAnalysisResult(null); // Clear previous results
     try {
       const result = await analyzeBlogSeoAction({ 
         blogTitle: editableTitle, 
@@ -437,6 +447,7 @@ export default function BlogEditPage() {
       });
       setSeoAnalysisResult(result);
 
+      // Update post state directly with new scores from AI
       setPost(prevPost => {
         if (!prevPost) return null;
         return {
@@ -456,6 +467,18 @@ export default function BlogEditPage() {
       toast({ title: "SEO Analysis Complete!", description: "Review the suggestions and scores below."});
     } catch (error: any) {
       toast({ title: "Error Analyzing SEO", description: error.message, variant: "destructive" });
+       // Reset scores on error to avoid showing stale data
+      setPost(prevPost => {
+        if (!prevPost) return null;
+        return {
+          ...prevPost,
+          seoScore: {
+            readability: 0,
+            keywordDensity: 0, 
+            quality: 0,
+          }
+        };
+      });
     }
     setIsAnalyzingSeo(false);
   };
@@ -1140,33 +1163,28 @@ export default function BlogEditPage() {
             <CardHeader><CardTitle>Optimization Panel</CardTitle><CardDescription>AI-driven SEO scores and content analysis.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               <Tabs defaultValue="seoScores" className="w-full">
-                <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="seoScores">SEO Scores & Feedback</TabsTrigger><TabsTrigger value="gapAnalysis">Gap Analysis (Mock)</TabsTrigger></TabsList>
+                <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="seoScores">SEO Scores & Feedback</TabsTrigger><TabsTrigger value="gapAnalysis">Gap Analysis</TabsTrigger></TabsList>
                 <TabsContent value="seoScores" className="mt-4 space-y-3">
-                  {(['Readability', 'Keyword Density', 'Overall Quality'] as const).map(scoreType => (
-                    <div key={scoreType}>
-                      <div className="flex justify-between mb-1 items-center">
-                        <div className="flex items-center gap-1">
-                            <Label className="text-sm">{scoreType}</Label>
-                            <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-3 w-3 text-muted-foreground" /></Button></TooltipTrigger>
-                                <TooltipContent side="top">
-                                    <p className="text-xs">
-                                    {scoreType === 'Readability' ? 'Flesch Reading Ease (0-100, higher is better).' :
-                                    scoreType === 'Keyword Density' ? 'Keyword relevance & usage score (0-100).' :
-                                    'Overall SEO strength based on multiple factors (0-100).'}
-                                    </p>
-                                </TooltipContent>
-                            </Tooltip>
+                  {scoreDisplayMapping.map(scoreItem => {
+                    const scoreValue = post?.seoScore?.[scoreItem.key] ?? 0;
+                    return (
+                      <div key={scoreItem.key}>
+                        <div className="flex justify-between mb-1 items-center">
+                          <div className="flex items-center gap-1">
+                              <Label className="text-sm">{scoreItem.label}</Label>
+                              <Tooltip>
+                                  <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-3 w-3 text-muted-foreground" /></Button></TooltipTrigger>
+                                  <TooltipContent side="top"><p className="text-xs">{scoreItem.tooltip}</p></TooltipContent>
+                              </Tooltip>
+                          </div>
+                          <span className="text-sm font-medium">
+                            {scoreValue}%
+                          </span>
                         </div>
-                        <span className="text-sm font-medium">
-                           {(post?.seoScore?.[scoreType.toLowerCase().replace(/\s/g, '') as keyof NonNullable<BlogPost['seoScore']>] ?? 0)}%
-                        </span>
+                        <Progress value={scoreValue} aria-label={`${scoreItem.label} score`} />
                       </div>
-                      <Progress
-                        value={(post?.seoScore?.[scoreType.toLowerCase().replace(/\s/g, '') as keyof NonNullable<BlogPost['seoScore']>] ?? 0)}
-                        aria-label={`${scoreType} score`} />
-                    </div>
-                  ))}
+                    );
+                  })}
                   <Separator />
                   
                   {isAnalyzingSeo && (
@@ -1213,9 +1231,14 @@ export default function BlogEditPage() {
                   )}
                 </TabsContent>
                 <TabsContent value="gapAnalysis" className="mt-4">
-                   <Label>Top Search Results Comparison (Mock)</Label>
-                   <Textarea readOnly value="Top result 1 focuses on X, Y, Z. Your article covers X, Y well but could expand on Z. Consider adding a section on A and B which are common in top ranking pages." rows={5} className="text-sm" />
-                   <Button variant="link" size="sm" className="p-0 h-auto mt-1 text-primary" onClick={() => toast({title: "Rewrite suggestions coming soon!"})}>Rewrite suggestions (mock)</Button>
+                  <Alert>
+                    <Icons.SEO className="h-4 w-4" />
+                    <AlertTitle>Gap Analysis - Coming Soon!</AlertTitle>
+                    <AlertDescription>
+                      This feature will help you compare your content against top-ranking articles to find opportunities.
+                      Stay tuned for updates!
+                    </AlertDescription>
+                  </Alert>
                 </TabsContent>
               </Tabs>
             </CardContent>
@@ -1263,5 +1286,7 @@ export default function BlogEditPage() {
     </TooltipProvider>
   );
 }
+
+    
 
     
