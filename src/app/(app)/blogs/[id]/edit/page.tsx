@@ -16,7 +16,17 @@ import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { PageHeader } from '@/components/shared/page-header';
 import { useToast } from '@/hooks/use-toast';
-import { generateHeroImageAction, repurposeContentAction, generateBlogTitleSuggestionAction, generateMetaTitleAction, generateMetaDescriptionAction, improveBlogContentAction, simplifyBlogContentAction } from '@/actions/ai';
+import { 
+  generateHeroImageAction, 
+  repurposeContentAction, 
+  generateBlogTitleSuggestionAction, 
+  generateMetaTitleAction, 
+  generateMetaDescriptionAction, 
+  improveBlogContentAction, 
+  simplifyBlogContentAction,
+  analyzeBlogSeoAction, // New SEO analysis action
+  type AnalyzeBlogSeoOutput // Type for SEO analysis result
+} from '@/actions/ai';
 import NextImage from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
@@ -24,6 +34,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { format, parseISO } from 'date-fns';
 import html2canvas from 'html2canvas';
 import { cn } from '@/lib/utils';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
 
 const imageThemes = ["General", "Dark", "Light", "Pastel", "Vibrant", "Monochrome"];
 const postStatuses: BlogStatus[] = ["draft", "published", "archived"];
@@ -106,15 +118,20 @@ export default function BlogEditPage() {
 
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
+  const [suggestedUrlSlug, setSuggestedUrlSlug] = useState<string | null>(null);
 
   const [isSuggestingBlogTitle, setIsSuggestingBlogTitle] = useState(false);
-  const [isSuggestingMetaTitle, setIsSuggestingMetaTitle] = useState(false);
-  const [isSuggestingMetaDescription, setIsSuggestingMetaDescription] = useState(false);
+  const [isSuggestingMetaTitle, setIsSuggestingMetaTitle] = useState(false); // Kept for standalone suggestion if needed
+  const [isSuggestingMetaDescription, setIsSuggestingMetaDescription] = useState(false); // Kept for standalone suggestion
   const [isImprovingContent, setIsImprovingContent] = useState(false);
   const [isSimplifyingContent, setIsSimplifyingContent] = useState(false);
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([]);
   const [isTakingSnapshot, setIsTakingSnapshot] = useState(false);
   const [htmlExportTemplate, setHtmlExportTemplate] = useState<HtmlExportTemplate>('basic-pre');
+
+  const [primaryKeyword, setPrimaryKeyword] = useState('');
+  const [isAnalyzingSeo, setIsAnalyzingSeo] = useState(false);
+  const [seoAnalysisResult, setSeoAnalysisResult] = useState<AnalyzeBlogSeoOutput | null>(null);
 
 
   useEffect(() => {
@@ -135,6 +152,7 @@ export default function BlogEditPage() {
         setMetaDescription(fetchedPost.metaDescription || `Meta description for ${fetchedPost.title}`);
         setExportHistory(fetchedPost.exportHistory || []);
         setCurrentRepurposedFeedback(fetchedPost.repurposedContentFeedback || { tweetThread: null, linkedInPost: null, instagramPost: null, emailNewsletterSummary: null });
+        setPrimaryKeyword(fetchedPost.topic); // Default primary keyword to topic
       } else {
         toast({ title: "Blog post not found", variant: "destructive" });
         router.push('/dashboard');
@@ -156,6 +174,12 @@ export default function BlogEditPage() {
     if (!post) return;
     setIsSaving(true);
     const currentPostData = blogStore.getPostById(post.id); 
+    const updatedSeoScore = { // Ensure seoScore object exists
+      readability: post.seoScore?.readability ?? 0,
+      keywordDensity: post.seoScore?.keywordDensity ?? 0,
+      quality: post.seoScore?.quality ?? 0,
+    };
+
     blogStore.updatePost(post.id, {
       title: editableTitle,
       content,
@@ -168,6 +192,7 @@ export default function BlogEditPage() {
       heroImageTheme,
       metaTitle,
       metaDescription,
+      seoScore: updatedSeoScore, // Save updated scores
       exportHistory: currentPostData?.exportHistory || exportHistory, 
       repurposedContentFeedback: currentRepurposedFeedback,
     });
@@ -184,6 +209,7 @@ export default function BlogEditPage() {
       heroImageTheme,
       metaTitle,
       metaDescription,
+      seoScore: updatedSeoScore,
       exportHistory: currentPostData?.exportHistory || exportHistory,
       repurposedContentFeedback: currentRepurposedFeedback,
     }) : null);
@@ -310,7 +336,7 @@ export default function BlogEditPage() {
     setIsSuggestingBlogTitle(false);
   };
 
-  const handleSuggestMetaTitle = async () => {
+  const handleStandaloneSuggestMetaTitle = async () => {
     if (!editableTitle || !content) {
       toast({ title: "Title and Content needed", description: "Blog title and content are needed to suggest a meta title.", variant: "destructive"});
       return;
@@ -326,7 +352,7 @@ export default function BlogEditPage() {
     setIsSuggestingMetaTitle(false);
   };
 
-  const handleSuggestMetaDescription = async () => {
+  const handleStandaloneSuggestMetaDescription = async () => {
      if (!editableTitle || !content) {
       toast({ title: "Title and Content needed", description: "Blog title and content are needed to suggest a meta description.", variant: "destructive"});
       return;
@@ -341,6 +367,47 @@ export default function BlogEditPage() {
     }
     setIsSuggestingMetaDescription(false);
   };
+
+  const handleAnalyzeSeo = async () => {
+    if (!editableTitle || !content) {
+      toast({ title: "Title and Content needed", description: "Blog title and content are needed for SEO analysis.", variant: "destructive"});
+      return;
+    }
+    setIsAnalyzingSeo(true);
+    setSeoAnalysisResult(null);
+    try {
+      const result = await analyzeBlogSeoAction({ 
+        blogTitle: editableTitle, 
+        blogContent: content,
+        primaryKeyword: primaryKeyword || undefined 
+      });
+      setSeoAnalysisResult(result);
+
+      // Update scores in the post state
+      setPost(prevPost => {
+        if (!prevPost) return null;
+        return {
+          ...prevPost,
+          seoScore: {
+            readability: result.readabilityScore,
+            keywordDensity: result.keywordRelevanceScore, // Mapping keyword relevance to density display
+            quality: result.overallSeoScore,
+          }
+        };
+      });
+
+      // Update meta tags
+      setMetaTitle(result.suggestedMetaTitle);
+      setMetaDescription(result.suggestedMetaDescription);
+      setSuggestedUrlSlug(result.suggestedUrlSlug);
+
+      toast({ title: "SEO Analysis Complete!", description: "Review the suggestions and scores below."});
+    } catch (error: any) {
+      toast({ title: "Error Analyzing SEO", description: error.message, variant: "destructive" });
+    }
+    setIsAnalyzingSeo(false);
+  };
+
 
   const handleImproveContent = async () => {
     if (!post || !content) {
@@ -767,7 +834,7 @@ export default function BlogEditPage() {
                       <div key={index}
                            className={`relative aspect-video w-full overflow-hidden rounded-md border cursor-pointer transition-all ${selectedHeroImageUrl === url ? 'ring-2 ring-primary ring-offset-2' : 'hover:opacity-80'}`}
                            onClick={() => setSelectedHeroImageUrl(url)}>
-                        <NextImage src={url} alt={`Variant ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint="variant choice" />
+                        <NextImage src={url} alt={`Variant ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint="variant choice"/>
                         {selectedHeroImageUrl === url && (
                             <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
                                 <Icons.Check className="h-6 w-6 text-white"/>
@@ -797,13 +864,13 @@ export default function BlogEditPage() {
           </Card>
 
           <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
-            <CardHeader><CardTitle>SEO Metadata</CardTitle><CardDescription>Optimize your post for search engines.</CardDescription></CardHeader>
+            <CardHeader><CardTitle>SEO Metadata & Analysis</CardTitle><CardDescription>Optimize your post for search engines.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1">
-                <Label htmlFor="metaTitle">Meta Title</Label>
+                <Label htmlFor="metaTitleInput">Meta Title</Label>
                  <div className="flex gap-2 items-center">
-                    <Input id="metaTitle" value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder="e.g., Your Catchy Blog Post Title | SiteName" className="flex-grow"/>
-                    <Button variant="outline" size="sm" onClick={handleSuggestMetaTitle} disabled={isSuggestingMetaTitle}>
+                    <Input id="metaTitleInput" value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder="e.g., Your Catchy Blog Post Title | SiteName" className="flex-grow"/>
+                    <Button variant="outline" size="sm" onClick={handleStandaloneSuggestMetaTitle} disabled={isSuggestingMetaTitle || isAnalyzingSeo}>
                         {isSuggestingMetaTitle ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Improve className="mr-2 h-4 w-4" />}
                         Suggest
                     </Button>
@@ -811,16 +878,37 @@ export default function BlogEditPage() {
                 <p className="text-xs text-muted-foreground">Recommended: 50-60 characters. Current: {metaTitle.length}</p>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="metaDescription">Meta Description</Label>
+                <Label htmlFor="metaDescriptionInput">Meta Description</Label>
                 <div className="flex gap-2 items-start"> 
-                    <Textarea id="metaDescription" value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder="A brief summary of your post to attract readers from search results." rows={3} className="flex-grow"/>
-                    <Button variant="outline" size="sm" onClick={handleSuggestMetaDescription} disabled={isSuggestingMetaDescription} className="mt-[1px]"> 
+                    <Textarea id="metaDescriptionInput" value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder="A brief summary of your post to attract readers from search results." rows={3} className="flex-grow"/>
+                    <Button variant="outline" size="sm" onClick={handleStandaloneSuggestMetaDescription} disabled={isSuggestingMetaDescription || isAnalyzingSeo} className="mt-[1px]"> 
                         {isSuggestingMetaDescription ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Improve className="mr-2 h-4 w-4" />}
                         Suggest
                     </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">Recommended: 150-160 characters. Current: {metaDescription.length}</p>
               </div>
+              {suggestedUrlSlug && (
+                <div className="space-y-1">
+                  <Label htmlFor="suggestedUrlSlug">Suggested URL Slug</Label>
+                  <Input id="suggestedUrlSlug" value={suggestedUrlSlug} readOnly className="bg-muted"/>
+                </div>
+              )}
+              <Separator />
+              <div className="space-y-2">
+                <Label htmlFor="primaryKeyword">Target Primary Keyword (Optional)</Label>
+                <Input 
+                  id="primaryKeyword" 
+                  value={primaryKeyword} 
+                  onChange={(e) => setPrimaryKeyword(e.target.value)} 
+                  placeholder="e.g., AI content creation"
+                />
+              </div>
+              <Button onClick={handleAnalyzeSeo} disabled={isAnalyzingSeo || !editableTitle || !content} className="w-full">
+                {isAnalyzingSeo ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Analytics className="mr-2 h-4 w-4" />}
+                Analyze SEO & Get Suggestions
+              </Button>
+
             </CardContent>
           </Card>
           
@@ -849,11 +937,11 @@ export default function BlogEditPage() {
 
 
           <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
-            <CardHeader><CardTitle>Optimization Panel</CardTitle><CardDescription>SEO scores and content analysis.</CardDescription></CardHeader>
+            <CardHeader><CardTitle>Optimization Panel</CardTitle><CardDescription>AI-driven SEO scores and content analysis.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
-              <Tabs defaultValue="seo" className="w-full">
-                <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="seo">SEO Scores</TabsTrigger><TabsTrigger value="analysis">Gap Analysis</TabsTrigger></TabsList>
-                <TabsContent value="seo" forceMount className="mt-4 space-y-3">
+              <Tabs defaultValue="seoScores" className="w-full">
+                <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="seoScores">SEO Scores & Feedback</TabsTrigger><TabsTrigger value="gapAnalysis">Gap Analysis (Mock)</TabsTrigger></TabsList>
+                <TabsContent value="seoScores" forceMount className="mt-4 space-y-3">
                   {(['Readability', 'Keyword Density', 'Overall Quality'] as const).map(scoreType => (
                     <div key={scoreType}>
                       <div className="flex justify-between mb-1 items-center">
@@ -863,30 +951,73 @@ export default function BlogEditPage() {
                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-3 w-3 text-muted-foreground" /></Button></TooltipTrigger>
                                 <TooltipContent side="top">
                                     <p className="text-xs">
-                                    {scoreType === 'Readability' ? 'Measures how easy your content is to read.' :
-                                    scoreType === 'Keyword Density' ? 'Percentage of target keywords in your content.' :
-                                    'Overall assessment of content quality based on various factors.'}
+                                    {scoreType === 'Readability' ? 'Flesch Reading Ease (0-100, higher is better).' :
+                                    scoreType === 'Keyword Density' ? 'Keyword relevance & usage score (0-100).' :
+                                    'Overall SEO strength based on multiple factors (0-100).'}
                                     </p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
                         <span className="text-sm font-medium">
-                           {(post?.seoScore?.[scoreType.toLowerCase().replace(/\s/g, '') as keyof typeof post.seoScore] ?? 0)}%
+                           {(post?.seoScore?.[scoreType.toLowerCase().replace(/\s/g, '') as keyof NonNullable<BlogPost['seoScore']>] ?? 0)}%
                         </span>
                       </div>
                       <Progress
-                        value={(post?.seoScore?.[scoreType.toLowerCase().replace(/\s/g, '') as keyof typeof post.seoScore] ?? 0)}
+                        value={(post?.seoScore?.[scoreType.toLowerCase().replace(/\s/g, '') as keyof NonNullable<BlogPost['seoScore']>] ?? 0)}
                         aria-label={`${scoreType} score`} />
                     </div>
                   ))}
                   <Separator />
                    <Alert>
                     <Icons.Plagiarism className="h-4 w-4" />
-                    <AlertTitle>Content Integrity</AlertTitle>
-                    <AlertDescription className="text-xs"><p>Repetitions: Low</p><p>Vague Wording: Minimal</p><p>Plagiarism Risk: Not Detected (Mock)</p></AlertDescription>
+                    <AlertTitle>Content Integrity (Mock)</AlertTitle>
+                    <AlertDescription className="text-xs"><p>Repetitions: Low</p><p>Vague Wording: Minimal</p><p>Plagiarism Risk: Not Detected</p></AlertDescription>
                   </Alert>
+
+                  {isAnalyzingSeo && (
+                    <div className="text-center p-4">
+                      <Icons.Spinner className="h-6 w-6 animate-spin text-primary mx-auto" />
+                      <p className="text-sm text-muted-foreground mt-2">Analyzing SEO, please wait...</p>
+                    </div>
+                  )}
+
+                  {seoAnalysisResult && !isAnalyzingSeo && (
+                    <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
+                      <AccordionItem value="item-1">
+                        <AccordionTrigger>Actionable Recommendations</AccordionTrigger>
+                        <AccordionContent>
+                          {seoAnalysisResult.actionableRecommendations.length > 0 ? (
+                            <ul className="list-disc pl-5 space-y-1 text-sm">
+                              {seoAnalysisResult.actionableRecommendations.map((rec, index) => <li key={index}>{rec}</li>)}
+                            </ul>
+                          ) : <p className="text-sm text-muted-foreground">No specific recommendations at this time.</p>}
+                        </AccordionContent>
+                      </AccordionItem>
+                      <AccordionItem value="item-2">
+                        <AccordionTrigger>Readability & Structure Feedback</AccordionTrigger>
+                        <AccordionContent className="space-y-2 text-sm">
+                          <p><strong>Readability:</strong> {seoAnalysisResult.readabilityFeedback}</p>
+                          <p><strong>Structure:</strong> {seoAnalysisResult.contentStructureFeedback}</p>
+                        </AccordionContent>
+                      </AccordionItem>
+                      <AccordionItem value="item-3">
+                        <AccordionTrigger>Keyword Analysis Details</AccordionTrigger>
+                        <AccordionContent className="space-y-2 text-sm">
+                          {seoAnalysisResult.primaryKeywordAnalysis.providedKeyword && <p><strong>Target Keyword:</strong> {seoAnalysisResult.primaryKeywordAnalysis.providedKeyword}</p>}
+                          {seoAnalysisResult.primaryKeywordAnalysis.suggestedKeywords && seoAnalysisResult.primaryKeywordAnalysis.suggestedKeywords.length > 0 && (
+                            <p><strong>Suggested Primary Keywords:</strong> {seoAnalysisResult.primaryKeywordAnalysis.suggestedKeywords.join(', ')}</p>
+                          )}
+                          {seoAnalysisResult.primaryKeywordAnalysis.densityFeedback && <p><strong>Density:</strong> {seoAnalysisResult.primaryKeywordAnalysis.densityFeedback}</p>}
+                           {seoAnalysisResult.primaryKeywordAnalysis.placementFeedback && <p><strong>Placement:</strong> {seoAnalysisResult.primaryKeywordAnalysis.placementFeedback}</p>}
+                          {seoAnalysisResult.secondaryKeywordSuggestions.length > 0 && (
+                             <p><strong>Secondary Keyword Suggestions:</strong> {seoAnalysisResult.secondaryKeywordSuggestions.join(', ')}</p>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  )}
                 </TabsContent>
-                <TabsContent value="analysis" forceMount className="mt-4">
+                <TabsContent value="gapAnalysis" forceMount className="mt-4">
                    <Label>Top Search Results Comparison (Mock)</Label>
                    <Textarea readOnly value="Top result 1 focuses on X, Y, Z. Your article covers X, Y well but could expand on Z. Consider adding a section on A and B which are common in top ranking pages." rows={5} className="text-sm" />
                    <Button variant="link" size="sm" className="p-0 h-auto mt-1 text-primary" onClick={() => toast({title: "Rewrite suggestions coming soon!"})}>Rewrite suggestions (mock)</Button>
@@ -937,4 +1068,3 @@ export default function BlogEditPage() {
     </TooltipProvider>
   );
 }
-

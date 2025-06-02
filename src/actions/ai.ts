@@ -10,6 +10,8 @@ import { simplifyBlogContent, type SimplifyBlogContentInput, type SimplifyBlogCo
 import { generateMetaTitle, type GenerateMetaTitleInput, type GenerateMetaTitleOutput } from '@/ai/flows/generate-meta-title-flow';
 import { generateMetaDescription, type GenerateMetaDescriptionInput, type GenerateMetaDescriptionOutput } from '@/ai/flows/generate-meta-description-flow';
 import { generateBlogTitleSuggestion, type GenerateBlogTitleSuggestionInput, type GenerateBlogTitleSuggestionOutput } from '@/ai/flows/generate-blog-title-suggestion-flow';
+import { analyzeBlogSeo, type AnalyzeBlogSeoInput, type AnalyzeBlogSeoOutput } from '@/ai/flows/analyze-blog-seo-flow';
+
 
 export async function generateHeroImageAction(input: GenerateHeroImageInput): Promise<GenerateHeroImageOutput> {
   try {
@@ -135,5 +137,33 @@ export async function generateMetaDescriptionAction(input: GenerateMetaDescripti
   } catch (error) {
     console.error("Error generating meta description:", error);
     return { suggestedMetaDescription: `Error: Could not suggest meta description for "${input.blogTitle.substring(0,30)}".` };
+  }
+}
+
+export async function analyzeBlogSeoAction(input: AnalyzeBlogSeoInput): Promise<AnalyzeBlogSeoOutput> {
+  console.log("analyzeBlogSeoAction called for blog title:", input.blogTitle);
+  try {
+    const result = await analyzeBlogSeo(input);
+    return result; // The flow itself has a fallback, so we can return result directly
+  } catch (error: any) {
+    console.error("Error analyzing blog SEO:", error);
+    // Construct a fallback response that matches the AnalyzeBlogSeoOutput schema
+    return {
+      overallSeoScore: 5,
+      readabilityScore: 10,
+      keywordRelevanceScore: 5,
+      suggestedMetaTitle: `Critial Error: SEO Analysis failed for "${input.blogTitle.substring(0, 25)}"`,
+      suggestedMetaDescription: "Critical Error: SEO Analysis failed. Please try again or check server logs.",
+      suggestedUrlSlug: "analysis-critical-error",
+      primaryKeywordAnalysis: {
+        suggestedKeywords: ["critical error"],
+        densityFeedback: "Critical error during analysis.",
+        placementFeedback: "Critical error during analysis."
+      },
+      secondaryKeywordSuggestions: ["critical analysis error"],
+      readabilityFeedback: "Critical Error: Could not analyze readability due to system error.",
+      contentStructureFeedback: "Critical Error: Could not analyze content structure due to system error.",
+      actionableRecommendations: ["Critical SEO analysis failed. Contact support if issue persists."],
+    };
   }
 }
