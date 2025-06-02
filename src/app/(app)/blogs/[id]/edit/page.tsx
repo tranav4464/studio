@@ -361,7 +361,7 @@ export default function BlogEditPage() {
         toast({ title: "Content repurposed!", description: "Check the generated snippets."});
     } catch (error: any) {
         toast({ title: "Error repurposing content", description: error.message, variant: "destructive" });
-        setRepurposedContent({ // Set fallback content on error
+        setRepurposedContent({ 
             tweetThread: ["Error generating tweets."],
             linkedInPost: "Error generating LinkedIn post.",
             instagramPost: "Error generating Instagram post.",
@@ -398,7 +398,7 @@ export default function BlogEditPage() {
   const copyToClipboard = (text: string | string[], type: string) => {
     let textToCopy: string;
     if (Array.isArray(text)) {
-        textToCopy = text.join('\n\n---\n\n'); // Join tweets with a separator
+        textToCopy = text.join('\n\n---\n\n'); 
     } else {
         textToCopy = text;
     }
@@ -600,7 +600,7 @@ export default function BlogEditPage() {
           setContent(parts[0] + result.insertionMarkerText + placeholderText + parts.slice(1).join(result.insertionMarkerText));
           toast({ title: "Visualization Suggestion Added!", description: `A placeholder comment for "${result.suggestedVisualDescription}" has been added to your content.` });
         } else {
-          setContent(content + placeholderText); // Append if marker not found or not provided
+          setContent(content + placeholderText); 
           toast({ title: "Visualization Suggestion Appended!", description: `Could not find exact insertion point. "${result.suggestedVisualDescription}" placeholder added at the end.` });
         }
       } else {
@@ -802,7 +802,7 @@ export default function BlogEditPage() {
   }
   
   const repurposedContentFields: Array<{key: RepurposedContentType, label: string, icon: React.ReactNode, contentKey: keyof Omit<RepurposedContent, 'tweetThread'> | 'tweetThreadArray'}> = [
-    { key: 'tweetThread', label: 'Tweet Thread', icon: <Icons.Tweet className="mr-1 h-4 w-4"/>, contentKey: 'tweetThreadArray' }, // Special handling for tweetThread
+    { key: 'tweetThread', label: 'Tweet Thread', icon: <Icons.Tweet className="mr-1 h-4 w-4"/>, contentKey: 'tweetThreadArray' }, 
     { key: 'linkedInPost', label: 'LinkedIn Post', icon: <Icons.LinkedIn className="mr-1 h-4 w-4"/>, contentKey: 'linkedInPost' },
     { key: 'instagramPost', label: 'Instagram Post', icon: <Icons.Instagram className="mr-1 h-4 w-4"/>, contentKey: 'instagramPost' },
     { key: 'emailNewsletterSummary', label: 'Email Summary', icon: <Icons.Email className="mr-1 h-4 w-4"/>, contentKey: 'emailNewsletterSummary' },
@@ -920,7 +920,7 @@ export default function BlogEditPage() {
                     ))}
                   </TabsList>
                   {repurposedContentFields.map(field => (
-                    <TabsContent key={field.key} value={field.key} forceMount className="mt-4">
+                    <TabsContent key={field.key} value={field.key} className="mt-4">
                       {field.contentKey === 'tweetThreadArray' ? (
                         <div className="space-y-3">
                           {(repurposedContent.tweetThread || []).map((tweet, index) => (
@@ -1178,7 +1178,7 @@ export default function BlogEditPage() {
             <CardContent className="space-y-4">
               <Tabs defaultValue="seoScores" className="w-full">
                 <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="seoScores">SEO Scores & Feedback</TabsTrigger><TabsTrigger value="gapAnalysis">Gap Analysis (Mock)</TabsTrigger></TabsList>
-                <TabsContent value="seoScores" forceMount className="mt-4 space-y-3">
+                <TabsContent value="seoScores" className="mt-4 space-y-3">
                   {(['Readability', 'Keyword Density', 'Overall Quality'] as const).map(scoreType => (
                     <div key={scoreType}>
                       <div className="flex justify-between mb-1 items-center">
@@ -1254,7 +1254,7 @@ export default function BlogEditPage() {
                     </Accordion>
                   )}
                 </TabsContent>
-                <TabsContent value="gapAnalysis" forceMount className="mt-4">
+                <TabsContent value="gapAnalysis" className="mt-4">
                    <Label>Top Search Results Comparison (Mock)</Label>
                    <Textarea readOnly value="Top result 1 focuses on X, Y, Z. Your article covers X, Y well but could expand on Z. Consider adding a section on A and B which are common in top ranking pages." rows={5} className="text-sm" />
                    <Button variant="link" size="sm" className="p-0 h-auto mt-1 text-primary" onClick={() => toast({title: "Rewrite suggestions coming soon!"})}>Rewrite suggestions (mock)</Button>
@@ -1305,3 +1305,5 @@ export default function BlogEditPage() {
     </TooltipProvider>
   );
 }
+
+    
