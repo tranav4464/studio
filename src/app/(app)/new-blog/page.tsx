@@ -166,7 +166,7 @@ export default function NewBlogPage() {
   };
   
   const pageTitle = uiStep === 'defineDetails' 
-    ? "Create New Blog Post - Step 1: Details" 
+    ? "Create New Blog Post" 
     : "Create New Blog Post - Step 2: Refine Outline & Generate";
   
   const pageDescription = uiStep === 'defineDetails'
