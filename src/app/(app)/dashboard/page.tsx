@@ -7,10 +7,17 @@ import { BlogCard } from '@/components/dashboard/blog-card';
 import { PageHeader } from '@/components/shared/page-header';
 import { blogStore } from '@/lib/blog-store';
 import type { BlogPost } from '@/types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { BlogCardSkeleton } from '@/components/dashboard/blog-card-skeleton';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
+
+interface PersonalizationLinkItem {
+  id: string;
+  content: ReactNode;
+  link: string;
+  ariaLabel: string;
+}
 
 export default function DashboardPage() {
   const [recentPosts, setRecentPosts] = useState<BlogPost[]>([]);
@@ -42,30 +49,39 @@ export default function DashboardPage() {
     }
   }, [postsToShow]);
 
-  const personalizationCards = [
+  const personalizationLinks: PersonalizationLinkItem[] = [
     {
-      id: "personalization-rules-card-link",
-      title: "Customize Your Content Rules",
-      description: "Define specific rules like automatically using diagrams in 'how-to' posts to tailor AI generation.",
-      buttonText: "Set Content Rules",
-      icon: <Icons.Settings className="mr-2 h-4 w-4" />,
-      link: "/settings#personalization-rules"
+      id: "personalization-rules-link",
+      content: (
+        <p className="text-base leading-relaxed">
+          Want personalized blogs for your niche?{' '}
+          <span className="font-semibold text-primary group-hover:underline">Set your content rules now &rarr;</span>
+        </p>
+      ),
+      link: "/settings#personalization-rules",
+      ariaLabel: "Navigate to content rules settings"
     },
     {
-      id: "style-presets-card-link",
-      title: "Manage Style Presets",
-      description: "Save and quickly apply your favorite tone and style combinations for consistent content.",
-      buttonText: "Configure Presets",
-      icon: <Icons.Style className="mr-2 h-4 w-4" />,
-      link: "/settings#style-presets"
+      id: "style-presets-link",
+      content: (
+        <p className="text-base leading-relaxed">
+          Save time with consistent branding.{' '}
+          <span className="font-semibold text-primary group-hover:underline">Manage your style presets &rarr;</span>
+        </p>
+      ),
+      link: "/settings#style-presets",
+      ariaLabel: "Navigate to style presets settings"
     },
     {
-      id: "export-templates-card-link",
-      title: "Customize Export Templates",
-      description: "Tailor your HTML exports by adding custom CSS for a unique look and feel.",
-      buttonText: "Edit Export CSS",
-      icon: <Icons.Export className="mr-2 h-4 w-4" />,
-      link: "/settings#export-templates"
+      id: "export-templates-link",
+      content: (
+        <p className="text-base leading-relaxed">
+          Make your exports uniquely yours.{' '}
+          <span className="font-semibold text-primary group-hover:underline">Customize HTML export CSS &rarr;</span>
+        </p>
+      ),
+      link: "/settings#export-templates",
+      ariaLabel: "Navigate to export templates settings"
     }
   ];
 
@@ -93,23 +109,16 @@ export default function DashboardPage() {
           </div>
 
           <section className="mb-10">
+            <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-4">Quick Tips to Personalize Your Experience:</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {personalizationCards.map((card) => (
-                <Card key={card.id} className="flex flex-col shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
-                  <CardHeader>
-                    <CardTitle className="text-lg">{card.title}</CardTitle>
-                    <CardDescription className="text-sm h-16 line-clamp-3">{card.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-grow" />
-                  <CardFooter>
-                    <Link href={card.link} passHref className="w-full">
-                      <Button variant="outline" className="w-full">
-                        {card.icon}
-                        {card.buttonText}
-                      </Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
+              {personalizationLinks.map((item) => (
+                <Link href={item.link} key={item.id} aria-label={item.ariaLabel} className="block group rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background">
+                  <Card className="h-full flex flex-col justify-center shadow-md hover:shadow-lg transition-all duration-200 ease-in-out group-hover:scale-[1.02]">
+                    <CardContent className="p-6">
+                      {item.content}
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </section>
