@@ -53,7 +53,7 @@ export default function DashboardPage() {
     {
       id: "personalization-rules-link",
       content: (
-        <p className="text-base leading-relaxed">
+        <p className="text-base leading-relaxed text-foreground group-hover:text-primary">
           Want personalized blogs for your niche?{' '}
           <span className="font-semibold text-primary group-hover:underline">Set your content rules now &rarr;</span>
         </p>
@@ -64,7 +64,7 @@ export default function DashboardPage() {
     {
       id: "style-presets-link",
       content: (
-        <p className="text-base leading-relaxed">
+        <p className="text-base leading-relaxed text-foreground group-hover:text-primary">
           Save time with consistent branding.{' '}
           <span className="font-semibold text-primary group-hover:underline">Manage your style presets &rarr;</span>
         </p>
@@ -75,7 +75,7 @@ export default function DashboardPage() {
     {
       id: "export-templates-link",
       content: (
-        <p className="text-base leading-relaxed">
+        <p className="text-base leading-relaxed text-foreground group-hover:text-primary">
           Make your exports uniquely yours.{' '}
           <span className="font-semibold text-primary group-hover:underline">Customize HTML export CSS &rarr;</span>
         </p>
@@ -112,12 +112,13 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-4">Quick Tips to Personalize Your Experience:</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {personalizationLinks.map((item) => (
-                <Link href={item.link} key={item.id} aria-label={item.ariaLabel} className="block group rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background">
-                  <Card className="h-full flex flex-col justify-center shadow-md hover:shadow-lg transition-all duration-200 ease-in-out group-hover:scale-[1.02]">
-                    <CardContent className="p-6">
-                      {item.content}
-                    </CardContent>
-                  </Card>
+                <Link 
+                  href={item.link} 
+                  key={item.id} 
+                  aria-label={item.ariaLabel} 
+                  className="block group p-4 rounded-lg hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background transition-colors"
+                >
+                  {item.content}
                 </Link>
               ))}
             </div>
