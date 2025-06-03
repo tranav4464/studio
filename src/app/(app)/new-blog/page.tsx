@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type ChangeEvent } from 'react'; // Added ChangeEvent
+import { useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import { blogStore } from '@/lib/blog-store';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { generateBlogOutlineAction, generateFullBlogAction } from '@/actions/ai';
+import { cn } from '@/lib/utils';
 
 const tones: BlogTone[] = ["formal", "casual", "informative", "persuasive", "humorous"];
 const styles: BlogStyle[] = ["academic", "journalistic", "storytelling", "technical"];
@@ -26,6 +27,8 @@ interface OutlineItem {
   value: string;
 }
 
+type UiStep = 'defineDetails' | 'editOutline';
+
 export default function NewBlogPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -34,11 +37,12 @@ export default function NewBlogPage() {
   const [style, setStyle] = useState<BlogStyle>('journalistic');
   const [length, setLength] = useState<BlogLength>('medium');
   const [referenceText, setReferenceText] = useState('');
-  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null); // State for uploaded file name
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [generatedOutline, setGeneratedOutline] = useState<OutlineItem[] | null>(null);
   const [isLoadingOutline, setIsLoadingOutline] = useState(false);
   const [isLoadingPost, setIsLoadingPost] = useState(false);
   const [customInstructions, setCustomInstructions] = useState('');
+  const [uiStep, setUiStep] = useState<UiStep>('defineDetails');
 
 
   const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -60,7 +64,7 @@ export default function NewBlogPage() {
       } else {
         toast({ title: "Invalid File Type", description: "Only .txt files are currently supported for direct content extraction. PDF/DOCX support coming soon.", variant: "destructive" });
         setUploadedFileName(null);
-        event.target.value = ""; // Reset file input
+        event.target.value = ""; 
       }
     }
   };
@@ -85,6 +89,7 @@ export default function NewBlogPage() {
       if (result.outline && result.outline.length > 0) {
         setGeneratedOutline(result.outline.map((item, index) => ({ id: Date.now().toString() + index, value: item })));
         toast({ title: "Outline Generated", description: "Review and customize the outline below." });
+        setUiStep('editOutline');
       } else {
         toast({ title: "Outline Generation Failed", description: "Could not generate an outline. Please try again or create one manually.", variant: "destructive" });
         setGeneratedOutline([
@@ -92,6 +97,7 @@ export default function NewBlogPage() {
           { id: Date.now().toString() + '2', value: `Key aspect 1 of ${topic}`},
           { id: Date.now().toString() + '3', value: `Conclusion about ${topic}`},
         ]);
+        setUiStep('editOutline'); 
       }
     } catch (error: any) {
       toast({ title: "Error Generating Outline", description: error.message || "An unexpected error occurred.", variant: "destructive" });
@@ -99,6 +105,7 @@ export default function NewBlogPage() {
           { id: Date.now().toString() + '1', value: `Error: Could not generate outline for ${topic}`},
           { id: Date.now().toString() + '2', value: `Please try again or manually create sections.`},
         ]);
+       setUiStep('editOutline');
     } finally {
       setIsLoadingOutline(false);
     }
@@ -157,19 +164,42 @@ export default function NewBlogPage() {
       setIsLoadingPost(false);
     }
   };
+  
+  const pageTitle = uiStep === 'defineDetails' 
+    ? "Create New Blog Post - Step 1: Details" 
+    : "Create New Blog Post - Step 2: Refine Outline & Generate";
+  
+  const pageDescription = uiStep === 'defineDetails'
+    ? "Define your blog's topic, tone, and style to get started."
+    : "Customize the AI-generated outline and add specific instructions for the full blog post generation.";
+
 
   return (
     <TooltipProvider>
       <div className="container mx-auto">
         <PageHeader
-          title="Create New Blog Post"
-          description="Define your blog's topic, tone, and style to get started."
+          title={pageTitle}
+          description={pageDescription}
         />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card className="md:col-span-2 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+        <div className={cn(
+            "gap-8",
+            uiStep === 'defineDetails'
+              ? "flex flex-col items-center" 
+              : "grid grid-cols-1 md:grid-cols-3" 
+          )}>
+          
+          {/* Blog Details Card */}
+          <Card className={cn(
+            "shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl",
+            uiStep === 'defineDetails' ? "w-full md:max-w-3xl" : "md:col-span-1"
+          )}>
             <CardHeader>
               <CardTitle>Blog Details</CardTitle>
-              <CardDescription>Fill in the specifics for your new blog post.</CardDescription>
+              <CardDescription>
+                {uiStep === 'defineDetails' 
+                  ? "Fill in the specifics for your new blog post."
+                  : "Review or adjust blog details if needed."}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -235,7 +265,7 @@ export default function NewBlogPage() {
                   <Input 
                     id="reference-files" 
                     type="file" 
-                    accept=".txt" // To guide user, actual check is in handler
+                    accept=".txt"
                     onChange={handleFileUpload}
                     className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" 
                   />
@@ -244,78 +274,96 @@ export default function NewBlogPage() {
                     Currently, only .txt files are directly processed. For PDF/DOCX, please paste content into the 'Initial Reference Text' box above. Full PDF/DOCX upload support coming soon.
                   </p>
               </div>
-
             </CardContent>
-            <CardFooter>
-              <Button onClick={handleGenerateOutline} disabled={isLoadingOutline || isLoadingPost}>
-                {isLoadingOutline && <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />}
-                Generate Outline
-              </Button>
-            </CardFooter>
-          </Card>
-
-          <Card className="md:col-span-1 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
-            <CardHeader>
-              <CardTitle>Blog Outline & Instructions</CardTitle>
-              <CardDescription>Customize the AI-generated outline and add specific instructions for the full blog post generation.</CardDescription>
-            </CardHeader>
-            <CardContent className="min-h-[200px] space-y-3">
-              {isLoadingOutline && (
-                <div className="flex items-center justify-center p-8"><Icons.Spinner className="h-8 w-8 animate-spin text-primary" /></div>
-              )}
-              {generatedOutline && !isLoadingOutline && (
-                <>
-                  <Label className="font-medium">Generated Outline:</Label>
-                  {generatedOutline.map((item) => (
-                    <div key={item.id} className="flex items-center gap-2">
-                      <Input 
-                        value={item.value} 
-                        className="flex-grow" 
-                        onChange={(e) => handleOutlineItemChange(item.id, e.target.value)}
-                      />
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveOutlineSection(item.id)} className="text-destructive hover:bg-destructive/10 h-8 w-8">
-                        <Icons.Delete className="h-4 w-4" />
-                        <span className="sr-only">Remove section</span>
-                      </Button>
-                    </div>
-                  ))}
-                   <Button variant="outline" size="sm" onClick={handleAddOutlineSection} className="w-full mt-2">
-                    <Icons.FilePlus className="mr-2 h-4 w-4" /> Add Section
-                  </Button>
-                  <div className="pt-4 space-y-2">
-                    <div className="flex items-center gap-1">
-                        <Label htmlFor="customInstructions">Additional Instructions for Full Blog (Optional)</Label>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs"><p>Provide specific instructions for the AI for the full blog generation stage (e.g., "Focus on practical examples in section 2", "Maintain a very optimistic tone throughout"). This will be combined with or override the initial reference text for this step.</p></TooltipContent>
-                        </Tooltip>
-                    </div>
-                    <Textarea 
-                        id="customInstructions"
-                        placeholder="e.g., Emphasize the impact on small businesses. Include a call to action to visit our website." 
-                        value={customInstructions}
-                        onChange={(e) => setCustomInstructions(e.target.value)}
-                        rows={3} 
-                        className="mt-1"
-                    />
-                  </div>
-                </>
-              )}
-              {!generatedOutline && !isLoadingOutline && (
-                <p className="text-sm text-muted-foreground text-center py-8">Click "Generate Outline" to start.</p>
-              )}
-            </CardContent>
-            {generatedOutline && generatedOutline.length > 0 && !isLoadingOutline && (
+            {uiStep === 'defineDetails' && (
               <CardFooter>
-                <Button onClick={handleGeneratePost} disabled={isLoadingPost || isLoadingOutline} className="w-full">
-                  {isLoadingPost && <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />}
-                  Generate Full Blog Post
+                <Button onClick={handleGenerateOutline} disabled={isLoadingOutline || isLoadingPost || !topic}>
+                  {isLoadingOutline && <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />}
+                  Generate Outline
                 </Button>
               </CardFooter>
             )}
           </Card>
+
+          {/* Blog Outline & Instructions Card - only shown in 'editOutline' step */}
+          {uiStep === 'editOutline' && (
+            <Card className="md:col-span-2 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+              <CardHeader>
+                 <div className="flex justify-between items-center">
+                    <CardTitle>Blog Outline & Instructions</CardTitle>
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => { 
+                            setGeneratedOutline(null); // Clear previous outline
+                            setCustomInstructions(''); // Clear custom instructions
+                            setUiStep('defineDetails'); 
+                        }}
+                        disabled={isLoadingPost || isLoadingOutline}
+                    >
+                        <Icons.ChevronLeft className="mr-2 h-4 w-4" /> Back to Details
+                    </Button>
+                </div>
+                <CardDescription>Customize the AI-generated outline and add specific instructions for the full blog post generation.</CardDescription>
+              </CardHeader>
+              <CardContent className="min-h-[200px] space-y-3">
+                {isLoadingOutline && (
+                  <div className="flex items-center justify-center p-8"><Icons.Spinner className="h-8 w-8 animate-spin text-primary" /></div>
+                )}
+                {generatedOutline && !isLoadingOutline && (
+                  <>
+                    <Label className="font-medium">Generated Outline:</Label>
+                    {generatedOutline.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2">
+                        <Input 
+                          value={item.value} 
+                          className="flex-grow" 
+                          onChange={(e) => handleOutlineItemChange(item.id, e.target.value)}
+                        />
+                        <Button variant="ghost" size="icon" onClick={() => handleRemoveOutlineSection(item.id)} className="text-destructive hover:bg-destructive/10 h-8 w-8">
+                          <Icons.Delete className="h-4 w-4" />
+                          <span className="sr-only">Remove section</span>
+                        </Button>
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={handleAddOutlineSection} className="w-full mt-2">
+                      <Icons.FilePlus className="mr-2 h-4 w-4" /> Add Section
+                    </Button>
+                    <div className="pt-4 space-y-2">
+                      <div className="flex items-center gap-1">
+                          <Label htmlFor="customInstructions">Additional Instructions for Full Blog (Optional)</Label>
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs"><p>Provide specific instructions for the AI for the full blog generation stage (e.g., "Focus on practical examples in section 2", "Maintain a very optimistic tone throughout"). This will be combined with or override the initial reference text for this step.</p></TooltipContent>
+                          </Tooltip>
+                      </div>
+                      <Textarea 
+                          id="customInstructions"
+                          placeholder="e.g., Emphasize the impact on small businesses. Include a call to action to visit our website." 
+                          value={customInstructions}
+                          onChange={(e) => setCustomInstructions(e.target.value)}
+                          rows={3} 
+                          className="mt-1"
+                      />
+                    </div>
+                  </>
+                )}
+                {!generatedOutline && !isLoadingOutline && (
+                  <p className="text-sm text-muted-foreground text-center py-8">Outline will appear here after generation.</p>
+                )}
+              </CardContent>
+              {generatedOutline && generatedOutline.length > 0 && !isLoadingOutline && (
+                <CardFooter>
+                  <Button onClick={handleGeneratePost} disabled={isLoadingPost || isLoadingOutline} className="w-full">
+                    {isLoadingPost && <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />}
+                    Generate Full Blog Post
+                  </Button>
+                </CardFooter>
+              )}
+            </Card>
+          )}
         </div>
       </div>
     </TooltipProvider>
