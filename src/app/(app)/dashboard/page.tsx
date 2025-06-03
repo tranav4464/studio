@@ -44,13 +44,15 @@ export default function DashboardPage() {
 
   const personalizationCards = [
     {
+      id: "personalization-rules-card-link",
       title: "Customize Your Content Rules",
       description: "Define specific rules like automatically using diagrams in 'how-to' posts to tailor AI generation.",
       buttonText: "Set Content Rules",
       icon: <Icons.Settings className="mr-2 h-4 w-4" />,
-      link: "/settings#personalization-rules" // Ideal, but hash navigation needs setup
+      link: "/settings#personalization-rules"
     },
     {
+      id: "style-presets-card-link",
       title: "Manage Style Presets",
       description: "Save and quickly apply your favorite tone and style combinations for consistent content.",
       buttonText: "Configure Presets",
@@ -58,10 +60,11 @@ export default function DashboardPage() {
       link: "/settings#style-presets"
     },
     {
+      id: "export-templates-card-link",
       title: "Customize Export Templates",
       description: "Tailor your HTML exports by adding custom CSS for a unique look and feel.",
       buttonText: "Edit Export CSS",
-      icon: <Icons.Export className="mr-2 h-4 w-4" />, // Could use Code icon too
+      icon: <Icons.Export className="mr-2 h-4 w-4" />,
       link: "/settings#export-templates"
     }
   ];
@@ -79,8 +82,8 @@ export default function DashboardPage() {
             <Link href="/new-blog" passHref>
               <Button
                 size="lg"
-                className="mt-6 sm:mt-0 shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-xl 
-                           bg-[#1A936F] text-white hover:bg-[#167d60] 
+                className="mt-6 sm:mt-0 shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-xl
+                           bg-[#1A936F] text-white hover:bg-[#167d60]
                            dark:bg-[#0B2C39] dark:text-white dark:hover:bg-[#1D3F4E]"
               >
                 <Icons.NewBlog className="mr-2 h-5 w-5 animate-pulse" />
@@ -92,14 +95,14 @@ export default function DashboardPage() {
           <section className="mb-10">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {personalizationCards.map((card) => (
-                <Card key={card.title} className="flex flex-col shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+                <Card key={card.id} className="flex flex-col shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
                   <CardHeader>
                     <CardTitle className="text-lg">{card.title}</CardTitle>
                     <CardDescription className="text-sm h-16 line-clamp-3">{card.description}</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex-grow" /> 
+                  <CardContent className="flex-grow" />
                   <CardFooter>
-                    <Link href={card.link.split('#')[0]} passHref className="w-full">
+                    <Link href={card.link} passHref className="w-full">
                       <Button variant="outline" className="w-full">
                         {card.icon}
                         {card.buttonText}

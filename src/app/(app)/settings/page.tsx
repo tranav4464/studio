@@ -67,10 +67,10 @@ export default function SettingsPage() {
         if (!completeSettings.userProfile) {
             completeSettings.userProfile = defaultSettings.userProfile;
         }
-        if (!completeSettings.rules) { 
+        if (!completeSettings.rules) {
             completeSettings.rules = defaultSettings.rules;
         }
-        if (!completeSettings.stylePresets) { 
+        if (!completeSettings.stylePresets) {
             completeSettings.stylePresets = defaultSettings.stylePresets;
         }
         if (completeSettings.customExportCss === undefined) { // Ensure customExportCss exists
@@ -80,10 +80,10 @@ export default function SettingsPage() {
       } catch (e) {
         console.error("Failed to parse settings from localStorage", e);
         localStorage.setItem('contentCraftAISettings', JSON.stringify(defaultSettings));
-        setSettings(defaultSettings); 
+        setSettings(defaultSettings);
       }
     } else {
-        setSettings(defaultSettings); 
+        setSettings(defaultSettings);
     }
   }, []);
 
@@ -98,7 +98,7 @@ export default function SettingsPage() {
   const handleInputChange = (field: keyof Settings, value: any) => {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
-  
+
   const handleNestedInputChange = <K extends keyof Settings, NK extends keyof NonNullable<Settings[K]>>(
     parentField: K,
     nestedField: NK,
@@ -150,7 +150,7 @@ export default function SettingsPage() {
 
   const handleLogout = () => {
     toast({ title: "Logged Out", description: "You have been successfully logged out." });
-    router.push('/login'); 
+    router.push('/login');
   };
 
   return (
@@ -201,7 +201,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+        <Card id="personalization-rules" className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
           <CardHeader><CardTitle>Personalization Rules</CardTitle><CardDescription>Define specific rules for content generation.</CardDescription></CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between space-x-2 p-4 border rounded-lg hover:shadow-sm transition-shadow">
@@ -225,7 +225,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+        <Card id="style-presets" className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
             <CardHeader><CardTitle>Style Presets</CardTitle><CardDescription>Save and manage your favorite tone and style combinations.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
                 {settings.stylePresets.length > 0 ? (
@@ -279,8 +279,8 @@ export default function SettingsPage() {
             </Button>
           </CardFooter>
         </Card>
-        
-        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+
+        <Card id="export-templates" className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
           <CardHeader><CardTitle>Export Template Customization</CardTitle><CardDescription>Add custom CSS for the "Styled Article HTML" export.</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
