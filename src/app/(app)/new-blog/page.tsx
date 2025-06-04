@@ -250,9 +250,10 @@ export default function NewBlogPage() {
     setUiStep('defineDetails');
     setGeneratedOutline(null);
     setCustomInstructions('');
-    if (uploadedFileName) {
+    if (uploadedFileName) { // If a file was involved in referenceText
       handleRemoveFile(); // This also clears referenceText and resets fileInputRef
     }
+    // Manually typed referenceText without file upload is preserved by default
   };
 
   const pageTitle = uiStep === 'defineDetails'
@@ -339,7 +340,7 @@ export default function NewBlogPage() {
                 <Label>Style</Label>
                 <div className="grid grid-cols-2 gap-3">
                     {styles.map(s => {
-                        const IconElement = Icons[s.icon];
+                        const IconElement = Icons[s.icon] || Icons.HelpCircle;
                         return (
                             <Button
                                 key={s.value}
@@ -348,7 +349,7 @@ export default function NewBlogPage() {
                                 className="h-auto py-3 flex flex-col items-start text-left"
                             >
                                 <div className="flex items-center gap-2">
-                                    {IconElement ? <IconElement className="h-4 w-4" /> : <Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /> }
+                                    <IconElement className="h-4 w-4" />
                                     <span className="font-semibold">{s.label}</span>
                                 </div>
                                 <p className={cn(
@@ -405,51 +406,69 @@ export default function NewBlogPage() {
               <Separator />
 
               <div className="space-y-2 pt-2">
-                  <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <Label htmlFor="referenceText">Reference Material (Optional)</Label>
-                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent side="top" className="max-w-xs"><p>Paste text, or use the attach icon to upload a .txt file. This material is primarily used for the initial outline generation.</p></TooltipContent></Tooltip>
+                        <Label htmlFor="referenceText">Reference Material (Optional)</Label>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-5 w-5">
+                                <Icons.HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                            <p>Paste text. This material is primarily used for the initial outline generation.</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
+                 </div>
+                 <div className="relative">
+                    <Textarea
+                        id="referenceText"
+                        placeholder="Paste any reference material, key points..."
+                        value={referenceText}
+                        onChange={(e) => setReferenceText(e.target.value)}
+                        rows={5}
+                        className="pr-12" 
+                    />
                     <Popover open={isAttachPopoverOpen} onOpenChange={setIsAttachPopoverOpen}>
                         <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                                <Icons.Paperclip className="h-5 w-5 text-primary" />
-                                <span className="sr-only">Attach file</span>
-                            </Button>
+                        <Button variant="ghost" size="icon" className="absolute bottom-2 right-2 h-8 w-8 text-primary hover:bg-primary/10">
+                            <Icons.Paperclip className="h-5 w-5" />
+                            <span className="sr-only">Attach file</span>
+                        </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-2" align="end">
-                            <div className="flex flex-col gap-1">
-                                <Button variant="ghost" size="sm" className="justify-start" onClick={triggerFileInput}>
-                                    <Icons.FilePlus className="mr-2 h-4 w-4" /> Upload .txt File
-                                </Button>
-                                <Button variant="ghost" size="sm" className="justify-start" onClick={() => toast({title: "Coming Soon", description: "PDF/DOCX upload support is planned. For now, please paste content or upload a .txt file."})}>
-                                    <Icons.FileText className="mr-2 h-4 w-4" /> Upload .pdf/.docx
-                                </Button>
-                                <Button variant="ghost" size="sm" className="justify-start" onClick={() => toast({title: "Coming Soon", description: "Google Drive integration is planned."})}>
-                                    <Icons.Dashboard className="mr-2 h-4 w-4" /> Connect Google Drive
-                                </Button>
-                            </div>
+                        <div className="flex flex-col gap-1">
+                            <Button variant="ghost" size="sm" className="justify-start" onClick={triggerFileInput}>
+                                <Icons.FilePlus className="mr-2 h-4 w-4" /> Upload .txt File
+                            </Button>
+                            <Button variant="ghost" size="sm" className="justify-start" onClick={() => toast({title: "Coming Soon", description: "PDF/DOCX upload support is planned. For now, please paste content or upload a .txt file."})}>
+                                <Icons.FileText className="mr-2 h-4 w-4" /> Upload .pdf/.docx
+                            </Button>
+                            <Button variant="ghost" size="sm" className="justify-start" onClick={() => toast({title: "Coming Soon", description: "Google Drive integration is planned."})}>
+                                <Icons.Dashboard className="mr-2 h-4 w-4" /> Connect Google Drive
+                            </Button>
+                        </div>
                         </PopoverContent>
                     </Popover>
-                  </div>
-                  <Textarea id="referenceText" placeholder="Paste any reference material, key points, or upload a .txt file..." value={referenceText} onChange={(e) => setReferenceText(e.target.value)} rows={5} />
-                  <input
-                    id="reference-file-input"
-                    type="file"
-                    accept=".txt"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                  {uploadedFileName && (
-                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-md mt-2">
-                        <div className="flex items-center gap-2">
-                            <Icons.Check className="h-4 w-4 text-green-600" />
-                            <p className="text-xs text-muted-foreground">File: {uploadedFileName}</p>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={handleRemoveFile} className="text-xs text-destructive hover:text-destructive/80 h-7 px-2">Remove</Button>
+                </div>
+                <input
+                  id="reference-file-input"
+                  type="file"
+                  accept=".txt"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                {uploadedFileName && (
+                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded-md mt-2">
+                    <div className="flex items-center gap-2">
+                      <Icons.Check className="h-4 w-4 text-green-600" />
+                      <p className="text-xs text-muted-foreground">File: {uploadedFileName}</p>
                     </div>
-                  )}
+                    <Button variant="ghost" size="sm" onClick={handleRemoveFile} className="text-xs text-destructive hover:text-destructive/80 h-7 px-2">Remove</Button>
+                  </div>
+                )}
               </div>
             </CardContent>
             {uiStep === 'defineDetails' && (
