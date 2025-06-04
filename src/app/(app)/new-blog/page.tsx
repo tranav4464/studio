@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type ChangeEvent } from 'react';
+import { useState, type ChangeEvent, useRef } from 'react'; // Added useRef
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +43,7 @@ export default function NewBlogPage() {
   const [isLoadingPost, setIsLoadingPost] = useState(false);
   const [customInstructions, setCustomInstructions] = useState('');
   const [uiStep, setUiStep] = useState<UiStep>('defineDetails');
+  const fileInputRef = useRef<HTMLInputElement>(null); // Ref for file input
 
 
   const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -64,9 +65,20 @@ export default function NewBlogPage() {
       } else {
         toast({ title: "Invalid File Type", description: "Only .txt files are currently supported for direct content extraction. PDF/DOCX support coming soon.", variant: "destructive" });
         setUploadedFileName(null);
-        event.target.value = ""; 
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""; // Reset file input
+        }
       }
     }
+  };
+
+  const handleRemoveFile = () => {
+    setUploadedFileName(null);
+    setReferenceText('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; // Reset file input visually
+    }
+    toast({ title: "File Removed", description: "Uploaded file and its reference text have been cleared." });
   };
 
   const handleGenerateOutline = async () => {
@@ -139,7 +151,7 @@ export default function NewBlogPage() {
         style,
         length,
         outline: outlineStrings,
-        referenceText: customInstructions || referenceText || undefined,
+        referenceText: customInstructions || referenceText || undefined, // Custom instructions take precedence for full blog
       });
 
       const newPost = blogStore.addPost({
@@ -163,6 +175,20 @@ export default function NewBlogPage() {
     } finally {
       setIsLoadingPost(false);
     }
+  };
+
+  const handleBackToDetails = () => {
+    setUiStep('defineDetails');
+    setGeneratedOutline(null);
+    setCustomInstructions('');
+    if (uploadedFileName) { // If reference text came from a file, clear it and the file name
+      setUploadedFileName(null);
+      setReferenceText('');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+    // Manually typed referenceText is preserved
   };
   
   const pageTitle = uiStep === 'defineDetails' 
@@ -188,7 +214,6 @@ export default function NewBlogPage() {
               : "grid grid-cols-1 md:grid-cols-3" 
           )}>
           
-          {/* Blog Details Card */}
           <Card className={cn(
             "shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl",
             uiStep === 'defineDetails' ? "w-full md:max-w-3xl" : "md:col-span-1"
@@ -246,32 +271,41 @@ export default function NewBlogPage() {
                     <TooltipTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
                     </TooltipTrigger>
-                    <TooltipContent side="top"><p>Paste any existing text, notes, or key points for the AI to consider for outline generation. This will be replaced if you upload a .txt file.</p></TooltipContent>
+                    <TooltipContent side="top" className="max-w-xs"><p>Paste text, notes, or key points. This helps the AI generate a relevant outline. This text is replaced if you upload a .txt file.</p></TooltipContent>
                   </Tooltip>
                 </div>
-                <Textarea id="referenceText" placeholder="Paste any reference material or key points here, or upload a .txt file below..." value={referenceText} onChange={(e) => setReferenceText(e.target.value)} rows={5} />
+                <Textarea id="referenceText" placeholder="Paste any reference material or key points here..." value={referenceText} onChange={(e) => setReferenceText(e.target.value)} rows={5} />
               </div>
               
               <div className="space-y-2">
                   <div className="flex items-center gap-1">
-                    <Label htmlFor="reference-files">Upload Reference File (Optional)</Label>
+                    <Label htmlFor="reference-files">Upload Reference File (Optional .txt)</Label>
                     <Tooltip>
                         <TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
                         </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs"><p>Upload a .txt file. Its content will replace the text in the 'Initial Reference Text' box above. Support for PDF/DOCX coming soon.</p></TooltipContent>
+                        <TooltipContent side="top" className="max-w-xs"><p>Upload a .txt file. Its content will replace text in 'Initial Reference Text'. PDF/DOCX support coming soon.</p></TooltipContent>
                     </Tooltip>
                   </div>
                   <Input 
                     id="reference-files" 
                     type="file" 
                     accept=".txt"
+                    ref={fileInputRef}
                     onChange={handleFileUpload}
                     className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" 
                   />
-                  {uploadedFileName && <p className="text-xs text-muted-foreground">Uploaded: {uploadedFileName}</p>}
+                  {uploadedFileName && (
+                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
+                        <div className="flex items-center gap-2">
+                            <Icons.Check className="h-4 w-4 text-green-600" />
+                            <p className="text-xs text-muted-foreground">Uploaded: {uploadedFileName}</p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={handleRemoveFile} className="text-xs text-destructive hover:text-destructive/80">Remove</Button>
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    Currently, only .txt files are directly processed. For PDF/DOCX, please paste content into the 'Initial Reference Text' box above. Full PDF/DOCX upload support coming soon.
+                    For PDF/DOCX, please paste content into 'Initial Reference Text' above. Full PDF/DOCX upload support coming soon.
                   </p>
               </div>
             </CardContent>
@@ -285,7 +319,6 @@ export default function NewBlogPage() {
             )}
           </Card>
 
-          {/* Blog Outline & Instructions Card - only shown in 'editOutline' step */}
           {uiStep === 'editOutline' && (
             <Card className="md:col-span-2 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
               <CardHeader>
@@ -294,11 +327,7 @@ export default function NewBlogPage() {
                     <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => { 
-                            setGeneratedOutline(null); // Clear previous outline
-                            setCustomInstructions(''); // Clear custom instructions
-                            setUiStep('defineDetails'); 
-                        }}
+                        onClick={handleBackToDetails}
                         disabled={isLoadingPost || isLoadingOutline}
                     >
                         <Icons.ChevronLeft className="mr-2 h-4 w-4" /> Back to Details
@@ -312,31 +341,33 @@ export default function NewBlogPage() {
                 )}
                 {generatedOutline && !isLoadingOutline && (
                   <>
-                    <Label className="font-medium">Generated Outline:</Label>
-                    {generatedOutline.map((item) => (
-                      <div key={item.id} className="flex items-center gap-2">
-                        <Input 
-                          value={item.value} 
-                          className="flex-grow" 
-                          onChange={(e) => handleOutlineItemChange(item.id, e.target.value)}
-                        />
-                        <Button variant="ghost" size="icon" onClick={() => handleRemoveOutlineSection(item.id)} className="text-destructive hover:bg-destructive/10 h-8 w-8">
-                          <Icons.Delete className="h-4 w-4" />
-                          <span className="sr-only">Remove section</span>
-                        </Button>
-                      </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={handleAddOutlineSection} className="w-full mt-2">
+                    <Label className="font-medium text-base">Generated Outline:</Label>
+                    <div className="space-y-2">
+                        {generatedOutline.map((item) => (
+                          <div key={item.id} className="flex items-center gap-2 p-2 border rounded-md bg-background hover:shadow-sm">
+                            <Input 
+                              value={item.value} 
+                              className="flex-grow" 
+                              onChange={(e) => handleOutlineItemChange(item.id, e.target.value)}
+                            />
+                            <Button variant="ghost" size="icon" onClick={() => handleRemoveOutlineSection(item.id)} className="text-destructive hover:bg-destructive/10 h-8 w-8 flex-shrink-0">
+                              <Icons.Delete className="h-4 w-4" />
+                              <span className="sr-only">Remove section</span>
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleAddOutlineSection} className="w-full mt-3">
                       <Icons.FilePlus className="mr-2 h-4 w-4" /> Add Section
                     </Button>
                     <div className="pt-4 space-y-2">
                       <div className="flex items-center gap-1">
-                          <Label htmlFor="customInstructions">Additional Instructions for Full Blog (Optional)</Label>
+                          <Label htmlFor="customInstructions">Specific Instructions for Blog Generation (Optional)</Label>
                           <Tooltip>
                               <TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
                               </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-xs"><p>Provide specific instructions for the AI for the full blog generation stage (e.g., "Focus on practical examples in section 2", "Maintain a very optimistic tone throughout"). This will be combined with or override the initial reference text for this step.</p></TooltipContent>
+                              <TooltipContent side="top" className="max-w-xs"><p>Provide specific instructions for the AI for the full blog generation stage (e.g., "Focus on practical examples in section 2", "Maintain a very optimistic tone throughout"). This guides the AI when writing the full content from the outline.</p></TooltipContent>
                           </Tooltip>
                       </div>
                       <Textarea 
