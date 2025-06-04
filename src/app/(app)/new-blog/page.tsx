@@ -17,7 +17,7 @@ import type { BlogTone, BlogStyle, BlogLength, Persona, ExpertiseLevel, Intent }
 import { blogStore } from '@/lib/blog-store';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Added Popover
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { generateBlogOutlineAction, generateFullBlogAction, generateTopicIdeasAction } from '@/actions/ai';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -31,10 +31,10 @@ const tones: Array<{value: BlogTone, label: string, emoji: string}> = [
 ];
 
 const styles: Array<{value: BlogStyle, label: string, description: string, icon: keyof typeof Icons}> = [
-    {value: "journalistic", label: "Journalistic", description: "Factual, news-like.", icon: "Edit"}, 
-    {value: "storytelling", label: "Storytelling", description: "Narrative-driven.", icon: "FileText"}, 
-    {value: "technical", label: "Technical", description: "Detailed, precise.", icon: "Settings"}, 
-    {value: "academic", label: "Academic", description: "Formal, research-oriented.", icon: "MyBlogs"}, 
+    {value: "journalistic", label: "Journalistic", description: "Factual, news-like.", icon: "Edit"},
+    {value: "storytelling", label: "Storytelling", description: "Narrative-driven.", icon: "FileText"},
+    {value: "technical", label: "Technical", description: "Detailed, precise.", icon: "Settings"},
+    {value: "academic", label: "Academic", description: "Formal, research-oriented.", icon: "MyBlogs"},
 ];
 const lengths: BlogLength[] = ["short", "medium", "long"];
 
@@ -59,9 +59,9 @@ export default function NewBlogPage() {
   const [length, setLength] = useState<BlogLength>('medium');
   const [referenceText, setReferenceText] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
-  
+
   const [persona, setPersona] = useState<Persona>('General Audience');
-  const [expertiseLevelValue, setExpertiseLevelValue] = useState<number[]>([1]); 
+  const [expertiseLevelValue, setExpertiseLevelValue] = useState<number[]>([1]);
   const [intent, setIntent] = useState<Intent>('Inform');
   const [topicIdeas, setTopicIdeas] = useState<string[]>([]);
   const [isSparkingIdeas, setIsSparkingIdeas] = useState(false);
@@ -72,7 +72,7 @@ export default function NewBlogPage() {
   const [isLoadingPost, setIsLoadingPost] = useState(false);
   const [customInstructions, setCustomInstructions] = useState('');
   const [uiStep, setUiStep] = useState<UiStep>('defineDetails');
-  const fileInputRef = useRef<HTMLInputElement>(null); 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isAttachPopoverOpen, setIsAttachPopoverOpen] = useState(false);
 
 
@@ -105,7 +105,7 @@ export default function NewBlogPage() {
         toast({ title: "Invalid File Type", description: "Only .txt files are currently supported for direct content extraction.", variant: "destructive" });
         setUploadedFileName(null);
         if (fileInputRef.current) {
-          fileInputRef.current.value = ""; 
+          fileInputRef.current.value = "";
         }
       }
     }
@@ -119,7 +119,7 @@ export default function NewBlogPage() {
     setUploadedFileName(null);
     setReferenceText('');
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; 
+      fileInputRef.current.value = "";
     }
     toast({ title: "File Removed", description: "Uploaded file and its reference text have been cleared." });
   };
@@ -171,7 +171,7 @@ export default function NewBlogPage() {
           { id: Date.now().toString() + '2', value: `Key aspect 1 of ${topic}`},
           { id: Date.now().toString() + '3', value: `Conclusion about ${topic}`},
         ]);
-        setUiStep('editOutline'); 
+        setUiStep('editOutline');
       }
     } catch (error: any) {
       toast({ title: "Error Generating Outline", description: error.message || "An unexpected error occurred.", variant: "destructive" });
@@ -203,7 +203,7 @@ export default function NewBlogPage() {
       return;
     }
     setIsLoadingPost(true);
-    
+
     const outlineStrings = generatedOutline.map(item => item.value);
 
     try {
@@ -213,7 +213,7 @@ export default function NewBlogPage() {
         style,
         length,
         outline: outlineStrings,
-        referenceText: referenceText || undefined, 
+        referenceText: referenceText || undefined,
         persona,
         expertiseLevel: currentExpertiseLevel,
         intent,
@@ -221,7 +221,7 @@ export default function NewBlogPage() {
       });
 
       const newPost = blogStore.addPost({
-          title: topic, 
+          title: topic,
           topic,
           tone,
           style,
@@ -230,8 +230,8 @@ export default function NewBlogPage() {
           expertiseLevel: currentExpertiseLevel,
           intent,
       });
-      
-      blogStore.updatePost(newPost.id, { 
+
+      blogStore.updatePost(newPost.id, {
         content: result.blogContent,
         outline: outlineStrings,
       });
@@ -250,21 +250,20 @@ export default function NewBlogPage() {
     setUiStep('defineDetails');
     setGeneratedOutline(null);
     setCustomInstructions('');
-    if (uploadedFileName) { 
+    if (uploadedFileName) {
       handleRemoveFile(); // This also clears referenceText and resets fileInputRef
     }
   };
-  
-  const pageTitle = uiStep === 'defineDetails' 
-    ? "Create New Blog Post" 
+
+  const pageTitle = uiStep === 'defineDetails'
+    ? "Create New Blog Post"
     : "Create New Blog Post - Step 2: Refine Outline & Generate";
-  
+
   const pageDescription = uiStep === 'defineDetails'
     ? "Define your blog's topic, tone, and style to get started."
     : "Customize the AI-generated outline and add specific instructions for the full blog post generation.";
 
   const selectedToneEmoji = tones.find(t => t.value === tone)?.emoji || '';
-  const StyleIcon = Icons[style];
 
   return (
     <TooltipProvider>
@@ -276,10 +275,10 @@ export default function NewBlogPage() {
         <div className={cn(
             "gap-8",
             uiStep === 'defineDetails'
-              ? "flex flex-col items-center" 
-              : "grid grid-cols-1 md:grid-cols-3" 
+              ? "flex flex-col items-center"
+              : "grid grid-cols-1 md:grid-cols-3"
           )}>
-          
+
           <Card className={cn(
             "shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl",
             uiStep === 'defineDetails' ? "w-full md:max-w-3xl" : "md:col-span-1"
@@ -287,7 +286,7 @@ export default function NewBlogPage() {
             <CardHeader>
               <CardTitle>Blog Details</CardTitle>
               <CardDescription>
-                {uiStep === 'defineDetails' 
+                {uiStep === 'defineDetails'
                   ? "Fill in the specifics for your new blog post."
                   : "Review or adjust blog details if needed."}
               </CardDescription>
@@ -318,7 +317,7 @@ export default function NewBlogPage() {
                     </div>
                 )}
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="tone">Tone {selectedToneEmoji}</Label>
@@ -340,16 +339,16 @@ export default function NewBlogPage() {
                 <Label>Style</Label>
                 <div className="grid grid-cols-2 gap-3">
                     {styles.map(s => {
-                        const IconComponent = Icons[s.icon];
+                        const IconElement = Icons[s.icon];
                         return (
-                            <Button 
-                                key={s.value} 
-                                variant={style === s.value ? "default" : "outline"} 
+                            <Button
+                                key={s.value}
+                                variant={style === s.value ? "default" : "outline"}
                                 onClick={() => setStyle(s.value)}
                                 className="h-auto py-3 flex flex-col items-start text-left"
                             >
                                 <div className="flex items-center gap-2">
-                                    <IconComponent className="h-4 w-4" />
+                                    {IconElement ? <IconElement className="h-4 w-4" /> : <Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /> }
                                     <span className="font-semibold">{s.label}</span>
                                 </div>
                                 <p className={cn(
@@ -402,14 +401,14 @@ export default function NewBlogPage() {
                     ))}
                 </RadioGroup>
               </div>
-              
+
               <Separator />
 
               <div className="space-y-2 pt-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       <Label htmlFor="referenceText">Reference Material (Optional)</Label>
-                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent side="top" className="max-w-xs"><p>Paste text, or use the attach icon to upload files. Used for initial outline generation.</p></TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent side="top" className="max-w-xs"><p>Paste text, or use the attach icon to upload a .txt file. This material is primarily used for the initial outline generation.</p></TooltipContent></Tooltip>
                     </div>
                     <Popover open={isAttachPopoverOpen} onOpenChange={setIsAttachPopoverOpen}>
                         <PopoverTrigger asChild>
@@ -423,7 +422,7 @@ export default function NewBlogPage() {
                                 <Button variant="ghost" size="sm" className="justify-start" onClick={triggerFileInput}>
                                     <Icons.FilePlus className="mr-2 h-4 w-4" /> Upload .txt File
                                 </Button>
-                                <Button variant="ghost" size="sm" className="justify-start" onClick={() => toast({title: "Coming Soon", description: "PDF/DOCX upload support is planned."})}>
+                                <Button variant="ghost" size="sm" className="justify-start" onClick={() => toast({title: "Coming Soon", description: "PDF/DOCX upload support is planned. For now, please paste content or upload a .txt file."})}>
                                     <Icons.FileText className="mr-2 h-4 w-4" /> Upload .pdf/.docx
                                 </Button>
                                 <Button variant="ghost" size="sm" className="justify-start" onClick={() => toast({title: "Coming Soon", description: "Google Drive integration is planned."})}>
@@ -433,14 +432,14 @@ export default function NewBlogPage() {
                         </PopoverContent>
                     </Popover>
                   </div>
-                  <Textarea id="referenceText" placeholder="Paste any reference material, key points, or upload a file..." value={referenceText} onChange={(e) => setReferenceText(e.target.value)} rows={5} />
-                  <input 
-                    id="reference-file-input" 
-                    type="file" 
+                  <Textarea id="referenceText" placeholder="Paste any reference material, key points, or upload a .txt file..." value={referenceText} onChange={(e) => setReferenceText(e.target.value)} rows={5} />
+                  <input
+                    id="reference-file-input"
+                    type="file"
                     accept=".txt"
                     ref={fileInputRef}
                     onChange={handleFileUpload}
-                    className="hidden" 
+                    className="hidden"
                   />
                   {uploadedFileName && (
                     <div className="flex items-center justify-between p-2 bg-muted/50 rounded-md mt-2">
@@ -468,9 +467,9 @@ export default function NewBlogPage() {
               <CardHeader>
                  <div className="flex justify-between items-center">
                     <CardTitle>Blog Outline & Instructions</CardTitle>
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
+                    <Button
+                        variant="outline"
+                        size="sm"
                         onClick={handleBackToDetails}
                         disabled={isLoadingPost || isLoadingOutline}
                     >
@@ -489,9 +488,9 @@ export default function NewBlogPage() {
                     <div className="space-y-2">
                         {generatedOutline.map((item) => (
                           <div key={item.id} className="flex items-center gap-2 p-2 border rounded-md bg-background hover:shadow-sm">
-                            <Input 
-                              value={item.value} 
-                              className="flex-grow" 
+                            <Input
+                              value={item.value}
+                              className="flex-grow"
                               onChange={(e) => handleOutlineItemChange(item.id, e.target.value)}
                             />
                             <Button variant="ghost" size="icon" onClick={() => handleRemoveOutlineSection(item.id)} className="text-destructive hover:bg-destructive/10 h-8 w-8 flex-shrink-0">
@@ -509,12 +508,12 @@ export default function NewBlogPage() {
                           <Label htmlFor="customInstructions">Specific Instructions for Blog Generation (Optional)</Label>
                           <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent side="top" className="max-w-xs"><p>Guide the AI for full blog generation (e.g., "Focus on practical examples"). This guides AI when writing from the outline, supplementing initial references for this step.</p></TooltipContent></Tooltip>
                       </div>
-                      <Textarea 
+                      <Textarea
                           id="customInstructions"
-                          placeholder="e.g., Emphasize the impact on small businesses. Include a call to action to visit our website." 
+                          placeholder="e.g., Emphasize the impact on small businesses. Include a call to action to visit our website."
                           value={customInstructions}
                           onChange={(e) => setCustomInstructions(e.target.value)}
-                          rows={3} 
+                          rows={3}
                           className="mt-1"
                       />
                     </div>
@@ -539,4 +538,3 @@ export default function NewBlogPage() {
     </TooltipProvider>
   );
 }
-
