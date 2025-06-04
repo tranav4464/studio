@@ -70,6 +70,7 @@ export const Icons = {
   Dashboard: LayoutGrid,
   Settings: Settings,
   MyBlogs: FileText,
+  FileText: FileText, // Added FileText explicitly
   Edit: Edit3,
   Delete: Trash2,
   Export: Download,
@@ -115,8 +116,7 @@ export const Icons = {
   Team: Users, // Icon for Team/Collaboration
   ThumbsUp: ThumbsUp,
   ThumbsDown: ThumbsDown,
-  Paperclip: Paperclip, // Added Paperclip
+  Paperclip: Paperclip,
 };
 
 export type IconName = keyof typeof Icons;
-
