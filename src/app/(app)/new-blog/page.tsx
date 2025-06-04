@@ -32,9 +32,9 @@ const tones: Array<{value: BlogTone, label: string, emoji: string}> = [
 
 const styles: Array<{value: BlogStyle, label: string, description: string, icon: keyof typeof Icons}> = [
     {value: "journalistic", label: "Journalistic", description: "Factual, news-like.", icon: "FileText"},
-    {value: "storytelling", label: "Storytelling", description: "Narrative-driven.", icon: "FileText"},
+    {value: "storytelling", label: "Storytelling", description: "Narrative-driven.", icon: "FileText"}, // Changed icon to FileText for consistency if BookOpen is not available
     {value: "technical", label: "Technical", description: "Detailed, precise.", icon: "Settings"},
-    {value: "academic", label: "Academic", description: "Formal, research-oriented.", icon: "MyBlogs"},
+    {value: "academic", label: "Academic", description: "Formal, research-oriented.", icon: "MyBlogs"}, // Assuming MyBlogs is a valid icon like BookText or similar
 ];
 const lengths: BlogLength[] = ["short", "medium", "long"];
 
@@ -89,7 +89,7 @@ export default function NewBlogPage() {
   const handleSummarizeReferenceText = async (text: string) => {
     if (!text.trim()) return;
     setIsSummarizingRefText(true);
-    setReferenceSummaryPoints([]);
+    setReferenceSummaryPoints([]); // Clear previous points
     try {
       const result = await summarizeReferenceTextAction({ textToSummarize: text });
       setReferenceSummaryPoints(result.keyPoints);
@@ -110,8 +110,8 @@ export default function NewBlogPage() {
           setReferenceText(content);
           setUploadedFileName(file.name);
           toast({ title: "File Uploaded", description: `${file.name} content loaded. Summarizing...` });
-          setIsAttachPopoverOpen(false); 
-          await handleSummarizeReferenceText(content);
+          setIsAttachPopoverOpen(false);
+          await handleSummarizeReferenceText(content); // Summarize after loading
         };
         reader.onerror = () => {
           toast({ title: "File Read Error", description: "Could not read the selected file.", variant: "destructive" });
@@ -122,7 +122,7 @@ export default function NewBlogPage() {
         toast({ title: "Invalid File Type", description: "Only .txt files are currently supported for direct content extraction.", variant: "destructive" });
         setUploadedFileName(null);
         if (fileInputRef.current) {
-          fileInputRef.current.value = "";
+          fileInputRef.current.value = ""; // Reset file input
         }
       }
     }
@@ -135,9 +135,9 @@ export default function NewBlogPage() {
   const handleRemoveFile = () => {
     setUploadedFileName(null);
     setReferenceText('');
-    setReferenceSummaryPoints([]);
+    setReferenceSummaryPoints([]); // Clear summary points when file is removed
     if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      fileInputRef.current.value = ""; // Reset file input
     }
     toast({ title: "File Removed", description: "Uploaded file and its reference text have been cleared." });
   };
@@ -266,16 +266,16 @@ export default function NewBlogPage() {
 
   const handleBackToDetails = () => {
     setUiStep('defineDetails');
-    if (uploadedFileName) { 
+    // If a file was uploaded, clear its related states
+    if (uploadedFileName) {
       handleRemoveFile(); // This also clears referenceText and summaryPoints
     } else {
       // If no file was uploaded, preserve manually typed referenceText but clear outline.
-      // Summary points from manually typed text might still be relevant, or could be cleared if preferred.
-      // For now, let's clear summary points too, to ensure a fresh state for outline generation.
+      // For consistency, let's clear summary points too, to ensure a fresh state for outline generation if details change.
       setReferenceSummaryPoints([]);
     }
-    setGeneratedOutline(null);
-    setCustomInstructions('');
+    setGeneratedOutline(null); // Always clear outline when going back
+    setCustomInstructions(''); // Clear custom instructions
   };
 
 
@@ -299,13 +299,14 @@ export default function NewBlogPage() {
         <div className={cn(
             "gap-8",
             uiStep === 'defineDetails'
-              ? "flex flex-col items-center"
-              : "grid grid-cols-1 md:grid-cols-3"
+              ? "flex flex-col items-center" // Center content for defineDetails step
+              : "grid grid-cols-1 md:grid-cols-3" // Grid for editOutline step
           )}>
 
+          {/* Card for Blog Details - always visible, but its width/position changes */}
           <Card className={cn(
             "shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl",
-            uiStep === 'defineDetails' ? "w-full md:max-w-3xl" : "md:col-span-1"
+            uiStep === 'defineDetails' ? "w-full md:max-w-3xl" : "md:col-span-1" // Spans 1 column in grid, or full width if centered
           )}>
             <CardHeader>
               <CardTitle>Blog Details</CardTitle>
@@ -323,17 +324,17 @@ export default function NewBlogPage() {
                 </div>
                 <div className="flex gap-2">
                     <div className={cn(
-                        "flex-grow rounded-md border border-input transition-all",
-                        isSparkingIdeas && "animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-background bg-primary/5 shadow-lg shadow-primary/30"
+                        "flex-grow rounded-md border border-input transition-all duration-300",
+                        isSparkingIdeas && "animate-pulse ring-4 ring-primary/70 ring-offset-2 ring-offset-background bg-primary/10 shadow-2xl shadow-primary/30"
                     )}>
-                        <Input 
-                            id="topic" 
-                            placeholder="e.g., The Future of Renewable Energy" 
-                            value={topic} 
-                            onChange={(e) => setTopic(e.target.value)} 
+                        <Input
+                            id="topic"
+                            placeholder="e.g., The Future of Renewable Energy"
+                            value={topic}
+                            onChange={(e) => setTopic(e.target.value)}
                             className={cn(
-                                "border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
-                                isSparkingIdeas && "bg-transparent" // Ensure input bg is transparent if wrapper has bg
+                                "border-0 focus-visible:ring-0 focus-visible:ring-offset-0", // Remove default input border to rely on wrapper
+                                isSparkingIdeas && "bg-transparent placeholder:text-primary/60"
                             )}
                         />
                     </div>
@@ -347,12 +348,12 @@ export default function NewBlogPage() {
                         <Label className="text-xs text-muted-foreground">Topic Suggestions:</Label>
                         <div className="flex flex-wrap gap-2">
                             {topicIdeas.map((idea, idx) => (
-                                <Button 
-                                  key={idx} 
-                                  variant="outline" 
-                                  size="sm" 
-                                  onClick={() => { setTopic(idea); setTopicIdeas([]); }} 
-                                  className="text-xs py-1 px-2 rounded-full bg-muted/50 hover:bg-muted border-border hover:border-primary/50"
+                                <Button
+                                  key={idx}
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => { setTopic(idea); setTopicIdeas([]); }}
+                                  className="text-xs py-1 px-2 rounded-full bg-muted/50 hover:bg-primary/10 hover:border-primary/50 border-border text-foreground"
                                 >
                                     {idea}
                                 </Button>
@@ -383,7 +384,7 @@ export default function NewBlogPage() {
                 <Label>Style</Label>
                 <div className="grid grid-cols-2 gap-3">
                     {styles.map(s => {
-                        const IconElement = Icons[s.icon] || Icons.HelpCircle;
+                        const IconElement = Icons[s.icon] || Icons.HelpCircle; // Fallback icon
                         return (
                             <Button
                                 key={s.value}
@@ -469,9 +470,14 @@ export default function NewBlogPage() {
                         id="referenceText"
                         placeholder="Paste any reference material, key points..."
                         value={referenceText}
-                        onChange={(e) => setReferenceText(e.target.value)}
+                        onChange={(e) => {
+                          setReferenceText(e.target.value);
+                          // If user types manually, clear uploaded file and its summary
+                          if (uploadedFileName) setUploadedFileName(null);
+                          if (referenceSummaryPoints.length > 0) setReferenceSummaryPoints([]);
+                        }}
                         rows={5}
-                        className="pr-12" 
+                        className="pr-12" // Padding for the attach icon
                     />
                     <Popover open={isAttachPopoverOpen} onOpenChange={setIsAttachPopoverOpen}>
                         <PopoverTrigger asChild>
@@ -523,10 +529,10 @@ export default function NewBlogPage() {
                         <Label className="text-xs text-muted-foreground">Key Points from Reference (click to append to reference text):</Label>
                         <div className="flex flex-wrap gap-2">
                             {referenceSummaryPoints.map((point, idx) => (
-                                <Button 
-                                    key={idx} 
-                                    variant="outline" 
-                                    size="sm" 
+                                <Button
+                                    key={idx}
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => {
                                         setReferenceText(prev => prev.trim() ? `${prev}\n\n${point}` : point);
                                         toast({ title: "Point Appended", description: "Key point added to your reference material."});
@@ -552,6 +558,7 @@ export default function NewBlogPage() {
             )}
           </Card>
 
+          {/* Card for Outline Editing - only visible in 'editOutline' step */}
           {uiStep === 'editOutline' && (
             <Card className="md:col-span-2 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
               <CardHeader>
@@ -580,7 +587,7 @@ export default function NewBlogPage() {
                           <div key={item.id} className="flex items-center gap-2 p-2 border rounded-md bg-background hover:shadow-sm">
                             <Input
                               value={item.value}
-                              className="flex-grow"
+                              className="flex-grow border-0 focus-visible:ring-0 focus-visible:ring-offset-0" // Minimalist input inside section
                               onChange={(e) => handleOutlineItemChange(item.id, e.target.value)}
                             />
                             <Button variant="ghost" size="icon" onClick={() => handleRemoveOutlineSection(item.id)} className="text-destructive hover:bg-destructive/10 h-8 w-8 flex-shrink-0">
@@ -628,5 +635,3 @@ export default function NewBlogPage() {
     </TooltipProvider>
   );
 }
-
-    
