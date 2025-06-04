@@ -31,10 +31,10 @@ const tones: Array<{value: BlogTone, label: string, emoji: string}> = [
 ];
 
 const styles: Array<{value: BlogStyle, label: string, description: string, icon: keyof typeof Icons}> = [
-    {value: "journalistic", label: "Journalistic", description: "Factual, news-like.", icon: "FileText"}, // Changed Edit to FileText based on current icons
+    {value: "journalistic", label: "Journalistic", description: "Factual, news-like.", icon: "FileText"},
     {value: "storytelling", label: "Storytelling", description: "Narrative-driven.", icon: "FileText"},
     {value: "technical", label: "Technical", description: "Detailed, precise.", icon: "Settings"},
-    {value: "academic", label: "Academic", description: "Formal, research-oriented.", icon: "MyBlogs"}, // MyBlogs is FileText, consider a more distinct icon if available
+    {value: "academic", label: "Academic", description: "Formal, research-oriented.", icon: "MyBlogs"},
 ];
 const lengths: BlogLength[] = ["short", "medium", "long"];
 
@@ -111,7 +111,7 @@ export default function NewBlogPage() {
           setUploadedFileName(file.name);
           toast({ title: "File Uploaded", description: `${file.name} content loaded. Summarizing...` });
           setIsAttachPopoverOpen(false); 
-          await handleSummarizeReferenceText(content); // Summarize after setting text
+          await handleSummarizeReferenceText(content);
         };
         reader.onerror = () => {
           toast({ title: "File Read Error", description: "Could not read the selected file.", variant: "destructive" });
@@ -266,14 +266,18 @@ export default function NewBlogPage() {
 
   const handleBackToDetails = () => {
     setUiStep('defineDetails');
+    if (uploadedFileName) { 
+      handleRemoveFile(); // This also clears referenceText and summaryPoints
+    } else {
+      // If no file was uploaded, preserve manually typed referenceText but clear outline.
+      // Summary points from manually typed text might still be relevant, or could be cleared if preferred.
+      // For now, let's clear summary points too, to ensure a fresh state for outline generation.
+      setReferenceSummaryPoints([]);
+    }
     setGeneratedOutline(null);
     setCustomInstructions('');
-    if (uploadedFileName) { 
-      handleRemoveFile(); 
-    }
-    // Manually typed referenceText and its summary are preserved by default if no file was uploaded.
-    // If a file was uploaded, handleRemoveFile clears both referenceText and summaryPoints.
   };
+
 
   const pageTitle = uiStep === 'defineDetails'
     ? "Create New Blog Post"
@@ -320,14 +324,17 @@ export default function NewBlogPage() {
                 <div className="flex gap-2">
                     <div className={cn(
                         "flex-grow rounded-md border border-input transition-all",
-                        isSparkingIdeas && "animate-pulse border-primary ring-2 ring-primary/50 shadow-[0_0_15px_rgba(var(--primary-hsl),0.5)]"
+                        isSparkingIdeas && "animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-background bg-primary/5 shadow-lg shadow-primary/30"
                     )}>
                         <Input 
                             id="topic" 
                             placeholder="e.g., The Future of Renewable Energy" 
                             value={topic} 
                             onChange={(e) => setTopic(e.target.value)} 
-                            className={cn("border-0 focus-visible:ring-0 focus-visible:ring-offset-0", isSparkingIdeas && "bg-primary/5")}
+                            className={cn(
+                                "border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+                                isSparkingIdeas && "bg-transparent" // Ensure input bg is transparent if wrapper has bg
+                            )}
                         />
                     </div>
                     <Button onClick={handleSparkIdeas} disabled={isSparkingIdeas} variant="outline" className="flex-shrink-0">
@@ -621,3 +628,5 @@ export default function NewBlogPage() {
     </TooltipProvider>
   );
 }
+
+    
