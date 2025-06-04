@@ -47,6 +47,7 @@ import {
   Users, // For Team/Collaboration
   ThumbsUp,
   ThumbsDown,
+  Paperclip, // Added Paperclip
   type LucideProps,
 } from 'lucide-react';
 
@@ -98,6 +99,7 @@ export const Icons = {
   User: UserCircle,
   Grid: Grid,
   List: List,
+  ExternalLink: ExternalLink,
   MoreVertical: MoreVertical,
   Spinner: Loader2,
   Image: LucideImage,
@@ -113,6 +115,8 @@ export const Icons = {
   Team: Users, // Icon for Team/Collaboration
   ThumbsUp: ThumbsUp,
   ThumbsDown: ThumbsDown,
+  Paperclip: Paperclip, // Added Paperclip
 };
 
 export type IconName = keyof typeof Icons;
+
