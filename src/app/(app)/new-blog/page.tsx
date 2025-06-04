@@ -347,7 +347,12 @@ export default function NewBlogPage() {
                                 <Icons.Logo className="h-4 w-4" /> {/* Replace with s.icon when available */}
                                 <span className="font-semibold">{s.label}</span>
                             </div>
-                            <p className="text-xs text-muted-foreground font-normal mt-1">{s.description}</p>
+                            <p className={cn(
+                                "text-xs font-normal mt-1",
+                                style === s.value ? "text-primary-foreground/80" : "text-muted-foreground"
+                            )}>
+                                {s.description}
+                            </p>
                         </Button>
                     ))}
                 </div>
