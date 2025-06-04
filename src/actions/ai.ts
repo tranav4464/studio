@@ -16,6 +16,7 @@ import { generateBlogTitleSuggestion, type GenerateBlogTitleSuggestionInput, typ
 import { analyzeBlogSeo, type AnalyzeBlogSeoInput, type AnalyzeBlogSeoOutput } from '@/ai/flows/analyze-blog-seo-flow';
 import { generateImagePromptHelper, type GenerateImagePromptHelperInput, type GenerateImagePromptHelperOutput } from '@/ai/flows/generate-image-prompt-helper-flow';
 import { generateTopicIdeas, type GenerateTopicIdeasInput, type GenerateTopicIdeasOutput } from '@/ai/flows/generate-topic-ideas-flow';
+import { summarizeReferenceText, type SummarizeReferenceTextInput, type SummarizeReferenceTextOutput } from '@/ai/flows/summarize-reference-text-flow';
 
 
 export async function generateTopicIdeasAction(input: GenerateTopicIdeasInput): Promise<GenerateTopicIdeasOutput> {
@@ -272,5 +273,19 @@ export async function analyzeBlogSeoAction(input: AnalyzeBlogSeoInput): Promise<
       contentStructureFeedback: "Critical Error: Could not analyze content structure due to system error.",
       actionableRecommendations: ["Critical SEO analysis failed. Contact support if issue persists."],
     };
+  }
+}
+
+export async function summarizeReferenceTextAction(input: SummarizeReferenceTextInput): Promise<SummarizeReferenceTextOutput> {
+  console.log("summarizeReferenceTextAction called.");
+  try {
+    const result = await summarizeReferenceText(input);
+    if (!result.keyPoints || result.keyPoints.length === 0) {
+      return { keyPoints: ["AI could not extract key points from the provided text."] };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error summarizing reference text:", error);
+    return { keyPoints: ["An error occurred while summarizing the reference text."] };
   }
 }

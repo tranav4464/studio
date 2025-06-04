@@ -77,3 +77,7 @@ export interface Settings {
   };
 }
 
+// New Type for Reference Text Summarization
+export interface ReferenceTextSummary {
+  keyPoints: string[];
+}

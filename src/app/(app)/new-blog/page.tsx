@@ -18,7 +18,7 @@ import { blogStore } from '@/lib/blog-store';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { generateBlogOutlineAction, generateFullBlogAction, generateTopicIdeasAction } from '@/actions/ai';
+import { generateBlogOutlineAction, generateFullBlogAction, generateTopicIdeasAction, summarizeReferenceTextAction } from '@/actions/ai';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
@@ -31,10 +31,10 @@ const tones: Array<{value: BlogTone, label: string, emoji: string}> = [
 ];
 
 const styles: Array<{value: BlogStyle, label: string, description: string, icon: keyof typeof Icons}> = [
-    {value: "journalistic", label: "Journalistic", description: "Factual, news-like.", icon: "Edit"},
+    {value: "journalistic", label: "Journalistic", description: "Factual, news-like.", icon: "FileText"}, // Changed Edit to FileText based on current icons
     {value: "storytelling", label: "Storytelling", description: "Narrative-driven.", icon: "FileText"},
     {value: "technical", label: "Technical", description: "Detailed, precise.", icon: "Settings"},
-    {value: "academic", label: "Academic", description: "Formal, research-oriented.", icon: "MyBlogs"},
+    {value: "academic", label: "Academic", description: "Formal, research-oriented.", icon: "MyBlogs"}, // MyBlogs is FileText, consider a more distinct icon if available
 ];
 const lengths: BlogLength[] = ["short", "medium", "long"];
 
@@ -66,6 +66,9 @@ export default function NewBlogPage() {
   const [topicIdeas, setTopicIdeas] = useState<string[]>([]);
   const [isSparkingIdeas, setIsSparkingIdeas] = useState(false);
 
+  const [referenceSummaryPoints, setReferenceSummaryPoints] = useState<string[]>([]);
+  const [isSummarizingRefText, setIsSummarizingRefText] = useState(false);
+
 
   const [generatedOutline, setGeneratedOutline] = useState<OutlineItem[] | null>(null);
   const [isLoadingOutline, setIsLoadingOutline] = useState(false);
@@ -83,18 +86,32 @@ export default function NewBlogPage() {
   };
   const currentExpertiseLevel = getExpertiseLevelFromSlider(expertiseLevelValue[0]);
 
+  const handleSummarizeReferenceText = async (text: string) => {
+    if (!text.trim()) return;
+    setIsSummarizingRefText(true);
+    setReferenceSummaryPoints([]);
+    try {
+      const result = await summarizeReferenceTextAction({ textToSummarize: text });
+      setReferenceSummaryPoints(result.keyPoints);
+    } catch (error: any) {
+      toast({ title: "Error Summarizing Text", description: error.message || "Could not summarize reference material.", variant: "destructive" });
+    }
+    setIsSummarizingRefText(false);
+  };
+
 
   const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.type === "text/plain") {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
           const content = e.target?.result as string;
           setReferenceText(content);
           setUploadedFileName(file.name);
-          toast({ title: "File Uploaded", description: `${file.name} content loaded into reference text.` });
-          setIsAttachPopoverOpen(false); // Close popover after successful upload
+          toast({ title: "File Uploaded", description: `${file.name} content loaded. Summarizing...` });
+          setIsAttachPopoverOpen(false); 
+          await handleSummarizeReferenceText(content); // Summarize after setting text
         };
         reader.onerror = () => {
           toast({ title: "File Read Error", description: "Could not read the selected file.", variant: "destructive" });
@@ -118,6 +135,7 @@ export default function NewBlogPage() {
   const handleRemoveFile = () => {
     setUploadedFileName(null);
     setReferenceText('');
+    setReferenceSummaryPoints([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -250,10 +268,11 @@ export default function NewBlogPage() {
     setUiStep('defineDetails');
     setGeneratedOutline(null);
     setCustomInstructions('');
-    if (uploadedFileName) { // If a file was involved in referenceText
-      handleRemoveFile(); // This also clears referenceText and resets fileInputRef
+    if (uploadedFileName) { 
+      handleRemoveFile(); 
     }
-    // Manually typed referenceText without file upload is preserved by default
+    // Manually typed referenceText and its summary are preserved by default if no file was uploaded.
+    // If a file was uploaded, handleRemoveFile clears both referenceText and summaryPoints.
   };
 
   const pageTitle = uiStep === 'defineDetails'
@@ -299,18 +318,35 @@ export default function NewBlogPage() {
                   <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent side="top"><p>Main subject or keywords for your post.</p></TooltipContent></Tooltip>
                 </div>
                 <div className="flex gap-2">
-                    <Input id="topic" placeholder="e.g., The Future of Renewable Energy" value={topic} onChange={(e) => setTopic(e.target.value)} className="flex-grow"/>
+                    <div className={cn(
+                        "flex-grow rounded-md border border-input transition-all",
+                        isSparkingIdeas && "animate-pulse border-primary ring-2 ring-primary/50 shadow-[0_0_15px_rgba(var(--primary-hsl),0.5)]"
+                    )}>
+                        <Input 
+                            id="topic" 
+                            placeholder="e.g., The Future of Renewable Energy" 
+                            value={topic} 
+                            onChange={(e) => setTopic(e.target.value)} 
+                            className={cn("border-0 focus-visible:ring-0 focus-visible:ring-offset-0", isSparkingIdeas && "bg-primary/5")}
+                        />
+                    </div>
                     <Button onClick={handleSparkIdeas} disabled={isSparkingIdeas} variant="outline" className="flex-shrink-0">
                         {isSparkingIdeas ? <Icons.Spinner className="animate-spin mr-2" /> : <Icons.Improve className="mr-2"/>}
                         Spark Ideas
                     </Button>
                 </div>
                 {topicIdeas.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                        <Label className="text-xs text-muted-foreground">Suggestions (click to use):</Label>
+                    <div className="mt-3 space-y-2">
+                        <Label className="text-xs text-muted-foreground">Topic Suggestions:</Label>
                         <div className="flex flex-wrap gap-2">
                             {topicIdeas.map((idea, idx) => (
-                                <Button key={idx} variant="outline" size="sm" onClick={() => { setTopic(idea); setTopicIdeas([]); }} className="text-xs">
+                                <Button 
+                                  key={idx} 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => { setTopic(idea); setTopicIdeas([]); }} 
+                                  className="text-xs py-1 px-2 rounded-full bg-muted/50 hover:bg-muted border-border hover:border-primary/50"
+                                >
                                     {idea}
                                 </Button>
                             ))}
@@ -416,7 +452,7 @@ export default function NewBlogPage() {
                             </Button>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="max-w-xs">
-                            <p>Paste text. This material is primarily used for the initial outline generation.</p>
+                            <p>Paste text or upload a .txt file. This material is primarily used for initial outline generation and can be summarized for key points.</p>
                             </TooltipContent>
                         </Tooltip>
                     </div>
@@ -468,6 +504,34 @@ export default function NewBlogPage() {
                     </div>
                     <Button variant="ghost" size="sm" onClick={handleRemoveFile} className="text-xs text-destructive hover:text-destructive/80 h-7 px-2">Remove</Button>
                   </div>
+                )}
+                {isSummarizingRefText && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                        <Icons.Spinner className="animate-spin h-4 w-4" />
+                        <span>Summarizing reference text...</span>
+                    </div>
+                )}
+                {referenceSummaryPoints.length > 0 && !isSummarizingRefText && (
+                    <div className="mt-3 space-y-2">
+                        <Label className="text-xs text-muted-foreground">Key Points from Reference (click to append to reference text):</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {referenceSummaryPoints.map((point, idx) => (
+                                <Button 
+                                    key={idx} 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => {
+                                        setReferenceText(prev => prev.trim() ? `${prev}\n\n${point}` : point);
+                                        toast({ title: "Point Appended", description: "Key point added to your reference material."});
+                                    }}
+                                    className="text-xs py-1 px-3 rounded-md bg-background hover:bg-muted/80 border-dashed border-primary/50 text-foreground"
+                                >
+                                    <Icons.Improve className="mr-1.5 h-3 w-3 text-primary/70" />
+                                    {point}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
                 )}
               </div>
             </CardContent>

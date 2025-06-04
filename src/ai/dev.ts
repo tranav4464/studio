@@ -16,4 +16,5 @@ import '@/ai/flows/generate-meta-description-flow.ts';
 import '@/ai/flows/generate-blog-title-suggestion-flow.ts';
 import '@/ai/flows/analyze-blog-seo-flow.ts';
 import '@/ai/flows/generate-image-prompt-helper-flow.ts';
-import '@/ai/flows/generate-topic-ideas-flow.ts'; // Added new flow
+import '@/ai/flows/generate-topic-ideas-flow.ts';
+import '@/ai/flows/summarize-reference-text-flow.ts'; // Added new flow
