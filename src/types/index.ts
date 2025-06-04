@@ -11,6 +11,11 @@ export interface RepurposedContentFeedback {
   emailNewsletterSummary?: 'liked' | 'disliked' | null;
 }
 
+export type Persona = "General Audience" | "Developers" | "Marketing Managers" | "Executives";
+export type ExpertiseLevel = "Beginner" | "Intermediate" | "Advanced";
+export type Intent = "Inform" | "Convert" | "Entertain";
+
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -23,6 +28,11 @@ export interface BlogPost {
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
   status: BlogStatus;
+  // New audience targeting fields (optional, as they are primarily for generation input)
+  persona?: Persona;
+  expertiseLevel?: ExpertiseLevel;
+  intent?: Intent;
+
   heroImageUrl?: string;
   heroImagePrompt?: string;
   heroImageCaption?: string;
@@ -41,11 +51,11 @@ export interface BlogPost {
 
 export type BlogStatus = "draft" | "published" | "archived";
 export type BlogTone = "formal" | "casual" | "informative" | "persuasive" | "humorous";
-export type BlogStyle = "academic" | "journalistic" | "storytelling" | "technical";
+export type BlogStyle = "academic" | "journalistic" | "storytelling" | "technical"; // Keep these as is, UI will map to them
 export type BlogLength = "short" | "medium" | "long";
 
 export interface RepurposedContent {
-  tweetThread: string[]; // Changed from string to string[]
+  tweetThread: string[];
   linkedInPost: string;
   instagramPost: string; 
   emailNewsletterSummary: string;
@@ -56,7 +66,7 @@ export interface Settings {
   defaultStyle: BlogStyle;
   defaultLength: BlogLength;
   defaultExportFormat: "markdown" | "html" | "pdf" | "image" | "txt";
-  customExportCss?: string; // Added for custom CSS for HTML export
+  customExportCss?: string; 
   rules: {
     useDiagramsInHowTo: boolean;
   };

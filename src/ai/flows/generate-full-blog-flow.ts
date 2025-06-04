@@ -10,6 +10,12 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import type { Persona, ExpertiseLevel, Intent } from '@/types'; // Import new types
+
+// Define enums for Zod validation if not already globally available for Zod
+const PersonaEnum = z.enum(["General Audience", "Developers", "Marketing Managers", "Executives"]);
+const ExpertiseLevelEnum = z.enum(["Beginner", "Intermediate", "Advanced"]);
+const IntentEnum = z.enum(["Inform", "Convert", "Entertain"]);
 
 const GenerateFullBlogInputSchema = z.object({
   topic: z.string().describe('The main topic of the blog post.'),
@@ -18,6 +24,10 @@ const GenerateFullBlogInputSchema = z.object({
   length: z.string().describe('The desired length of the blog post (e.g., short, medium, long).'),
   outline: z.array(z.string().describe('A main section or heading from the blog post outline.')).describe('The structured outline for the blog post.'),
   referenceText: z.string().optional().describe('Optional reference text or notes to guide the blog post generation.'),
+  persona: PersonaEnum.optional().describe('The target audience persona (e.g., Developers, Marketing Managers).'),
+  expertiseLevel: ExpertiseLevelEnum.optional().describe('The expertise level of the target audience (e.g., Beginner, Advanced).'),
+  intent: IntentEnum.optional().describe('The primary goal of the blog post (e.g., Inform, Convert).'),
+  customInstructions: z.string().optional().describe('Specific instructions for the AI for full blog generation (e.g., focus on specific examples, maintain a particular narrative).'),
 });
 export type GenerateFullBlogInput = z.infer<typeof GenerateFullBlogInputSchema>;
 
@@ -40,7 +50,11 @@ Given the following parameters:
 - Desired Tone: {{{tone}}}
 - Desired Style: {{{style}}}
 - Desired Length: {{{length}}}
-{{#if referenceText}}- Reference Material: {{{referenceText}}}{{/if}}
+{{#if persona}}- Target Persona: {{{persona}}}{{/if}}
+{{#if expertiseLevel}}- Expertise Level: {{{expertiseLevel}}}{{/if}}
+{{#if intent}}- Content Intent: {{{intent}}}{{/if}}
+{{#if referenceText}}- General Reference Material (use for context if no specific instructions contradict): {{{referenceText}}}{{/if}}
+{{#if customInstructions}}- Specific Instructions for this post: {{{customInstructions}}}{{/if}}
 
 And the following outline:
 {{#each outline}}
@@ -49,28 +63,19 @@ And the following outline:
 
 Please write a comprehensive and engaging {{length}} blog post.
 The post should follow the provided outline, using each outline item as a major heading or section (e.g., using H2 or H3 Markdown for headings).
+Tailor the language, depth, and examples to the specified Target Persona and their Expertise Level.
+Ensure the content aligns with the Content Intent (e.g., if "Convert", include persuasive elements or a call to action).
 Ensure the content flows logically, adheres to the specified tone and style, and thoroughly covers the topic.
+If 'Specific Instructions' are provided, prioritize them.
 The output should be a single string containing the full blog post in Markdown format.
 Start directly with the content, for example, if the first outline item is "Introduction", start with "## Introduction".
 `,
-  config: { // Added safety settings configuration
+  config: { 
     safetySettings: [
-      {
-        category: 'HARM_CATEGORY_HATE_SPEECH',
-        threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-      },
-      {
-        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-        threshold: 'BLOCK_MEDIUM_AND_ABOVE', // Was BLOCK_ONLY_HIGH, trying medium
-      },
-      {
-        category: 'HARM_CATEGORY_HARASSMENT',
-        threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-      },
-      {
-        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-        threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-      },
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
     ],
   },
 });
@@ -85,7 +90,7 @@ const generateFullBlogFlow = ai.defineFlow(
     const {output} = await prompt(input);
     if (!output || !output.blogContent) {
       // Fallback in case AI returns empty or malformed output
-      let fallbackContent = `# ${input.topic}\n\n## Introduction\nFailed to generate AI content for this section. Please write manually.\n\n`;
+      let fallbackContent = `# ${input.topic}\n\n## Introduction\nFailed to generate AI content for this section for ${input.persona || 'general audience'}. Please write manually.\n\n`;
       input.outline.forEach(section => {
         if (section.toLowerCase() !== 'introduction' && section.toLowerCase() !== 'conclusion') {
           fallbackContent += `## ${section}\nContent generation failed for this section. Please fill in manually.\n\n`;
@@ -97,4 +102,3 @@ const generateFullBlogFlow = ai.defineFlow(
     return output;
   }
 );
-

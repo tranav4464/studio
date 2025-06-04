@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type ChangeEvent, useRef } from 'react'; // Added useRef
+import { useState, type ChangeEvent, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,18 +9,38 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Slider } from "@/components/ui/slider";
 import { Icons } from '@/components/icons';
 import { PageHeader } from '@/components/shared/page-header';
-import type { BlogTone, BlogStyle, BlogLength } from '@/types';
+import type { BlogTone, BlogStyle, BlogLength, Persona, ExpertiseLevel, Intent } from '@/types';
 import { blogStore } from '@/lib/blog-store';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { generateBlogOutlineAction, generateFullBlogAction } from '@/actions/ai';
+import { generateBlogOutlineAction, generateFullBlogAction, generateTopicIdeasAction } from '@/actions/ai';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
-const tones: BlogTone[] = ["formal", "casual", "informative", "persuasive", "humorous"];
-const styles: BlogStyle[] = ["academic", "journalistic", "storytelling", "technical"];
+const tones: Array<{value: BlogTone, label: string, emoji: string}> = [
+  {value: "formal", label: "Formal", emoji: "💼"},
+  {value: "casual", label: "Casual", emoji: "😊"},
+  {value: "informative", label: "Informative", emoji: "🧠"},
+  {value: "persuasive", label: "Persuasive", emoji: "📢"},
+  {value: "humorous", label: "Humorous", emoji: "😂"},
+];
+
+const styles: Array<{value: BlogStyle, label: string, description: string, icon: keyof typeof Icons}> = [
+    {value: "journalistic", label: "Journalistic", description: "Factual, news-like.", icon: "Edit"}, // Placeholder icon
+    {value: "storytelling", label: "Storytelling", description: "Narrative-driven.", icon: "FileText"}, // Placeholder icon
+    {value: "technical", label: "Technical", description: "Detailed, precise.", icon: "Settings"}, // Placeholder icon
+    {value: "academic", label: "Academic", description: "Formal, research-oriented.", icon: "MyBlogs"}, // Placeholder icon
+];
 const lengths: BlogLength[] = ["short", "medium", "long"];
+
+const personas: Persona[] = ["General Audience", "Developers", "Marketing Managers", "Executives"];
+const expertiseLevels: ExpertiseLevel[] = ["Beginner", "Intermediate", "Advanced"];
+const intents: Intent[] = ["Inform", "Convert", "Entertain"];
+
 
 interface OutlineItem {
   id: string;
@@ -38,12 +58,28 @@ export default function NewBlogPage() {
   const [length, setLength] = useState<BlogLength>('medium');
   const [referenceText, setReferenceText] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  
+  const [persona, setPersona] = useState<Persona>('General Audience');
+  const [expertiseLevelValue, setExpertiseLevelValue] = useState<number[]>([1]); // 0: Beginner, 1: Intermediate, 2: Advanced
+  const [intent, setIntent] = useState<Intent>('Inform');
+  const [topicIdeas, setTopicIdeas] = useState<string[]>([]);
+  const [isSparkingIdeas, setIsSparkingIdeas] = useState(false);
+
+
   const [generatedOutline, setGeneratedOutline] = useState<OutlineItem[] | null>(null);
   const [isLoadingOutline, setIsLoadingOutline] = useState(false);
   const [isLoadingPost, setIsLoadingPost] = useState(false);
   const [customInstructions, setCustomInstructions] = useState('');
   const [uiStep, setUiStep] = useState<UiStep>('defineDetails');
-  const fileInputRef = useRef<HTMLInputElement>(null); // Ref for file input
+  const fileInputRef = useRef<HTMLInputElement>(null); 
+
+
+  const getExpertiseLevelFromSlider = (value: number): ExpertiseLevel => {
+    if (value === 0) return "Beginner";
+    if (value === 2) return "Advanced";
+    return "Intermediate";
+  };
+  const currentExpertiseLevel = getExpertiseLevelFromSlider(expertiseLevelValue[0]);
 
 
   const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -66,7 +102,7 @@ export default function NewBlogPage() {
         toast({ title: "Invalid File Type", description: "Only .txt files are currently supported for direct content extraction. PDF/DOCX support coming soon.", variant: "destructive" });
         setUploadedFileName(null);
         if (fileInputRef.current) {
-          fileInputRef.current.value = ""; // Reset file input
+          fileInputRef.current.value = ""; 
         }
       }
     }
@@ -76,9 +112,25 @@ export default function NewBlogPage() {
     setUploadedFileName(null);
     setReferenceText('');
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // Reset file input visually
+      fileInputRef.current.value = ""; 
     }
     toast({ title: "File Removed", description: "Uploaded file and its reference text have been cleared." });
+  };
+
+  const handleSparkIdeas = async () => {
+    if (!topic.trim()) {
+        toast({ title: "Enter Keywords", description: "Please enter some keywords in the topic field to spark ideas.", variant: "destructive"});
+        return;
+    }
+    setIsSparkingIdeas(true);
+    setTopicIdeas([]);
+    try {
+        const result = await generateTopicIdeasAction({ keywords: topic.trim() });
+        setTopicIdeas(result.ideas);
+    } catch (error: any) {
+        toast({ title: "Error Sparking Ideas", description: error.message || "Could not fetch topic ideas.", variant: "destructive"});
+    }
+    setIsSparkingIdeas(false);
   };
 
   const handleGenerateOutline = async () => {
@@ -96,6 +148,9 @@ export default function NewBlogPage() {
         style,
         length,
         referenceText: referenceText || undefined,
+        persona,
+        expertiseLevel: currentExpertiseLevel,
+        intent,
       });
 
       if (result.outline && result.outline.length > 0) {
@@ -151,7 +206,11 @@ export default function NewBlogPage() {
         style,
         length,
         outline: outlineStrings,
-        referenceText: customInstructions || referenceText || undefined, // Custom instructions take precedence for full blog
+        referenceText: referenceText || undefined, 
+        persona,
+        expertiseLevel: currentExpertiseLevel,
+        intent,
+        customInstructions: customInstructions || undefined,
       });
 
       const newPost = blogStore.addPost({
@@ -160,6 +219,10 @@ export default function NewBlogPage() {
           tone,
           style,
           length,
+          // Store new audience params if needed
+          persona,
+          expertiseLevel: currentExpertiseLevel,
+          intent,
       });
       
       blogStore.updatePost(newPost.id, { 
@@ -181,14 +244,13 @@ export default function NewBlogPage() {
     setUiStep('defineDetails');
     setGeneratedOutline(null);
     setCustomInstructions('');
-    if (uploadedFileName) { // If reference text came from a file, clear it and the file name
+    if (uploadedFileName) { 
       setUploadedFileName(null);
       setReferenceText('');
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     }
-    // Manually typed referenceText is preserved
   };
   
   const pageTitle = uiStep === 'defineDetails' 
@@ -199,6 +261,7 @@ export default function NewBlogPage() {
     ? "Define your blog's topic, tone, and style to get started."
     : "Customize the AI-generated outline and add specific instructions for the full blog post generation.";
 
+  const selectedToneEmoji = tones.find(t => t.value === tone)?.emoji || '';
 
   return (
     <TooltipProvider>
@@ -215,7 +278,7 @@ export default function NewBlogPage() {
           )}>
           
           <Card className={cn(
-            "shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl",
+            "shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl",
             uiStep === 'defineDetails' ? "w-full md:max-w-3xl" : "md:col-span-1"
           )}>
             <CardHeader>
@@ -229,33 +292,39 @@ export default function NewBlogPage() {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <div className="flex items-center gap-1">
-                  <Label htmlFor="topic">Blog Topic <span className="text-destructive">*</span></Label>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top"><p>The main subject or theme of your blog post.</p></TooltipContent>
-                  </Tooltip>
+                  <Label htmlFor="topic">Blog Topic / Keywords <span className="text-destructive">*</span></Label>
+                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent side="top"><p>Main subject or keywords for your post.</p></TooltipContent></Tooltip>
                 </div>
-                <Input id="topic" placeholder="e.g., The Future of Renewable Energy" value={topic} onChange={(e) => setTopic(e.target.value)} />
+                <div className="flex gap-2">
+                    <Input id="topic" placeholder="e.g., The Future of Renewable Energy" value={topic} onChange={(e) => setTopic(e.target.value)} className="flex-grow"/>
+                    <Button onClick={handleSparkIdeas} disabled={isSparkingIdeas} variant="outline" className="flex-shrink-0">
+                        {isSparkingIdeas ? <Icons.Spinner className="animate-spin mr-2" /> : <Icons.Improve className="mr-2"/>}
+                        Spark Ideas
+                    </Button>
+                </div>
+                {topicIdeas.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                        <Label className="text-xs text-muted-foreground">Suggestions (click to use):</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {topicIdeas.map((idea, idx) => (
+                                <Button key={idx} variant="outline" size="sm" onClick={() => { setTopic(idea); setTopicIdeas([]); }} className="text-xs">
+                                    {idea}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                )}
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="tone">Tone</Label>
+                  <Label htmlFor="tone">Tone {selectedToneEmoji}</Label>
                   <Select value={tone} onValueChange={(value: BlogTone) => setTone(value)}>
                     <SelectTrigger id="tone"><SelectValue placeholder="Select tone" /></SelectTrigger>
-                    <SelectContent>{tones.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
+                    <SelectContent>{tones.map(t => <SelectItem key={t.value} value={t.value} className="capitalize">{t.emoji} {t.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="style">Style</Label>
-                  <Select value={style} onValueChange={(value: BlogStyle) => setStyle(value)}>
-                    <SelectTrigger id="style"><SelectValue placeholder="Select style" /></SelectTrigger>
-                    <SelectContent>{styles.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
+                 <div className="space-y-2">
                   <Label htmlFor="length">Length</Label>
                   <Select value={length} onValueChange={(value: BlogLength) => setLength(value)}>
                     <SelectTrigger id="length"><SelectValue placeholder="Select length" /></SelectTrigger>
@@ -264,15 +333,71 @@ export default function NewBlogPage() {
                 </div>
               </div>
 
+              <div className="space-y-3">
+                <Label>Style</Label>
+                <div className="grid grid-cols-2 gap-3">
+                    {styles.map(s => (
+                        <Button 
+                            key={s.value} 
+                            variant={style === s.value ? "default" : "outline"} 
+                            onClick={() => setStyle(s.value)}
+                            className="h-auto py-3 flex flex-col items-start text-left"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Icons.Logo className="h-4 w-4" /> {/* Replace with s.icon when available */}
+                                <span className="font-semibold">{s.label}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground font-normal mt-1">{s.description}</p>
+                        </Button>
+                    ))}
+                </div>
+              </div>
+
+              <Separator />
+              <CardTitle className="text-lg pt-2">Audience Targeting</CardTitle>
+
               <div className="space-y-2">
+                <Label htmlFor="persona">Target Persona</Label>
+                <Select value={persona} onValueChange={(value: Persona) => setPersona(value)}>
+                  <SelectTrigger id="persona"><SelectValue /></SelectTrigger>
+                  <SelectContent>{personas.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="expertise">Expertise Level: <span className="font-semibold text-primary">{currentExpertiseLevel}</span></Label>
+                <Slider
+                    id="expertise"
+                    min={0} max={2} step={1}
+                    value={expertiseLevelValue}
+                    onValueChange={setExpertiseLevelValue}
+                    className="my-3"
+                />
+                 <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Beginner</span>
+                    <span>Intermediate</span>
+                    <span>Advanced</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Content Intent</Label>
+                <RadioGroup value={intent} onValueChange={(value: Intent) => setIntent(value)} className="flex space-x-4">
+                    {intents.map(i => (
+                        <div key={i} className="flex items-center space-x-2">
+                            <RadioGroupItem value={i} id={`intent-${i}`} />
+                            <Label htmlFor={`intent-${i}`} className="font-normal">{i}</Label>
+                        </div>
+                    ))}
+                </RadioGroup>
+              </div>
+              
+              <Separator />
+
+              <div className="space-y-2 pt-2">
                 <div className="flex items-center gap-1">
                   <Label htmlFor="referenceText">Initial Reference Text / Notes (Optional)</Label>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs"><p>Paste text, notes, or key points. This helps the AI generate a relevant outline. This text is replaced if you upload a .txt file.</p></TooltipContent>
-                  </Tooltip>
+                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent side="top" className="max-w-xs"><p>Used for initial outline generation. Paste text, notes, or key points. Replaced by .txt upload.</p></TooltipContent></Tooltip>
                 </div>
                 <Textarea id="referenceText" placeholder="Paste any reference material or key points here..." value={referenceText} onChange={(e) => setReferenceText(e.target.value)} rows={5} />
               </div>
@@ -280,12 +405,7 @@ export default function NewBlogPage() {
               <div className="space-y-2">
                   <div className="flex items-center gap-1">
                     <Label htmlFor="reference-files">Upload Reference File (Optional .txt)</Label>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs"><p>Upload a .txt file. Its content will replace text in 'Initial Reference Text'. PDF/DOCX support coming soon.</p></TooltipContent>
-                    </Tooltip>
+                    <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent side="top" className="max-w-xs"><p>Upload a .txt file. Its content will replace text in 'Initial Reference Text'. PDF/DOCX copy/paste for now.</p></TooltipContent></Tooltip>
                   </div>
                   <Input 
                     id="reference-files" 
@@ -305,22 +425,22 @@ export default function NewBlogPage() {
                     </div>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    For PDF/DOCX, please paste content into 'Initial Reference Text' above. Full PDF/DOCX upload support coming soon.
+                    For PDF/DOCX, please paste content into 'Initial Reference Text' above.
                   </p>
               </div>
             </CardContent>
             {uiStep === 'defineDetails' && (
               <CardFooter>
-                <Button onClick={handleGenerateOutline} disabled={isLoadingOutline || isLoadingPost || !topic}>
+                <Button onClick={handleGenerateOutline} disabled={isLoadingOutline || isLoadingPost || !topic} className="w-full">
                   {isLoadingOutline && <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />}
-                  Generate Outline
+                  Generate Outline & Proceed
                 </Button>
               </CardFooter>
             )}
           </Card>
 
           {uiStep === 'editOutline' && (
-            <Card className="md:col-span-2 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:shadow-xl">
+            <Card className="md:col-span-2 shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
               <CardHeader>
                  <div className="flex justify-between items-center">
                     <CardTitle>Blog Outline & Instructions</CardTitle>
@@ -363,12 +483,7 @@ export default function NewBlogPage() {
                     <div className="pt-4 space-y-2">
                       <div className="flex items-center gap-1">
                           <Label htmlFor="customInstructions">Specific Instructions for Blog Generation (Optional)</Label>
-                          <Tooltip>
-                              <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-xs"><p>Provide specific instructions for the AI for the full blog generation stage (e.g., "Focus on practical examples in section 2", "Maintain a very optimistic tone throughout"). This guides the AI when writing the full content from the outline.</p></TooltipContent>
-                          </Tooltip>
+                          <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent side="top" className="max-w-xs"><p>Guide the AI for full blog generation (e.g., "Focus on practical examples"). This guides AI when writing from the outline, supplementing initial references for this step.</p></TooltipContent></Tooltip>
                       </div>
                       <Textarea 
                           id="customInstructions"
@@ -400,4 +515,3 @@ export default function NewBlogPage() {
     </TooltipProvider>
   );
 }
-

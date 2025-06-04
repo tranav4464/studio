@@ -15,7 +15,21 @@ import { generateMetaDescription, type GenerateMetaDescriptionInput, type Genera
 import { generateBlogTitleSuggestion, type GenerateBlogTitleSuggestionInput, type GenerateBlogTitleSuggestionOutput } from '@/ai/flows/generate-blog-title-suggestion-flow';
 import { analyzeBlogSeo, type AnalyzeBlogSeoInput, type AnalyzeBlogSeoOutput } from '@/ai/flows/analyze-blog-seo-flow';
 import { generateImagePromptHelper, type GenerateImagePromptHelperInput, type GenerateImagePromptHelperOutput } from '@/ai/flows/generate-image-prompt-helper-flow';
+import { generateTopicIdeas, type GenerateTopicIdeasInput, type GenerateTopicIdeasOutput } from '@/ai/flows/generate-topic-ideas-flow';
 
+
+export async function generateTopicIdeasAction(input: GenerateTopicIdeasInput): Promise<GenerateTopicIdeasOutput> {
+  try {
+    const result = await generateTopicIdeas(input);
+    if (!result.ideas || result.ideas.length === 0) {
+        return { ideas: [`No ideas found for: ${input.keywords}`] };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error generating topic ideas:", error);
+    return { ideas: [`Error fetching ideas for: ${input.keywords}`] };
+  }
+}
 
 // User-initiated hero image generation
 export async function generateHeroImageAction(input: GenerateHeroImageInput): Promise<GenerateHeroImageOutput> {
@@ -25,12 +39,12 @@ export async function generateHeroImageAction(input: GenerateHeroImageInput): Pr
     
     if (!result.imageUrls || result.imageUrls.length === 0) {
       console.warn("AI did not return any image URLs. Input:", input, "Output:", result);
-      return { imageUrls: [`https://placehold.co/800x400.png?text=Image+Generation+Failed`] };
+      return { imageUrls: [`https://placehold.co/800x400.png`] };
     }
     return result;
   } catch (error) {
     console.error("Error generating hero image:", error);
-    return { imageUrls: [`https://placehold.co/800x400.png?text=Error+Generating+Images`] };
+    return { imageUrls: [`https://placehold.co/800x400.png`] };
   }
 }
 
@@ -77,19 +91,16 @@ export async function generateBlogOutlineAction(input: GenerateBlogOutlineInput)
 }
 
 export async function generateFullBlogAction(input: GenerateFullBlogInput): Promise<GenerateFullBlogOutput> {
-  console.log("generateFullBlogAction called with topic:", input.topic, "outline sections:", input.outline.length);
+  console.log("generateFullBlogAction called with topic:", input.topic, "outline sections:", input.outline.length, "persona:", input.persona);
   try {
     const result = await generateFullBlog(input);
-    // The flow `generateFullBlog` has its own fallback if `output` or `output.blogContent` is missing.
-    // So, `result.blogContent` should always be a string here, even if it's the flow's fallback.
-    // This explicit check is a safeguard in case the flow's contract is violated.
     if (!result.blogContent) {
       console.warn("generateFullBlog flow returned a result but blogContent was unexpectedly empty. Input:", input);
       return { blogContent: `# ${input.topic}\n\n## Generation Error\n\n**Critical Error:** AI failed to generate blog content due to an unexpected issue in the generation flow. Please check server logs and try again. If the problem persists, consider simplifying the topic or outline.` };
     }
     return result;
   } catch (error: any) {
-    console.error("generateFullBlogAction caught an error:", error.message, error.stack, error); // Log more details
+    console.error("generateFullBlogAction caught an error:", error.message, error.stack, error); 
     let errorMessage = "An unexpected error occurred while generating the blog content. Please check server logs for details and try again.";
     if (error.message) {
       errorMessage = `Error: ${error.message}. Please check server logs and try again or write manually.`;
@@ -108,7 +119,7 @@ ${errorMessage}
 **What to do next:**
 1.  Check the server console/logs for specific error messages from the AI.
 2.  Ensure your API key is correctly configured and has the necessary permissions.
-3.  Try simplifying your blog topic or outline.
+3.  Try simplifying your blog topic or outline, or adjust audience parameters.
 4.  Check your network connection.
 5.  You can manually write the content in the editor.
 
