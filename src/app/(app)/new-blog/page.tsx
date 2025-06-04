@@ -39,7 +39,7 @@ const lengths: BlogLength[] = ["short", "medium", "long"];
 
 const personas: Persona[] = ["General Audience", "Developers", "Marketing Managers", "Executives"];
 const expertiseLevels: ExpertiseLevel[] = ["Beginner", "Intermediate", "Advanced"];
-const intents: Intent[] = ["Inform", "Convert", "Entertain"];
+const intents: Intent[] = ["Inform", "Convert", "Entertain", "Engage", "Educate"];
 
 
 interface OutlineItem {
@@ -387,7 +387,7 @@ export default function NewBlogPage() {
 
               <div className="space-y-2">
                 <Label>Content Intent</Label>
-                <RadioGroup value={intent} onValueChange={(value: Intent) => setIntent(value)} className="flex space-x-4">
+                <RadioGroup value={intent} onValueChange={(value: Intent) => setIntent(value)} className="flex flex-wrap gap-x-4 gap-y-2">
                     {intents.map(i => (
                         <div key={i} className="flex items-center space-x-2">
                             <RadioGroupItem value={i} id={`intent-${i}`} />
@@ -520,3 +520,4 @@ export default function NewBlogPage() {
     </TooltipProvider>
   );
 }
+

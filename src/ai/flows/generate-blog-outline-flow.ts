@@ -15,7 +15,7 @@ import type { Persona, ExpertiseLevel, Intent } from '@/types'; // Import new ty
 // Define enums for Zod validation if not already globally available for Zod
 const PersonaEnum = z.enum(["General Audience", "Developers", "Marketing Managers", "Executives"]);
 const ExpertiseLevelEnum = z.enum(["Beginner", "Intermediate", "Advanced"]);
-const IntentEnum = z.enum(["Inform", "Convert", "Entertain"]);
+const IntentEnum = z.enum(["Inform", "Convert", "Entertain", "Engage", "Educate"]);
 
 
 const GenerateBlogOutlineInputSchema = z.object({
@@ -26,7 +26,7 @@ const GenerateBlogOutlineInputSchema = z.object({
   referenceText: z.string().optional().describe('Optional reference text or notes to guide the outline generation.'),
   persona: PersonaEnum.optional().describe('The target audience persona (e.g., Developers, Marketing Managers).'),
   expertiseLevel: ExpertiseLevelEnum.optional().describe('The expertise level of the target audience (e.g., Beginner, Advanced).'),
-  intent: IntentEnum.optional().describe('The primary goal of the blog post (e.g., Inform, Convert).'),
+  intent: IntentEnum.optional().describe('The primary goal of the blog post (e.g., Inform, Convert, Engage, Educate).'),
 });
 export type GenerateBlogOutlineInput = z.infer<typeof GenerateBlogOutlineInputSchema>;
 
@@ -51,7 +51,13 @@ Given the following parameters:
 - Desired Length: {{{length}}}
 {{#if persona}}- Target Persona: {{{persona}}}{{/if}}
 {{#if expertiseLevel}}- Expertise Level: {{{expertiseLevel}}}{{/if}}
-{{#if intent}}- Content Intent: {{{intent}}}{{/if}}
+{{#if intent}}- Content Intent: {{{intent}}}
+  {{#if (eq intent "Inform")}}(Provide factual, clear, and comprehensive information. Focus on answering who, what, when, where, why, and how. Structure for easy understanding.){{/if}}
+  {{#if (eq intent "Convert")}}(Focus on persuading the reader to take a specific action. Highlight benefits, address objections, and build towards a clear call-to-action.){{/if}}
+  {{#if (eq intent "Entertain")}}(Aim to amuse, delight, or captivate the reader. Use storytelling, humor, or engaging narratives. Focus on enjoyment.){{/if}}
+  {{#if (eq intent "Engage")}}(Encourage reader interaction. Consider incorporating questions, discussion prompts, or elements that invite comments and sharing.){{/if}}
+  {{#if (eq intent "Educate")}}(Provide structured learning. Break down complex topics, explain concepts clearly, and potentially include actionable steps or key takeaways for learning.){{/if}}
+{{/if}}
 {{#if referenceText}}- Reference Material: {{{referenceText}}}{{/if}}
 
 Generate a concise, logical, and comprehensive blog post outline. The outline should consist of 5-7 main sections or headings that would form a well-structured {{length}} blog post.
@@ -71,8 +77,9 @@ const generateBlogOutlineFlow = ai.defineFlow(
     const {output} = await prompt(input);
     if (!output || !output.outline || output.outline.length === 0) {
       // Fallback in case AI returns empty or malformed output
-      return { outline: [`Introduction to ${input.topic}`, `Exploring ${input.topic} for ${input.persona || 'a general audience'}`, `Key aspects of ${input.topic}`, `Challenges related to ${input.topic}`, `Conclusion on ${input.topic}`] };
+      return { outline: [`Introduction to ${input.topic}`, `Exploring ${input.topic} for ${input.persona || 'a general audience'} with an intent to ${input.intent || 'inform'}`, `Key aspects of ${input.topic}`, `Challenges related to ${input.topic}`, `Conclusion on ${input.topic}`] };
     }
     return output;
   }
 );
+

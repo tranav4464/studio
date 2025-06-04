@@ -15,7 +15,7 @@ import type { Persona, ExpertiseLevel, Intent } from '@/types'; // Import new ty
 // Define enums for Zod validation if not already globally available for Zod
 const PersonaEnum = z.enum(["General Audience", "Developers", "Marketing Managers", "Executives"]);
 const ExpertiseLevelEnum = z.enum(["Beginner", "Intermediate", "Advanced"]);
-const IntentEnum = z.enum(["Inform", "Convert", "Entertain"]);
+const IntentEnum = z.enum(["Inform", "Convert", "Entertain", "Engage", "Educate"]);
 
 const GenerateFullBlogInputSchema = z.object({
   topic: z.string().describe('The main topic of the blog post.'),
@@ -26,7 +26,7 @@ const GenerateFullBlogInputSchema = z.object({
   referenceText: z.string().optional().describe('Optional reference text or notes to guide the blog post generation.'),
   persona: PersonaEnum.optional().describe('The target audience persona (e.g., Developers, Marketing Managers).'),
   expertiseLevel: ExpertiseLevelEnum.optional().describe('The expertise level of the target audience (e.g., Beginner, Advanced).'),
-  intent: IntentEnum.optional().describe('The primary goal of the blog post (e.g., Inform, Convert).'),
+  intent: IntentEnum.optional().describe('The primary goal of the blog post (e.g., Inform, Convert, Engage, Educate).'),
   customInstructions: z.string().optional().describe('Specific instructions for the AI for full blog generation (e.g., focus on specific examples, maintain a particular narrative).'),
 });
 export type GenerateFullBlogInput = z.infer<typeof GenerateFullBlogInputSchema>;
@@ -52,7 +52,13 @@ Given the following parameters:
 - Desired Length: {{{length}}}
 {{#if persona}}- Target Persona: {{{persona}}}{{/if}}
 {{#if expertiseLevel}}- Expertise Level: {{{expertiseLevel}}}{{/if}}
-{{#if intent}}- Content Intent: {{{intent}}}{{/if}}
+{{#if intent}}- Content Intent: {{{intent}}}
+  {{#if (eq intent "Inform")}}(Ensure the content is factual, clear, and answers key questions like who, what, when, where, why, and how. Structure for easy understanding and comprehensive coverage.){{/if}}
+  {{#if (eq intent "Convert")}}(Craft persuasive content that guides the reader towards a specific action. Emphasize benefits, address potential concerns, and include or lead into strong calls-to-action.){{/if}}
+  {{#if (eq intent "Entertain")}}(Create an enjoyable reading experience. Use storytelling, humor, vivid descriptions, or engaging narratives as appropriate for the topic and tone.){{/if}}
+  {{#if (eq intent "Engage")}}(Foster reader interaction. Consider incorporating questions, discussion points, or calls for comments/shares naturally within the content.){{/if}}
+  {{#if (eq intent "Educate")}}(Provide clear, structured instruction. Break down complex topics, explain concepts thoroughly, and offer actionable steps or learning takeaways. Aim to teach the reader something specific.){{/if}}
+{{/if}}
 {{#if referenceText}}- General Reference Material (use for context if no specific instructions contradict): {{{referenceText}}}{{/if}}
 {{#if customInstructions}}- Specific Instructions for this post: {{{customInstructions}}}{{/if}}
 
@@ -64,7 +70,7 @@ And the following outline:
 Please write a comprehensive and engaging {{length}} blog post.
 The post should follow the provided outline, using each outline item as a major heading or section (e.g., using H2 or H3 Markdown for headings).
 Tailor the language, depth, and examples to the specified Target Persona and their Expertise Level.
-Ensure the content aligns with the Content Intent (e.g., if "Convert", include persuasive elements or a call to action).
+Ensure the content aligns with the Content Intent.
 Ensure the content flows logically, adheres to the specified tone and style, and thoroughly covers the topic.
 If 'Specific Instructions' are provided, prioritize them.
 The output should be a single string containing the full blog post in Markdown format.
@@ -90,7 +96,7 @@ const generateFullBlogFlow = ai.defineFlow(
     const {output} = await prompt(input);
     if (!output || !output.blogContent) {
       // Fallback in case AI returns empty or malformed output
-      let fallbackContent = `# ${input.topic}\n\n## Introduction\nFailed to generate AI content for this section for ${input.persona || 'general audience'}. Please write manually.\n\n`;
+      let fallbackContent = `# ${input.topic}\n\n## Introduction\nFailed to generate AI content for this section for ${input.persona || 'general audience'} with intent to ${input.intent || 'inform'}. Please write manually.\n\n`;
       input.outline.forEach(section => {
         if (section.toLowerCase() !== 'introduction' && section.toLowerCase() !== 'conclusion') {
           fallbackContent += `## ${section}\nContent generation failed for this section. Please fill in manually.\n\n`;
@@ -102,3 +108,4 @@ const generateFullBlogFlow = ai.defineFlow(
     return output;
   }
 );
+

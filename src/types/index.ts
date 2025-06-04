@@ -13,7 +13,7 @@ export interface RepurposedContentFeedback {
 
 export type Persona = "General Audience" | "Developers" | "Marketing Managers" | "Executives";
 export type ExpertiseLevel = "Beginner" | "Intermediate" | "Advanced";
-export type Intent = "Inform" | "Convert" | "Entertain";
+export type Intent = "Inform" | "Convert" | "Entertain" | "Engage" | "Educate";
 
 
 export interface BlogPost {
