@@ -302,10 +302,10 @@ export default function BlogEditPage() {
     setIsGeneratingHelperPrompt(false);
   };
 
-  const copyHelperPromptToClipboard = () => {
+  const copyHelperPromptToMain = () => {
     if (suggestedHelperPrompt) {
-      navigator.clipboard.writeText(suggestedHelperPrompt);
-      toast({ title: "Copied to clipboard!", description: "Suggested prompt copied." });
+      setHeroImagePrompt(suggestedHelperPrompt);
+      toast({ title: "Prompt Copied!", description: "Suggestion copied to main image prompt field." });
     }
   };
 
@@ -1018,7 +1018,10 @@ export default function BlogEditPage() {
                       <div className="mt-3 space-y-2">
                         <Label>Suggested Prompt:</Label>
                         <Textarea value={suggestedHelperPrompt} readOnly rows={3} className="bg-muted"/>
-                        <Button variant="outline" size="sm" onClick={copyHelperPromptToClipboard} className="w-full"><Icons.Copy className="mr-2 h-3 w-3"/>Copy Suggestion</Button>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(suggestedHelperPrompt); toast({ title: "Copied to clipboard!"}); }} className="flex-1"><Icons.Copy className="mr-2 h-3 w-3"/>Copy</Button>
+                          <Button variant="default" size="sm" onClick={copyHelperPromptToMain} className="flex-1"><Icons.LogIn className="mr-2 h-3 w-3"/>Use This Prompt</Button>
+                        </div>
                       </div>
                     )}
                   </AccordionContent>
@@ -1335,3 +1338,5 @@ export default function BlogEditPage() {
     </TooltipProvider>
   );
 }
+
+    
