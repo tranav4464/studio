@@ -3,7 +3,6 @@ import type {Metadata} from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google'; // Updated font imports
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "next-themes";
 
 // Configure Inter font
 const inter = Inter({
@@ -33,15 +32,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       {/* Apply font variables to the html tag for global availability */}
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        {children}
+        <Toaster />
       </body>
     </html>
   );

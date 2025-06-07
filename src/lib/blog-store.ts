@@ -1,5 +1,4 @@
-
-import type { BlogPost, BlogTone, BlogStyle, BlogLength, RepurposedContentFeedback } from '@/types';
+import type { BlogPost, BlogTone, BlogStyle, BlogLength, RepurposedContentFeedback, Persona, ExpertiseLevel, Intent } from '@/types';
 import { formatISO } from 'date-fns';
 
 let posts: BlogPost[] = [
@@ -48,7 +47,16 @@ const defaultRepurposedFeedback: RepurposedContentFeedback = {
 };
 
 export const blogStore = {
-  addPost: (postData: { title: string; topic: string; tone: BlogTone; style: BlogStyle; length: BlogLength }): BlogPost => {
+  addPost: (postData: { 
+    title: string; 
+    topic: string; 
+    tone: BlogTone; 
+    style: BlogStyle; 
+    length: BlogLength;
+    persona?: Persona;
+    expertiseLevel?: ExpertiseLevel;
+    intent?: Intent;
+  }): BlogPost => {
     const newId = String(Date.now());
     const now = formatISO(new Date());
     const newPost: BlogPost = {

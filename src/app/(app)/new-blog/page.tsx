@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type ChangeEvent, useRef, useEffect } from 'react';
+import React, { useState, type ChangeEvent, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
-import { Icons } from '@/components/icons';
+import { Icons } from "@/components/icons";
+import { X, Loader2, Upload } from "lucide-react";
+import { IntelligentTopicInput } from "@/components/blog/intelligent-topic-input";
 import { PageHeader } from '@/components/shared/page-header';
 import type { BlogTone, BlogStyle, BlogLength, Persona, ExpertiseLevel, Intent } from '@/types';
 import { blogStore } from '@/lib/blog-store';
@@ -59,6 +61,8 @@ export default function NewBlogPage() {
   const [length, setLength] = useState<BlogLength>('medium');
   const [referenceText, setReferenceText] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
 
   const [persona, setPersona] = useState<Persona>('General Audience');
   const [expertiseLevelValue, setExpertiseLevelValue] = useState<number[]>([1]);
@@ -100,47 +104,120 @@ export default function NewBlogPage() {
   };
 
 
-  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
+  const processFile = useCallback(async (file: File) => {
+    if (!file) return false;
+    
+    // Reset any previous state
+    setIsProcessingFile(true);
+    setUploadedFileName(null);
+    setReferenceText('');
+    setReferenceSummaryPoints([]);
+    
+    try {
+      if (file.type !== 'text/plain' && !file.name.toLowerCase().endsWith('.txt')) {
+        throw new Error('Only .txt files are supported');
+      }
+      
+      const content = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsText(file);
+      });
+      
+      setReferenceText(content);
+      setUploadedFileName(file.name);
+      toast({ 
+        title: 'File Uploaded', 
+        description: `Processing ${file.name}...`,
+        action: (
+          <Button variant="ghost" size="sm" onClick={handleRemoveFile}>
+            Undo
+          </Button>
+        )
+      });
+      
+      // Start summarization in the background
+      handleSummarizeReferenceText(content);
+      return true;
+      
+    } catch (error: any) {
+      console.error('File processing error:', error);
+      toast({ 
+        title: 'Error Processing File', 
+        description: error.message || 'Could not process the file', 
+        variant: 'destructive' 
+      });
+      return false;
+    } finally {
+      setIsProcessingFile(false);
+    }
+  }, [handleSummarizeReferenceText]);
+  
+  const handleFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.type === "text/plain") {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const content = e.target?.result as string;
-          setReferenceText(content);
-          setUploadedFileName(file.name);
-          toast({ title: "File Uploaded", description: `${file.name} content loaded. Summarizing...` });
-          setIsAttachPopoverOpen(false);
-          await handleSummarizeReferenceText(content); // Summarize after loading
-        };
-        reader.onerror = () => {
-          toast({ title: "File Read Error", description: "Could not read the selected file.", variant: "destructive" });
-          setUploadedFileName(null);
-        };
-        reader.readAsText(file);
-      } else {
-        toast({ title: "Invalid File Type", description: "Only .txt files are currently supported for direct content extraction.", variant: "destructive" });
-        setUploadedFileName(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ""; // Reset file input
-        }
+      processFile(file);
+      // Reset the file input to allow selecting the same file again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
     }
-  };
+  }, [processFile]);
+  
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  }, [processFile]);
+  
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragOver) {
+      setIsDragOver(true);
+    }
+  }, [isDragOver]);
+  
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isDragOver) {
+      setIsDragOver(false);
+    }
+  }, [isDragOver]);
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
 
-  const handleRemoveFile = () => {
+  const handleRemoveFile = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setUploadedFileName(null);
     setReferenceText('');
-    setReferenceSummaryPoints([]); // Clear summary points when file is removed
+    setReferenceSummaryPoints([]);
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // Reset file input
+      fileInputRef.current.value = '';
     }
-    toast({ title: "File Removed", description: "Uploaded file and its reference text have been cleared." });
-  };
+    toast({ 
+      title: 'File Removed', 
+      description: 'Uploaded file and its reference text have been cleared.',
+      action: (
+        <Button variant="ghost" size="sm" onClick={() => {
+          if (fileInputRef.current) {
+            fileInputRef.current.click();
+          }
+        }}>
+          Upload New
+        </Button>
+      )
+    });
+  }, []);
 
   const handleSparkIdeas = async () => {
     if (!topic.trim()) {
@@ -289,20 +366,63 @@ export default function NewBlogPage() {
 
   const selectedToneEmoji = tones.find(t => t.value === tone)?.emoji || '';
 
-  return (
-    <TooltipProvider>
-      <div className="container mx-auto">
-        <PageHeader
-          title={pageTitle}
-          description={pageDescription}
-        />
-        <div className={cn(
-            "gap-8",
-            uiStep === 'defineDetails'
-              ? "flex flex-col items-center" // Center content for defineDetails step
-              : "grid grid-cols-1 md:grid-cols-3" // Grid for editOutline step
-          )}>
+  // Function to safely copy to clipboard with user interaction
+  const copyToClipboard = async (text: string) => {
+    try {
+      // Ensure the document has focus
+      if (!document.hasFocus()) {
+        window.focus();
+      }
+      
+      // Request permission
+      const permission = await navigator.permissions.query({ name: 'clipboard-write' as PermissionName });
+      if (permission.state === 'granted' || permission.state === 'prompt') {
+        await navigator.clipboard.writeText(text);
+        // Show success toast or feedback
+        toast({
+          title: 'Copied to clipboard!',
+          variant: 'default',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      // Fallback for browsers that don't support the Clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({
+          title: 'Copied to clipboard!',
+          variant: 'default',
+        });
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+        toast({
+          title: 'Failed to copy',
+          description: 'Please try again',
+          variant: 'destructive',
+        });
+      }
+      document.body.removeChild(textArea);
+    }
+  };
 
+  return (
+    <div className="container mx-auto">
+      <PageHeader
+        title={pageTitle}
+        description={pageDescription}
+      />
+      <div className={cn(
+        "gap-8",
+        uiStep === 'defineDetails'
+          ? "flex flex-col items-center" // Center content for defineDetails step
+          : "grid grid-cols-1 md:grid-cols-3" // Grid for editOutline step
+      )}>
+        {/* Main content */}
+        <div className="w-full">
           {/* Card for Blog Details - always visible, but its width/position changes */}
           <Card className={cn(
             "shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl",
@@ -320,28 +440,32 @@ export default function NewBlogPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-1">
                   <Label htmlFor="topic">Blog Topic / Keywords <span className="text-destructive">*</span></Label>
-                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent side="top"><p>Main subject or keywords for your post.</p></TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent side="top"><p>Start typing to get AI-powered topic suggestions</p></TooltipContent></Tooltip>
                 </div>
                 <div className="flex gap-2">
-                    <div className={cn(
-                        "flex-grow rounded-md border border-input transition-all duration-300",
-                        isSparkingIdeas && "animate-pulse ring-4 ring-primary/70 ring-offset-2 ring-offset-background bg-primary/10 shadow-2xl shadow-primary/30"
-                    )}>
-                        <Input
-                            id="topic"
-                            placeholder="e.g., The Future of Renewable Energy"
-                            value={topic}
-                            onChange={(e) => setTopic(e.target.value)}
-                            className={cn(
-                                "border-0 focus-visible:ring-0 focus-visible:ring-offset-0", // Remove default input border to rely on wrapper
-                                isSparkingIdeas && "bg-transparent placeholder:text-primary/60"
-                            )}
-                        />
-                    </div>
-                    <Button onClick={handleSparkIdeas} disabled={isSparkingIdeas} variant="outline" className="flex-shrink-0">
-                        {isSparkingIdeas ? <Icons.Spinner className="animate-spin mr-2" /> : <Icons.Improve className="mr-2"/>}
-                        Spark Ideas
-                    </Button>
+                  <div className="flex-grow">
+                    <IntelligentTopicInput
+                      value={topic}
+                      onChange={setTopic}
+                      placeholder="e.g., The Future of Renewable Energy"
+                      className={cn(
+                        isSparkingIdeas && "ring-4 ring-primary/70 ring-offset-2 ring-offset-background bg-primary/10 shadow-2xl shadow-primary/30"
+                      )}
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleSparkIdeas} 
+                    disabled={isSparkingIdeas || !topic.trim()} 
+                    variant="outline" 
+                    className="flex-shrink-0"
+                  >
+                    {isSparkingIdeas ? (
+                      <Icons.Spinner className="animate-spin mr-2 h-4 w-4" />
+                    ) : (
+                      <Icons.Improve className="mr-2 h-4 w-4" />
+                    )}
+                    Spark Ideas
+                  </Button>
                 </div>
                 {topicIdeas.length > 0 && (
                     <div className="mt-3 space-y-2">
@@ -447,67 +571,122 @@ export default function NewBlogPage() {
                 </RadioGroup>
               </div>
 
-              <Separator />
-
               <div className="space-y-2 pt-2">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                        <Label htmlFor="referenceText">Reference Material (Optional)</Label>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-5 w-5">
-                                <Icons.HelpCircle className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs">
-                            <p>Paste text or upload a .txt file. This material is primarily used for initial outline generation and can be summarized for key points.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </div>
-                 </div>
-                 <div className="relative">
+                  <div className="flex items-center gap-1">
+                    <Label htmlFor="referenceText">Reference Material (Optional)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-5 w-5">
+                          <Icons.HelpCircle className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p>Paste text or drag & drop a .txt file. This material is used for initial outline generation and can be summarized for key points.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+                 <div 
+                    className={cn(
+                        'relative border-2 border-dashed rounded-lg transition-colors',
+                        isDragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25',
+                        isProcessingFile && 'opacity-70 cursor-wait'
+                    )}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                >
                     <Textarea
                         id="referenceText"
-                        placeholder="Paste any reference material, key points..."
+                        placeholder={
+                            isProcessingFile 
+                                ? 'Processing file...' 
+                                : 'Paste text or drag & drop a .txt file here...'
+                        }
                         value={referenceText}
                         onChange={(e) => {
-                          setReferenceText(e.target.value);
-                          // If user types manually, clear uploaded file and its summary
-                          if (uploadedFileName) setUploadedFileName(null);
-                          if (referenceSummaryPoints.length > 0) setReferenceSummaryPoints([]);
+                            setReferenceText(e.target.value);
+                            // If user types manually, clear uploaded file and its summary
+                            if (uploadedFileName) setUploadedFileName(null);
+                            if (referenceSummaryPoints.length > 0) setReferenceSummaryPoints([]);
                         }}
                         rows={5}
-                        className="pr-12" // Padding for the attach icon
+                        className={cn(
+                            'resize-none border-0 bg-transparent',
+                            'focus-visible:ring-0 focus-visible:ring-offset-0',
+                            isDragOver && 'opacity-70',
+                            isProcessingFile && 'cursor-wait'
+                        )}
+                        disabled={isProcessingFile}
                     />
-                    <Popover open={isAttachPopoverOpen} onOpenChange={setIsAttachPopoverOpen}>
-                        <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="absolute bottom-2 right-2 h-8 w-8 text-primary hover:bg-primary/10">
-                            <Icons.Paperclip className="h-5 w-5" />
-                            <span className="sr-only">Attach file</span>
-                        </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-2" align="end">
-                        <div className="flex flex-col gap-1">
-                            <Button variant="ghost" size="sm" className="justify-start" onClick={triggerFileInput}>
-                                <Icons.FilePlus className="mr-2 h-4 w-4" /> Upload .txt File
-                            </Button>
-                            <Button variant="ghost" size="sm" className="justify-start" onClick={() => toast({title: "Coming Soon", description: "PDF/DOCX upload support is planned. For now, please paste content or upload a .txt file."})}>
-                                <Icons.FileText className="mr-2 h-4 w-4" /> Upload .pdf/.docx
-                            </Button>
-                            <Button variant="ghost" size="sm" className="justify-start" onClick={() => toast({title: "Coming Soon", description: "Google Drive integration is planned."})}>
-                                <Icons.Dashboard className="mr-2 h-4 w-4" /> Connect Google Drive
-                            </Button>
-                        </div>
-                        </PopoverContent>
-                    </Popover>
+                    <div className="absolute bottom-2 right-2 flex items-center gap-1">
+                        {uploadedFileName && (
+                            <div className="flex items-center gap-1 px-2 py-1 text-xs bg-muted rounded-md">
+                                <Icons.FileText className="h-3 w-3 text-muted-foreground" />
+                                <span className="max-w-[120px] truncate">{uploadedFileName}</span>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-4 w-4 text-muted-foreground hover:text-destructive"
+                                    onClick={handleRemoveFile}
+                                    disabled={isProcessingFile}
+                                >
+                                    <X className="h-3 w-3" />
+                                    <span className="sr-only">Remove file</span>
+                                </Button>
+                            </div>
+                        )}
+                        <Popover open={isAttachPopoverOpen} onOpenChange={setIsAttachPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-muted-foreground hover:bg-muted"
+                                    disabled={isProcessingFile}
+                                >
+                                    {isProcessingFile ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Icons.Paperclip className="h-4 w-4" />
+                                    )}
+                                    <span className="sr-only">Attach file</span>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-48 p-2" align="end">
+                                <div className="flex flex-col gap-1">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="justify-start" 
+                                        onClick={triggerFileInput}
+                                        disabled={isProcessingFile}
+                                    >
+                                        <Upload className="mr-2 h-4 w-4" /> Upload File
+                                    </Button>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="justify-start" 
+                                        onClick={() => toast({
+                                            title: "Coming Soon", 
+                                            description: "PDF/DOCX upload support is planned. For now, please paste content or upload a .txt file."
+                                        })}
+                                        disabled={isProcessingFile}
+                                    >
+                                        <Icons.FileText className="mr-2 h-4 w-4" /> More Formats
+                                    </Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                 </div>
                 <input
-                  id="reference-file-input"
-                  type="file"
-                  accept=".txt"
                   ref={fileInputRef}
-                  onChange={handleFileUpload}
+                  type="file"
                   className="hidden"
+                  accept=".txt"
+                  onChange={handleFileChange}
+                  disabled={isProcessingFile}
                 />
                 {uploadedFileName && (
                   <div className="flex items-center justify-between p-2 bg-muted/50 rounded-md mt-2">
@@ -547,6 +726,7 @@ export default function NewBlogPage() {
                     </div>
                 )}
               </div>
+            </div>
             </CardContent>
             {uiStep === 'defineDetails' && (
               <CardFooter>
@@ -603,15 +783,24 @@ export default function NewBlogPage() {
                     <div className="pt-4 space-y-2">
                       <div className="flex items-center gap-1">
                           <Label htmlFor="customInstructions">Specific Instructions for Blog Generation (Optional)</Label>
-                          <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5"><Icons.HelpCircle className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent side="top" className="max-w-xs"><p>Guide the AI for full blog generation (e.g., "Focus on practical examples"). This guides AI when writing from the outline, supplementing initial references for this step.</p></TooltipContent></Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-5 w-5">
+                                <Icons.HelpCircle className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p>Guide the AI for full blog generation (e.g., "Focus on practical examples"). This guides AI when writing from the outline, supplementing initial references for this step.</p>
+                            </TooltipContent>
+                          </Tooltip>
                       </div>
                       <Textarea
-                          id="customInstructions"
-                          placeholder="e.g., Emphasize the impact on small businesses. Include a call to action to visit our website."
-                          value={customInstructions}
-                          onChange={(e) => setCustomInstructions(e.target.value)}
-                          rows={3}
-                          className="mt-1"
+                        id="customInstructions"
+                        placeholder="e.g., Emphasize the impact on small businesses. Include a call to action to visit our website."
+                        value={customInstructions}
+                        onChange={(e) => setCustomInstructions(e.target.value)}
+                        rows={3}
+                        className="mt-1"
                       />
                     </div>
                   </>
@@ -632,6 +821,6 @@ export default function NewBlogPage() {
           )}
         </div>
       </div>
-    </TooltipProvider>
+    </div>
   );
 }
