@@ -283,7 +283,21 @@ export function IntelligentTopicInput({
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API Error response:', errorText);
-        throw new Error(`Failed to fetch suggestions: ${response.status} ${response.statusText}`);
+        let apiErrorDetails = `Failed to fetch suggestions: ${response.status} ${response.statusText}`;
+        try {
+          const parsedError = JSON.parse(errorText);
+          if (parsedError && parsedError.details && typeof parsedError.details === 'string' && parsedError.details.includes('NEXT_PUBLIC_GEMINI_API is not configured')) {
+            apiErrorDetails = 'Gemini API Key is missing. Please set NEXT_PUBLIC_GEMINI_API in your .env.local file.';
+          } else if (parsedError && parsedError.error) {
+            apiErrorDetails = parsedError.error;
+          }
+        } catch (e) {
+          // JSON parsing failed, stick to original error message if errorText itself is not empty
+          if (errorText.trim()) {
+            apiErrorDetails = errorText;
+          }
+        }
+        throw new Error(apiErrorDetails);
       }
 
       const data = await response.json();
@@ -365,24 +379,37 @@ export function IntelligentTopicInput({
 
         } catch (error) {
           console.error('Error in fetchSuggestions:', error);
-          toast({
-            title: 'Failed to load suggestions',
-            description: 'Using default suggestions instead',
-            variant: 'destructive',
-          } as any);
+          const errorMessage = error instanceof Error ? error.message : "An unknown error occurred processing suggestions.";
+          
+          if (errorMessage.includes('Gemini API Key is missing')) {
+            toast({
+              title: 'API Configuration Error',
+              description: errorMessage + " Topic suggestions will use defaults.",
+              variant: 'destructive',
+              duration: 7000, // Keep this toast longer
+            } as any);
+          } else {
+            toast({
+              title: 'Failed to load suggestions',
+              description: 'Using default suggestions instead. Details: ' + errorMessage,
+              variant: 'destructive',
+            } as any);
+          }
 
           const fallbackSuggestions: Suggestion[] = [
             {
               id: generateId(),
               text: `${trimmedQuery} best practices`,
               frequency: 0.9,
-              lastSelected: Date.now()
+              lastSelected: Date.now(),
+              fromHistory: true // Note: This was the line indicated in the original error source
             },
             {
               id: generateId(),
               text: `How to master ${trimmedQuery}`,
               frequency: 0.85,
-              lastSelected: Date.now()
+              lastSelected: Date.now(),
+              fromHistory: true
             },
           ];
 
