@@ -57,71 +57,90 @@ type IntelligentTopicInputProps = {
 const MotionDiv = motion.div;
 const MotionSpan = motion.span;
 
-const SuggestionItem = memo(({ 
+const SuggestionItem = memo(function SuggestionItem({ 
   suggestion, 
   index, 
   selectedIndex, 
   onSelect,
   onHover,
   showPulse
-}: SuggestionItemProps) => (
-  <MotionDiv
-    ref={el => { 
-      if (el) (el as any).suggestionRefs = { current: el };
-    }}
-    className={cn(
-      'relative flex items-center px-4 py-3 text-sm cursor-pointer',
-      'hover:bg-accent/50 transition-colors',
-      selectedIndex === index ? 'bg-accent/30' : 'bg-popover',
-      suggestion.isNew && 'border-l-2 border-primary/70'
-    )}
-    initial={suggestion.isNew ? { x: -5, opacity: 0 } : { x: 0, opacity: 1 }}
-    animate={{ 
-      x: 0, 
-      opacity: 1,
-      backgroundColor: selectedIndex === index ? 'hsl(var(--accent)/0.3)' : 'hsl(var(--popover))',
-    }}
-    transition={{
-      x: { duration: 0.2, ease: "easeOut" },
-      backgroundColor: { duration: 0.1 }
-    }}
-    onMouseDown={(e) => {
-      e.preventDefault();
-      onSelect(suggestion);
-    }}
-    onMouseEnter={() => onHover(index)}
-  >
-    {suggestion.isNew && (
-      <MotionSpan 
-        className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary/50"
-        initial={{ scaleY: 0.5, opacity: 0 }}
-        animate={{ scaleY: 1, opacity: 1 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      />
-    )}
-    <span className="truncate">{suggestion.text}</span>
-    
-    {suggestion.isNew && (
-      <MotionSpan
-        className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary"
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.1, type: 'spring', stiffness: 500, damping: 20 }}
-      >
-        New
-      </MotionSpan>
-    )}
-    
-    {showPulse && suggestion.isNew && (
-      <MotionSpan
-        className="absolute inset-0 rounded-md bg-primary/5"
-        initial={{ opacity: 0.5 }}
-        animate={{ opacity: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-      />
-    )}
-  </MotionDiv>
-));
+}: SuggestionItemProps) {
+  const isSelected = selectedIndex === index;
+  const isNew = suggestion.isNew;
+  
+  return (
+    <MotionDiv
+      ref={el => { 
+        if (el) (el as any).suggestionRefs = { current: el };
+      }}
+      className={cn(
+        'relative flex items-center px-4 py-3 text-sm cursor-pointer',
+        'hover:bg-accent/50 transition-all duration-200',
+        isSelected ? 'bg-accent/30' : 'bg-popover',
+        isNew && 'border-l-2 border-primary/70',
+        'group/suggestion'
+      )}
+      initial={isNew ? { x: -5, opacity: 0 } : { x: 0, opacity: 1 }}
+      animate={{ 
+        x: 0, 
+        opacity: 1,
+        scale: isSelected ? 1.01 : 1,
+        backgroundColor: isSelected ? 'hsl(var(--accent)/0.3)' : 'hsl(var(--popover))',
+        transition: {
+          backgroundColor: { duration: 0.1 },
+          scale: { type: 'spring', stiffness: 500, damping: 30 }
+        }
+      }}
+      whileHover={{
+        scale: 1.01,
+        backgroundColor: 'hsl(var(--accent)/0.2)',
+        transition: { duration: 0.15 }
+      }}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        onSelect(suggestion);
+        // Trigger haptic feedback on mobile
+        if ('vibrate' in navigator) {
+          navigator.vibrate(5);
+        }
+      }}
+      onMouseEnter={() => onHover(index)}
+    >
+      {/* Pulse effect for new suggestions */}
+      {showPulse && isNew && (
+        <MotionDiv
+          className="absolute inset-0 bg-primary/5 rounded-md"
+          initial={{ opacity: 0.5, scale: 1 }}
+          animate={{
+            opacity: 0,
+            scale: 1.05,
+            transition: { duration: 0.5, ease: 'easeOut' }
+          }}
+        />
+      )}
+      {isNew && (
+        <MotionSpan 
+          className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary/50"
+          initial={{ scaleY: 0.5, opacity: 0 }}
+          animate={{ scaleY: 1, opacity: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        />
+      )}
+      <span className="truncate">{suggestion.text}</span>
+      
+      {isNew && (
+        <MotionSpan
+          className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1, type: 'spring', stiffness: 500, damping: 20 }}
+        >
+          New
+        </MotionSpan>
+      )}
+    </MotionDiv>
+  );
+});
 
 const SuggestionList = memo(({ 
   suggestions, 
@@ -232,6 +251,7 @@ export function IntelligentTopicInput({
   };
 
   const fetchGeminiSuggestions = useCallback(async (query: string) => {
+    console.log('Fetching suggestions for query:', query);
     try {
       const response = await fetch('/api/gemini/suggestions', {
         method: 'POST',
@@ -244,20 +264,34 @@ export function IntelligentTopicInput({
         }),
       });
 
+      console.log('API Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch suggestions');
+        const errorText = await response.text();
+        console.error('API Error response:', errorText);
+        throw new Error(`Failed to fetch suggestions: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('API Response data:', data);
+      
+      if (!data.suggestions) {
+        console.warn('No suggestions in response:', data);
+        return [];
+      }
       
       // Add haptic feedback on new suggestions
       if ('vibrate' in navigator) {
         navigator.vibrate(10);
       }
       
-      return data.suggestions || [];
+      return data.suggestions;
     } catch (error) {
-      console.error('Error fetching Gemini suggestions:', error);
+      console.error('Error in fetchGeminiSuggestions:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       throw error;
     }
   }, []);
@@ -416,42 +450,104 @@ export function IntelligentTopicInput({
   };
 
   const handleHover = useCallback((index: number) => {
-    setSelectedIndex(index);
+    setSelectedIndex(index); // AI Co-Pilot Engine: Real-Time Suggestion Matrix
   }, []);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     onChange(value);
+    const trimmedValue = value.trim();
 
     // Clear suggestions if input is empty
-    if (!value.trim()) {
+    if (!trimmedValue) {
       setSuggestions([]);
       return;
     }
 
-    // Debounce the API call
+    // Trigger visual feedback
+    if (trimmedValue.length > 3) {
+      // Show processing state
+      controls.start({
+        borderColor: ['#4F46E5', '#A855F7', '#4F46E5'],
+        transition: { duration: 1.5, repeat: Infinity }
+      });
+      setIsProcessing(true);
+    }
+
+    // Debounce the API call with 300ms delay
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
 
     debounceTimer.current = setTimeout(() => {
-      fetchSuggestions(value);
-    }, debounceDelay);
-  }, [debounceDelay, onChange, fetchSuggestions]);
+      if (trimmedValue.length > 3) {
+        // Fetch AI-powered suggestions for longer inputs
+        fetchSuggestions(trimmedValue);
+      } else if (trimmedValue.length > 0) {
+        // Show trending topics for shorter inputs
+        showTrendingTopics();
+      }
+    }, 300);
+  }, [onChange, fetchSuggestions, controls]);
+
+  // Show trending topics from cache
+  const showTrendingTopics = useCallback(() => {
+    const trendingTopics: Suggestion[] = [
+      { 
+        id: 'trend-1',
+        text: 'Latest in AI Development',
+        frequency: 0.92,
+        lastSelected: Date.now(),
+        fromHistory: true
+      },
+      { 
+        id: 'trend-2',
+        text: 'Web3 and Blockchain Updates',
+        frequency: 0.88,
+        lastSelected: Date.now(),
+        fromHistory: true
+      },
+      { 
+        id: 'trend-3',
+        text: 'Cloud Native Technologies',
+        frequency: 0.85,
+        lastSelected: Date.now(),
+        fromHistory: true
+      }
+    ];
+    setSuggestions(trendingTopics);
+    triggerHapticFeedback();
+  }, []);
+
+  // Trigger haptic feedback on supported devices
+  const triggerHapticFeedback = useCallback(() => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(10);
+    }
+  }, []);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full group">
       <MotionDiv 
         className={cn(
-          'relative rounded-lg transition-all duration-300',
-          'border border-border',
-          (isLoading || isProcessing) && 'border-transparent',
+          'relative rounded-lg transition-all duration-300 overflow-hidden',
+          'border border-border group-hover:border-primary/30',
+          (isLoading || isProcessing) ? 'border-transparent' : '',
           className
         )}
         ref={containerRef}
         animate={borderGlowAnimation}
         initial={{ background: 'transparent' }}
       >
+        {/* Visual Feedback Layer: Gradient Border Glow */}
+        <MotionDiv 
+          className="absolute inset-0 -z-10 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10"
+          animate={isProcessing ? {
+            opacity: [0.3, 0.6, 0.3],
+            transition: { duration: 2, repeat: Infinity }
+          } : { opacity: 0 }}
+        />
+        
         <div className="relative">
           <Input
             ref={inputRef}
@@ -463,9 +559,12 @@ export function IntelligentTopicInput({
             placeholder={placeholder}
             className={cn(
               "w-full transition-all duration-200 bg-background/80 backdrop-blur-sm",
+              "focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2",
               (isLoading || isProcessing) && "pr-10"
             )}
           />
+          
+          {/* Processing Indicator */}
           {(isLoading || isProcessing) && (
             <MotionDiv 
               className="absolute inset-y-0 right-0 flex items-center pr-3"

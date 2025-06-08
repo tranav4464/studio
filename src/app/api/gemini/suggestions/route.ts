@@ -1,8 +1,37 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
-// Initialize the Gemini API with your API key
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Mock data for development
+const MOCK_SUGGESTIONS = [
+  '10 Best Practices for Using AI in Development',
+  'How to Optimize Your Development Workflow with AI',
+  'The Future of AI in Software Engineering',
+  'Getting Started with Gemini API: A Comprehensive Guide',
+  'Common Pitfalls When Working with AI APIs and How to Avoid Them'
+];
+
+// Helper function to generate mock responses
+function generateMockResponse(query: string, count: number): string[] {
+  const baseSuggestions = [...MOCK_SUGGESTIONS];
+  // Add query-specific mock if it's not a generic query
+  if (query && !['test', 'hello', 'hi'].includes(query.toLowerCase())) {
+    baseSuggestions.unshift(
+      `The Ultimate Guide to ${query}`,
+      `10 Tips for Mastering ${query}`,
+      `Why ${query} Matters in 2025`
+    );
+  }
+  return baseSuggestions.slice(0, Math.min(count, 10));
+}
+
+// Helper function to initialize Gemini API
+function initializeGemini() {
+  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API;
+  if (!apiKey) {
+    throw new Error('NEXT_PUBLIC_GEMINI_API is not configured. Please check your .env.local file.');
+  }
+  return new GoogleGenerativeAI(apiKey);
+}
 
 // Define the request body type
 interface SuggestionRequest {
@@ -15,23 +44,105 @@ interface SuggestionRequest {
 interface SuggestionResponse {
   suggestions: string[];
   error?: string;
+  details?: string;
+  mockMode?: boolean;
+  timestamp?: string;
 }
 
 export async function POST(request: Request) {
-  try {
-    // Parse the request body
-    const body: SuggestionRequest = await request.json();
-    const { query, count = 5, context = [] } = body;
+  console.log('=== New Request ===');
+  console.log('Time:', new Date().toISOString());
+  
+  // Check if mock mode is enabled
+  const isMockMode = process.env.NEXT_PUBLIC_MOCK_MODE === 'true';
+  
+  if (isMockMode) {
+    console.log('⚠️ MOCK MODE ENABLED - Using mock responses');
+  }
 
-    if (!query) {
+  // Debug: Log all environment variables (be careful with this in production)
+  const debugVars = Object.keys(process.env).filter(key => 
+    key.includes('GEMINI') || 
+    key.includes('MOCK') || 
+    key.includes('NODE_ENV')
+  );
+  console.log('Environment variables:', debugVars);
+  
+  // Initialize Gemini API if not in mock mode
+  let genAI: GoogleGenerativeAI | null = null;
+  if (!isMockMode) {
+    try {
+      genAI = initializeGemini();
+    } catch (error: any) {
+      console.error('Failed to initialize Gemini API:', error);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to initialize Gemini API',
+          details: error instanceof Error ? error.message : 'Unknown initialization error',
+          mockMode: false
+        }), 
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+  
+  try {
+    // Log environment variable status
+    const hasApiKey = !!process.env.GEMINI_API;
+    console.log('GEMINI_API key present:', hasApiKey);
+    if (!hasApiKey) {
+      console.error('ERROR: GEMINI_API environment variable is not set');
+    }
+
+    // Parse the request body
+    let body: SuggestionRequest;
+    try {
+      body = await request.json();
+      console.log('Request body:', JSON.stringify(body, null, 2));
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
       return NextResponse.json(
-        { error: 'Query is required' } as SuggestionResponse,
+        { error: 'Invalid request body' } as SuggestionResponse,
         { status: 400 }
       );
     }
+    
+    const { query = 'test', count = 5, context = [] } = body;
+    console.log('Processing query:', query, '| Mock Mode:', isMockMode);
 
-    // Get the Gemini Pro model
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    if (!query) {
+      return NextResponse.json(
+        { 
+          error: 'Query is required',
+          mockMode: isMockMode
+        } as SuggestionResponse,
+        { status: 400 }
+      );
+    }
+    
+    // If in mock mode, return mock data immediately
+    if (isMockMode) {
+      console.log('🔹 Returning mock suggestions for query:', query);
+      const mockSuggestions = generateMockResponse(query, count);
+      return NextResponse.json({
+        suggestions: mockSuggestions,
+        mockMode: true,
+        timestamp: new Date().toISOString()
+      } as SuggestionResponse);
+    }
+
+    // Get the Gemini Pro model with configuration
+    if (!genAI) {
+      throw new Error('Gemini API client not initialized');
+    }
+    
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-pro',
+      generationConfig: {
+        maxOutputTokens: 2000,
+        temperature: 0.9,
+      },
+    });
 
     // Create a prompt for topic suggestions
     const prompt = `
@@ -48,10 +159,70 @@ export async function POST(request: Request) {
       Example: ["Suggestion 1", "Suggestion 2"]
     `;
 
-    // Generate content
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    // Generate content with timeout
+    let text: string;
+    try {
+      const result = await Promise.race([
+        model.generateContent(prompt),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
+        )
+      ]);
+      
+      const response = await result.response;
+      text = response.text();
+      
+      if (!text) {
+        throw new Error('Empty response from Gemini API');
+      }
+    } catch (error: any) {
+      console.error('Error generating content:', error);
+      
+      // Handle rate limits specifically
+      if (error.message?.includes('429') || error.message?.includes('quota') || error.status === 429) {
+        return NextResponse.json(
+          { 
+            suggestions: [],
+            error: 'API rate limit exceeded',
+            details: 'You have exceeded your API quota. Please try again later or check your Google AI Studio quota.'
+          } as SuggestionResponse,
+          { 
+            status: 429,
+            headers: { 
+              'Content-Type': 'application/json',
+              'Retry-After': '60' // Tell client to retry after 60 seconds
+            } 
+          }
+        );
+      }
+      
+      // Handle authentication errors
+      if (error.message?.includes('API key') || error.status === 401) {
+        return NextResponse.json(
+          { 
+            suggestions: [],
+            error: 'Authentication failed',
+            details: 'Invalid API key. Please check your Gemini API key configuration.'
+          } as SuggestionResponse,
+          { status: 401 }
+        );
+      }
+      
+      // Handle timeouts
+      if (error.message?.includes('timeout')) {
+        return NextResponse.json(
+          { 
+            suggestions: [],
+            error: 'Request timeout',
+            details: 'The request took too long to complete. Please try again.'
+          } as SuggestionResponse,
+          { status: 504 }
+        );
+      }
+      
+      // Re-throw for other errors to be handled by the outer catch
+      throw error;
+    }
 
     // Try to parse the response as JSON, fallback to text processing if it fails
     let suggestions: string[] = [];
@@ -85,15 +256,34 @@ export async function POST(request: Request) {
     } as SuggestionResponse);
 
   } catch (error) {
-    console.error('Error generating suggestions:', error);
+    console.error('Error in suggestions route:', error);
+    
+    // Get the request body for fallback
+    let query = '';
+    try {
+      // Clone the request to read the body again
+      const requestClone = request.clone();
+      const requestBody = await requestClone.json().catch(() => ({}));
+      query = requestBody?.query || '';
+    } catch (e) {
+      console.error('Error parsing request body in error handler:', e);
+      // Continue with empty query if we can't parse the body
+    }
+    
+    // Log the full error for debugging
+    console.error('Full error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'UnknownError',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     
     // Provide fallback suggestions in case of API failure
     const fallbackSuggestions = [
-      `Best practices for ${body?.query || 'your topic'}`,
-      `How to master ${body?.query || 'this subject'}`,
-      `The complete guide to ${body?.query || 'this topic'}`,
-      `${body?.query || 'Expert'} tips and tricks`,
-      `Why ${body?.query || 'this'} matters in 2025`
+      `Best practices for ${query || 'your topic'}`,
+      `How to master ${query || 'this subject'}`,
+      `The complete guide to ${query || 'this topic'}`,
+      `${query || 'Expert'} tips and tricks`,
+      `Why ${query || 'this'} matters in 2025`
     ].filter(Boolean);
 
     return NextResponse.json(

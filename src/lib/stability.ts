@@ -1,6 +1,12 @@
 // Stability AI API Client
-const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
+const STABILITY_API_KEY = process.env.NEXT_PUBLIC_STABILITY_API_KEY;
 const STABILITY_API_URL = 'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image';
+
+if (!STABILITY_API_KEY) {
+  const errorMsg = 'NEXT_PUBLIC_STABILITY_API_KEY is not configured. Please check your .env.local file.';
+  console.error(errorMsg);
+  throw new Error(errorMsg);
+}
 
 type StabilityRequest = {
   text_prompts: { text: string; weight?: number }[];
