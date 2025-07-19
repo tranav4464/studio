@@ -1,0 +1,43 @@
+.tiptap table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.tiptap colgroup col {
+  min-width: 0;
+}
+
+.tiptap th,
+.tiptap td {
+  min-width: 0;
+  padding: 4px 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  vertical-align: top;
+  box-sizing: border-box;
+  border-left: 1px solid #e5e7eb;
+  border-right: none;
+  border-top: none;
+  border-bottom: none;
+}
+
+.tiptap th:first-child,
+.tiptap td:first-child {
+  border-left: none;
+}
+
+/* Force equal width for up to 10 columns (adjust as needed) */
+.tiptap table tr > th,
+.tiptap table tr > td {
+  width: 1%;
+}
+.tiptap table tr > th:nth-child(1),
+.tiptap table tr > td:nth-child(1),
+.tiptap table tr > th:nth-child(2),
+.tiptap table tr > td:nth-child(2),
+.tiptap table tr > th:nth-child(3),
+.tiptap table tr > td:nth-child(3) {
+  width: 33.33%;
+} 

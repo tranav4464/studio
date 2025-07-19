@@ -1,0 +1,85 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+
+type WorkflowStep = {
+  id: string;
+  label: string;
+  path: string;
+};
+
+const workflowSteps: WorkflowStep[] = [
+  { id: 'create', label: 'Create', path: '/new-blog/create' },
+  { id: 'outline', label: 'Outline', path: '/new-blog/outline' },
+  { id: 'editor', label: 'Editor', path: '/new-blog/editor' },
+  { id: 'visualization', label: 'Visualization', path: '/new-blog/visualization' },
+  { id: 'optimization', label: 'Optimization', path: '/new-blog/optimization' },
+  { id: 'hero', label: 'Hero', path: '/new-blog/hero-image' },
+  { id: 'repurpose', label: 'Repurpose', path: '/new-blog/repurpose' },
+  { id: 'final', label: 'Final', path: '/new-blog/final-output' },
+];
+
+export function WorkflowProgress() {
+  const pathname = usePathname();
+  const currentStepIndex = workflowSteps.findIndex(step => pathname?.startsWith(step.path));
+  const isInWorkflow = currentStepIndex !== -1;
+
+  if (!isInWorkflow) return null;
+
+  return (
+    <div className="absolute left-1/2 top-full -translate-x-1/2 w-full max-w-4xl px-4 mt-1">
+      <div className="bg-white border rounded-lg shadow-sm p-1">
+        <div className="flex items-center justify-between">
+          {workflowSteps.map((step, index) => {
+            const isCurrent = pathname?.startsWith(step.path);
+            const isCompleted = index < currentStepIndex;
+            
+            return (
+              <React.Fragment key={step.id}>
+                <Link
+                  href={step.path}
+                  className={cn(
+                    'flex flex-col items-center relative z-10',
+                    'text-xs font-medium transition-colors px-2 py-1 rounded',
+                    isCurrent 
+                      ? 'text-primary font-semibold' 
+                      : isCompleted 
+                        ? 'text-green-600' 
+                        : 'text-gray-500 hover:text-gray-700',
+                  )}
+                >
+                  <div className={cn(
+                    'w-6 h-6 rounded-full flex items-center justify-center mb-1 text-xs',
+                    isCurrent 
+                      ? 'bg-primary text-white' 
+                      : isCompleted 
+                        ? 'bg-green-100 text-green-600' 
+                        : 'bg-gray-100 text-gray-400'
+                  )}>
+                    {isCompleted ? '✓' : index + 1}
+                  </div>
+                  <span className="text-center">{step.label}</span>
+                </Link>
+                
+                {index < workflowSteps.length - 1 && (
+                  <div className="flex-1 h-0.5 mx-1 bg-gray-200 relative -top-3">
+                    <div 
+                      className={cn(
+                        'absolute top-0 left-0 h-full transition-all duration-300',
+                        isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                      )}
+                      style={{ width: isCompleted ? '100%' : '0%' }}
+                    />
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}

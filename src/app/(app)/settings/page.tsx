@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -16,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 
 
 const tones: BlogTone[] = ["formal", "casual", "informative", "persuasive", "humorous"];
@@ -48,7 +48,12 @@ img { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
   userProfile: {
     name: "Demo User",
     email: "user@example.com"
-  }
+  },
+  autoSave: true,
+  defaultView: 'grid',
+  defaultTheme: 'system',
+  notifications: true,
+  emailDigest: false,
 };
 
 export default function SettingsPage() {
@@ -89,28 +94,56 @@ export default function SettingsPage() {
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    localStorage.setItem('contentCraftAISettings', JSON.stringify(settings));
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save settings');
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Settings saved successfully!',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save settings. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
     setIsSaving(false);
-    toast({ title: "Settings Saved", description: "Your preferences have been updated." });
+    }
   };
 
   const handleInputChange = (field: keyof Settings, value: any) => {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleNestedInputChange = <K extends keyof Settings, NK extends keyof NonNullable<Settings[K]>>(
-    parentField: K,
-    nestedField: NK,
-    value: NonNullable<Settings[K]>[NK]
+  const handleNestedInputChange = (
+    parentField: keyof Settings,
+    nestedField: string,
+    value: any
   ) => {
-    setSettings(prev => ({
+    setSettings(prev => {
+      const currentValue = prev[parentField];
+      if (typeof currentValue === 'object' && currentValue !== null) {
+        return {
       ...prev,
       [parentField]: {
-        ...prev[parentField],
+            ...currentValue,
         [nestedField]: value,
       },
-    }));
+        };
+      }
+      return prev;
+    });
   };
 
 
@@ -154,20 +187,107 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="container mx-auto">
-      <PageHeader
-        title="Settings"
-        description="Personalize your ContentCraft AI experience."
-        actions={
-          <Button onClick={handleSaveSettings} disabled={isSaving}>
-            {isSaving ? <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.Save className="mr-2 h-4 w-4" />}
-            Save Settings
-          </Button>
+    <div className="container mx-auto py-8 space-y-6">
+      <h1 className="text-3xl font-bold">Settings</h1>
+
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>General Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Auto-save Drafts</Label>
+                <p className="text-sm text-muted-foreground">
+                  Automatically save your blog posts as drafts
+                </p>
+              </div>
+              <Switch
+                checked={settings.autoSave}
+                onCheckedChange={(checked) =>
+                  setSettings((prev) => ({ ...prev, autoSave: checked }))
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Default View</Label>
+              <Select
+                value={settings.defaultView}
+                onValueChange={(value: 'grid' | 'list') =>
+                  setSettings((prev) => ({ ...prev, defaultView: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select default view" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="grid">Grid</SelectItem>
+                  <SelectItem value="list">List</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Default Theme</Label>
+              <Select
+                value={settings.defaultTheme}
+                onValueChange={(value: 'light' | 'dark' | 'system') =>
+                  setSettings((prev) => ({ ...prev, defaultTheme: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select theme" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="dark">Dark</SelectItem>
+                  <SelectItem value="system">System</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Notifications</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Browser Notifications</Label>
+                <p className="text-sm text-muted-foreground">
+                  Receive notifications about your blog activity
+                </p>
+              </div>
+              <Switch
+                checked={settings.notifications}
+                onCheckedChange={(checked) =>
+                  setSettings((prev) => ({ ...prev, notifications: checked }))
         }
       />
+            </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Weekly Email Digest</Label>
+                <p className="text-sm text-muted-foreground">
+                  Get a weekly summary of your blog performance
+                </p>
+              </div>
+              <Switch
+                checked={settings.emailDigest}
+                onCheckedChange={(checked) =>
+                  setSettings((prev) => ({ ...prev, emailDigest: checked }))
+                }
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardHeader><CardTitle>Default Blog Settings</CardTitle><CardDescription>Set your default preferences for new blog posts.</CardDescription></CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -299,30 +419,6 @@ export default function SettingsPage() {
         </Card>
 
         <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
-          <CardHeader><CardTitle>Notification Settings</CardTitle><CardDescription>Manage your notification preferences (feature coming soon).</CardDescription></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between space-x-2 p-3 border rounded-lg opacity-50 cursor-not-allowed">
-              <Label htmlFor="productUpdates" className="flex flex-col space-y-1">
-                <span>Product Updates</span>
-                <span className="font-normal text-xs leading-snug text-muted-foreground">
-                  Receive emails about new features and updates.
-                </span>
-              </Label>
-              <Switch id="productUpdates" checked={false} disabled/>
-            </div>
-            <div className="flex items-center justify-between space-x-2 p-3 border rounded-lg opacity-50 cursor-not-allowed">
-              <Label htmlFor="weeklySummary" className="flex flex-col space-y-1">
-                <span>Weekly Summary</span>
-                <span className="font-normal text-xs leading-snug text-muted-foreground">
-                  Get a weekly summary of your content activity.
-                </span>
-              </Label>
-              <Switch id="weeklySummary" checked={false} disabled/>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-xl">
           <CardHeader><CardTitle>Feedback & Support</CardTitle><CardDescription>Report a bug or send us your feedback.</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -356,6 +452,18 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        <div className="flex justify-end">
+          <Button onClick={handleSaveSettings} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import type { BlogPost } from '@/types';
 import { useState, useEffect, type ReactNode } from 'react';
 import { BlogCardSkeleton } from '@/components/dashboard/blog-card-skeleton';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sidebar } from '@/components/layout/Sidebar';
 
 
 interface PersonalizationLinkItem {
@@ -24,6 +25,7 @@ export default function DashboardPage() {
   const [postsToShow, setPostsToShow] = useState(5);
   const [isLoading, setIsLoading] = useState(true);
   const userName = "Creator";
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const loadMorePosts = () => {
     setPostsToShow(prev => prev + 5);
@@ -89,6 +91,7 @@ export default function DashboardPage() {
   return (
     <>
       <div className="flex h-full">
+        <Sidebar isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(c => !c)} />
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="bg-secondary dark:bg-[#e0e1dd] p-8 rounded-lg shadow-xl mb-10 flex flex-col sm:flex-row items-center justify-between transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-2xl dark:text-[hsl(222_47%_11.2%)]">
             <div className="text-foreground dark:text-[hsl(222_47%_11.2%)]">

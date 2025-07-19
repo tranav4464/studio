@@ -1,3 +1,4 @@
+"use client";
 
 import {
   PlusCircle,
@@ -48,6 +49,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   Paperclip, // Added Paperclip
+  Eye,
+  PlayCircle, // Add PlayCircle for video icon
   type LucideProps,
 } from 'lucide-react';
 
@@ -91,6 +94,7 @@ export const Icons = {
   Plagiarism: ShieldCheck,
   Scores: BarChart3,
   Analytics: BarChart3, // Reusing Scores icon for Analytics
+  Loader2: Loader2, // Added Loader2 for loading states
   PlaceholderImage: ImageIcon,
   Share: Share2,
   Tweet: MessageSquare,
@@ -117,6 +121,14 @@ export const Icons = {
   ThumbsUp: ThumbsUp,
   ThumbsDown: ThumbsDown,
   Paperclip: Paperclip,
+  CreateBlog: FilePlus,
+  Outline: List,
+  Visual: ImageIcon,
+  Optimize: BarChart3,
+  Hero: LucideImage,
+  Repurpose: RefreshCw,
+  Final: Check,
+  Video: PlayCircle, // Add this line for video icon
 };
 
 export type IconName = keyof typeof Icons;

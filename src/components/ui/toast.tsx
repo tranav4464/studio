@@ -110,7 +110,6 @@ const ToastDescription = React.forwardRef<
     {...props}
   />
 ))
-
 ToastDescription.displayName = ToastPrimitives.Description.displayName
 
 type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>

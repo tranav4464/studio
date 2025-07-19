@@ -1,4 +1,3 @@
-
 export interface ExportRecord {
   format: 'markdown' | 'html' | 'pdf' | 'image' | 'txt'; 
   timestamp: string; // ISO date string
@@ -65,16 +64,25 @@ export interface Settings {
   defaultTone: BlogTone;
   defaultStyle: BlogStyle;
   defaultLength: BlogLength;
-  defaultExportFormat: "markdown" | "html" | "pdf" | "image" | "txt";
-  customExportCss?: string; 
+  defaultExportFormat: 'markdown' | 'html' | 'pdf' | 'image' | 'txt';
+  customExportCss: string;
   rules: {
     useDiagramsInHowTo: boolean;
   };
-  stylePresets: Array<{ name: string; tone: BlogTone; style: BlogStyle }>;
-  userProfile?: { 
+  stylePresets: {
+    name: string;
+    tone: BlogTone;
+    style: BlogStyle;
+  }[];
+  userProfile: {
     name: string;
     email: string;
   };
+  autoSave: boolean;
+  defaultView: 'grid' | 'list';
+  defaultTheme: 'light' | 'dark' | 'system';
+  notifications: boolean;
+  emailDigest: boolean;
 }
 
 // New Type for Reference Text Summarization
