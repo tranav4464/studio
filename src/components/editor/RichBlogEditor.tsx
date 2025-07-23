@@ -463,6 +463,88 @@ function insertCodeBlock(editor: any, language: string) {
   });
 }
 
+// --- CTA Button Node and Component ---
+function CtaButtonComponent({ nodeKey, text, url, variant }: { nodeKey: string, text: string, url: string, variant: string }) {
+  const tabYellow = '#ffc800';
+  const tabText = '#222';
+  return (
+    <div className="my-4 flex justify-center">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={
+          'px-6 py-3 rounded-lg font-semibold shadow transition-all duration-200'
+        }
+        style={
+          {
+            background: variant === 'secondary' ? '#fff' : tabYellow,
+            color: tabText,
+            fontSize: '1.1rem',
+            minWidth: 120,
+            textAlign: 'center',
+            textDecoration: 'none',
+            border: variant === 'secondary' ? `2px solid ${tabYellow}` : 'none',
+            cursor: 'pointer',
+            display: 'inline-block',
+            transition: 'transform 0.15s cubic-bezier(.4,1.3,.5,1), box-shadow 0.15s cubic-bezier(.4,1.3,.5,1)',
+          }
+        }
+        onMouseOver={e => {
+          (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 24px 0 rgba(0,0,0,0.10)';
+        }}
+        onMouseOut={e => {
+          (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '';
+        }}
+      >
+        {text && text.trim() ? text : 'Call to Action'}
+      </a>
+    </div>
+  );
+}
+
+class CtaButtonNode extends DecoratorNode<JSX.Element> {
+  __text: string;
+  __url: string;
+  __variant: string;
+  static getType() { return 'cta-button'; }
+  static clone(node: CtaButtonNode) { return new CtaButtonNode(node.__text, node.__url, node.__variant, node.__key); }
+  constructor(text: string, url: string, variant: string, key?: string) {
+    super(key);
+    this.__text = text;
+    this.__url = url;
+    this.__variant = variant;
+  }
+  createDOM() { return document.createElement('div'); }
+  updateDOM() { return false; }
+  decorate() { return <CtaButtonComponent nodeKey={this.getKey()} text={this.__text} url={this.__url} variant={this.__variant} />; }
+  static importJSON(serialized: any) { return new CtaButtonNode(serialized.text, serialized.url, serialized.variant, serialized.key); }
+  exportJSON() { return { ...super.exportJSON(), type: 'cta-button', text: this.__text, url: this.__url, variant: this.__variant, version: 1 }; }
+}
+export function $createCtaButtonNode(text: string, url: string, variant: string) {
+  return $applyNodeReplacement(new CtaButtonNode(text, url, variant));
+}
+function insertCtaButton(editor: any, text: string, url: string, variant: string) {
+  if (!editor) return;
+  editor.update(() => {
+    const ctaNode = $createCtaButtonNode(text, url, variant);
+    $insertNodes([ctaNode, $createParagraphNode()]);
+  });
+}
+
+// Add a placeholder upload function at the top (replace with real upload logic as needed)
+async function uploadFile(file: File, type: 'image' | 'video'): Promise<string> {
+  // TODO: Replace with real upload logic (e.g., to S3, Supabase, etc.)
+  // For now, return a fake URL after a short delay
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(`https://fake-uploaded-files.com/${type}s/${file.name}`);
+    }, 1200);
+  });
+}
+
 // Toolbar component
 function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, setFontColor, toolbarGroupStyle, dividerStyle }) {
   const [editor] = useLexicalComposerContext();
@@ -705,6 +787,34 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
             <DialogDescription>Add an image to your content</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = async (e: any) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setImageUrl('Uploading...');
+                      try {
+                        const url = await uploadFile(file, 'image');
+                        setImageUrl(url);
+                      } catch {
+                        setImageUrl('');
+                        alert('Upload failed.');
+                      }
+                    }
+                  };
+                  input.click();
+                }}
+              >Upload from Device</Button>
+              <Button
+                variant="outline"
+                onClick={() => alert('Google Drive upload not implemented in this demo.')}
+              >Upload from Drive</Button>
+            </div>
             <Input
               placeholder="Image URL"
               value={imageUrl}
@@ -733,6 +843,34 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
             <DialogDescription>Add a video to your content</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'video/*';
+                  input.onchange = async (e: any) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setVideoUrl('Uploading...');
+                      try {
+                        const url = await uploadFile(file, 'video');
+                        setVideoUrl(url);
+                      } catch {
+                        setVideoUrl('');
+                        alert('Upload failed.');
+                      }
+                    }
+                  };
+                  input.click();
+                }}
+              >Upload from Device</Button>
+              <Button
+                variant="outline"
+                onClick={() => alert('Google Drive upload not implemented in this demo.')}
+              >Upload from Drive</Button>
+            </div>
             <Input
               placeholder="Video URL (YouTube, Vimeo, or direct link)"
               value={videoUrl}
@@ -803,6 +941,67 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* CTA Dialog */}
+      <Dialog open={showCtaDialog} onOpenChange={setShowCtaDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Insert CTA Button</DialogTitle>
+            <DialogDescription>Add a call-to-action button to your content</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              placeholder="Button text (e.g. Get Started)"
+              value={ctaText}
+              onChange={e => setCtaText(e.target.value)}
+              maxLength={40}
+            />
+            <Input
+              placeholder="Button URL (https://...)"
+              value={ctaUrl}
+              onChange={e => setCtaUrl(e.target.value)}
+            />
+            <div className="flex gap-4 items-center">
+              <label className="font-medium">Style:</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={`px-4 py-1 rounded border font-semibold transition-colors duration-150 ${ctaVariant === 'primary' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-teal-700 border-teal-600'}`}
+                  onClick={() => setCtaVariant('primary')}
+                  style={{ outline: ctaVariant === 'primary' ? '2px solid #1C8C8C' : 'none', color: ctaVariant === 'primary' ? '#fff' : '#1C8C8C', background: ctaVariant === 'primary' ? '#1C8C8C' : '#fff' }}
+                >
+                  Primary
+                </button>
+                <button
+                  type="button"
+                  className={`px-4 py-1 rounded border font-semibold transition-colors duration-150 ${ctaVariant === 'secondary' ? 'bg-teal-100 text-teal-700 border-teal-600' : 'bg-white text-teal-700 border-teal-600'}`}
+                  onClick={() => setCtaVariant('secondary')}
+                  style={{ outline: ctaVariant === 'secondary' ? '2px solid #1C8C8C' : 'none', color: ctaVariant === 'secondary' ? '#1C8C8C' : '#1C8C8C', background: ctaVariant === 'secondary' ? '#e6f9f9' : '#fff' }}
+                >
+                  Secondary
+                </button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCtaDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!ctaText.trim() || !ctaUrl.trim()) return;
+                insertCtaButton(editor, ctaText.trim(), ctaUrl.trim(), ctaVariant);
+                setShowCtaDialog(false);
+                setCtaText('');
+                setCtaUrl('');
+                setCtaVariant('primary');
+              }}
+              disabled={!ctaText.trim() || !ctaUrl.trim()}
+            >
+              Insert CTA
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -833,6 +1032,7 @@ const editorConfig = {
     VideoNode,
     BlockquoteNode,
     CodeBlockNode,
+    CtaButtonNode,
   ],
 };
 
