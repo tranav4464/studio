@@ -51,6 +51,7 @@ import {
   Paperclip, // Added Paperclip
   Eye,
   PlayCircle, // Add PlayCircle for video icon
+  Upload, // Add Upload icon
   type LucideProps,
 } from 'lucide-react';
 
@@ -129,6 +130,7 @@ export const Icons = {
   Repurpose: RefreshCw,
   Final: Check,
   Video: PlayCircle, // Add this line for video icon
+  Upload: Upload, // Add Upload icon
 };
 
 export type IconName = keyof typeof Icons;

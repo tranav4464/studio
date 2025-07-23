@@ -52,12 +52,8 @@ export function handleImageUpload(editor: any, file: File) {
     return;
   }
   
-  // Generate a unique ID for the loading toast
-  const toastId = `toast-${uuidv4()}`;
-  
-  // Show loading toast
-  toast({
-    id: toastId,
+  // Show loading toast and get its ID
+  const loadingToast = toast({
     title: "Uploading image...",
     description: "Please wait",
     duration: 0, // Don't auto-dismiss
@@ -66,10 +62,7 @@ export function handleImageUpload(editor: any, file: File) {
   uploadImage(file)
     .then(({ url, alt, width, height }) => {
       // Dismiss loading toast
-      const toastElement = document.querySelector(`[data-toast-id="${toastId}"]`);
-      if (toastElement) {
-        toastElement.remove();
-      }
+      loadingToast.dismiss();
       
       // Show success toast
       toast({
@@ -92,10 +85,7 @@ export function handleImageUpload(editor: any, file: File) {
     .catch((error) => {
       console.error("Upload failed:", error);
       // Dismiss loading toast
-      const toastElement = document.querySelector(`[data-toast-id="${toastId}"]`);
-      if (toastElement) {
-        toastElement.remove();
-      }
+      loadingToast.dismiss();
       
       // Show error toast
       toast({

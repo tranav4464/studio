@@ -422,3 +422,23 @@ body {
     font-family: var(--font-jetbrains-mono), monospace;
   }
 }
+
+.rich-editor hr {
+  border: none;
+  border-top: 4px solid #14b8a6; /* teal-500 */
+  margin: 2rem 0;
+}
+
+.rich-editor a {
+  pointer-events: auto;
+  color: #0d9488;
+  text-decoration: underline;
+}
+
+/* Custom horizontal rule for Lexical editor */
+.rich-editor hr, .editor hr, hr {
+  border: none;
+  border-top: 4px solid #1C8C8C;
+  margin: 24px 0;
+  border-radius: 2px;
+}

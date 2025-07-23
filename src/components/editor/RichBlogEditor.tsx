@@ -41,6 +41,28 @@ import { $createLinkNode, LinkNode } from '@lexical/link';
 import { $createTableNode, $createTableCellNode, $createTableRowNode, TableNode, TableCellNode, TableRowNode } from '@lexical/table';
 import { $createCodeNode, CodeNode } from '@lexical/code';
 import { HorizontalRuleNode, $createHorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+
+// List of valid programming languages for code block validation
+const PROGRAMMING_LANGUAGES = [
+  'javascript', 'typescript', 'python', 'java', 'c', 'cpp', 'c++', 'c#', 'go', 'ruby', 'php', 'swift', 'kotlin', 'rust', 'scala', 'perl', 'haskell', 'lua', 'dart', 'elixir', 'clojure', 'f#', 'r', 'matlab', 'objective-c', 'shell', 'bash', 'powershell', 'html', 'css', 'json', 'xml', 'yaml', 'markdown', 'sql', 'assembly', 'fortran', 'groovy', 'julia', 'lisp', 'sas', 'vb', 'visualbasic', 'tsx', 'jsx', 'vbnet', 'abap', 'ada', 'apex', 'awk', 'cobol', 'd', 'delphi', 'erlang', 'j', 'ocaml', 'pascal', 'prolog', 'scheme', 'smalltalk', 'solidity', 'verilog', 'vhdl', 'plsql', 'tcl', 'actionscript', 'coffeescript', 'crystal', 'elm', 'nim', 'reason', 'vala', 'zig'
+];
+
+const PRISM_LANGUAGE_MAP: Record<string, string> = {
+  'c++': 'cpp',
+  'c#': 'csharp',
+  'shell': 'bash',
+  'sh': 'bash',
+  'js': 'javascript',
+  'ts': 'typescript',
+  'py': 'python',
+  'html': 'markup',
+  'xml': 'markup',
+  'plaintext': 'text',
+  'text': 'text',
+  // add more aliases as needed
+};
 
 // Add LexicalErrorBoundary for RichTextPlugin
 function LexicalErrorBoundary({ children }: { children: React.ReactNode }) {
@@ -238,25 +260,63 @@ import { $getNodeByKey } from 'lexical';
 function BlockquoteComponent({ nodeKey, text }: { nodeKey: string, text: string }) {
   const [editor] = useLexicalComposerContext();
   const [value, setValue] = React.useState(text);
+  const [isEditing, setIsEditing] = React.useState(true); // Start in editing mode
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
   React.useEffect(() => { setValue(text); }, [text]);
+
+  // Auto-expand textarea as user types
+  React.useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+      textareaRef.current.focus();
+    }
+  }, [isEditing, value]);
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
     editor.update(() => {
       const node = $getNodeByKey(nodeKey);
       if (node && typeof (node as any).setText === 'function') (node as any).setText(e.target.value);
     });
   };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Exit blockquote on Esc or Ctrl+Enter
+    if (e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
+      e.preventDefault();
+      setIsEditing(false);
+      // Optionally, move focus to next block or editor
+    }
+  };
+
   return (
     <blockquote
       className="my-4 py-2 px-2 rounded-lg text-gray-800 relative"
       style={{ background: '#e6f9f9', borderLeft: '5px solid #ffe066' }}
+      onClick={() => setIsEditing(true)}
     >
-      <textarea
-        className="block w-full bg-transparent border-none outline-none resize-none text-lg italic"
-        value={value}
-        onChange={handleChange}
-        rows={1}
-      />
+      {isEditing ? (
+        <textarea
+          ref={textareaRef}
+          className="block w-full bg-transparent border-none outline-none resize-none text-lg italic"
+          value={value}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          rows={1}
+          placeholder="Type a quote..."
+          autoFocus
+        />
+      ) : (
+        <div className="min-h-[28px] italic text-lg cursor-text" style={{whiteSpace: 'pre-wrap'}}>
+          {value || <span className="text-gray-400">Type a quote...</span>}
+        </div>
+      )}
     </blockquote>
   );
 }
@@ -274,7 +334,10 @@ class BlockquoteNode extends DecoratorNode<JSX.Element> {
   decorate() { return <BlockquoteComponent nodeKey={this.getKey()} text={this.__text} />; }
   static importJSON(serialized: any) { return new BlockquoteNode(serialized.text, serialized.key); }
   exportJSON() { return { ...super.exportJSON(), type: 'blockquote', text: this.__text, version: 1 }; }
-  setText(text: string) { this.__text = text; }
+  setText(text: string) {
+    const self = this.getWritable();
+    self.__text = text;
+  }
 }
 export function $createBlockquoteNode(text: string) {
   return $applyNodeReplacement(new BlockquoteNode(text));
@@ -289,14 +352,113 @@ function insertBlockquote(editor: any) {
   });
 }
 
-// 3. Code block dialog: only ask for language
-// In Toolbar, on code block button click: setShowCodeDialog(true)
-// Dialog: only Input for language
-// On submit: insertCodeBlock(editor, codeLanguage)
+// Custom CodeBlockComponent
+function CodeBlockComponent({ nodeKey, code, language }: { nodeKey: string, code: string, language: string }) {
+  const [editor] = useLexicalComposerContext();
+  const [value, setValue] = useState(code);
+  const [isEditing, setIsEditing] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => { setValue(code); }, [code]);
+
+  // Auto-expand textarea as user types
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [isEditing, value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setValue(e.target.value);
+    // Auto-expand as user types
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  };
+  const handleBlur = () => {
+    setIsEditing(false);
+    editor.update(() => {
+      const node = editor.getEditorState().read(() => $getNodeByKey(nodeKey));
+      if (node && typeof (node as any).setCode === 'function') (node as any).setCode(value);
+    });
+  };
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      (e.target as HTMLTextAreaElement).blur();
+    }
+  };
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value);
+  };
+  // Map user language to Prism key
+  const prismLanguage = PRISM_LANGUAGE_MAP[language] || language;
+  return (
+    <div className="relative my-4 bg-[#181c24] rounded-lg shadow-md border border-gray-700">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#23272f] rounded-t-lg">
+        <span className="text-xs text-gray-300 font-mono">{language || 'text'}</span>
+        <button onClick={handleCopy} className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded border border-gray-600 bg-[#23272f]">Copy</button>
+      </div>
+      {isEditing ? (
+        <textarea
+          ref={textareaRef}
+          className="w-full min-h-[80px] bg-[#181c24] text-white font-mono text-sm p-4 outline-none resize-none rounded-b-lg"
+          value={value}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          autoFocus
+          spellCheck={false}
+          style={{overflow: 'hidden'}}
+        />
+      ) : (
+        <div
+          className="p-4 cursor-text rounded-b-lg"
+          onClick={() => setIsEditing(true)}
+          tabIndex={0}
+          onKeyDown={e => { if (e.key === 'Enter') setIsEditing(true); }}
+        >
+          <SyntaxHighlighter
+            language={prismLanguage}
+            style={oneDark}
+            customStyle={{ margin: 0, borderRadius: 0, background: 'transparent', padding: 0, minHeight: 0 }}
+            showLineNumbers={false}
+          >{value || ' '}</SyntaxHighlighter>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Custom CodeBlockNode
+class CodeBlockNode extends DecoratorNode<JSX.Element> {
+  __code: string;
+  __language: string;
+  static getType() { return 'codeblock'; }
+  static clone(node: CodeBlockNode) { return new CodeBlockNode(node.__code, node.__language, node.__key); }
+  constructor(code: string, language: string, key?: string) {
+    super(key);
+    this.__code = code;
+    this.__language = language;
+  }
+  createDOM() { return document.createElement('div'); }
+  updateDOM() { return false; }
+  decorate() { return <CodeBlockComponent nodeKey={this.getKey()} code={this.__code} language={this.__language} />; }
+  static importJSON(serialized: any) { return new CodeBlockNode(serialized.code, serialized.language, serialized.key); }
+  exportJSON() { return { ...super.exportJSON(), type: 'codeblock', code: this.__code, language: this.__language, version: 1 }; }
+  setCode(code: string) { this.__code = code; }
+}
+export function $createCodeBlockNode(language: string, code: string) {
+  return $applyNodeReplacement(new CodeBlockNode(code, language));
+}
+
+// Update insertCodeBlock to use custom node
 function insertCodeBlock(editor: any, language: string) {
   if (!editor) return;
   editor.update(() => {
-    const codeNode = $createCodeNode(language);
+    const codeNode = $createCodeBlockNode(language, '');
     $insertNodes([codeNode, $createParagraphNode()]);
   });
 }
@@ -495,7 +657,7 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
               <div style={toolbarGroupStyle}>
                 <button className="p-1.5 mx-0.5 rounded" title="Insert Blockquote" onMouseDown={e => { e.preventDefault(); insertBlockquote(editor); }}><Quote size={20} /></button>
                 <button className="p-1.5 mx-0.5 rounded" title="Insert Code Block" onMouseDown={e => { e.preventDefault(); setShowCodeDialog(true); }}><CodeIcon size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Insert Divider" onMouseDown={e => { e.preventDefault(); editor.dispatchCommand('INSERT_HORIZONTAL_RULE', undefined); }}><Minus size={20} /></button>
+                <button className="p-1.5 mx-0.5 rounded" title="Insert Divider" onMouseDown={e => { e.preventDefault(); insertHorizontalRule(); }}><Minus size={20} /></button>
               </div>
               <div style={dividerStyle}></div>
               {/* Action Group */}
@@ -599,31 +761,43 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
             <DialogDescription>Add a code block with syntax highlighting</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <select
+            <Input
+              placeholder="Programming language (e.g. javascript, python, c++)"
               value={codeLanguage}
-              onChange={(e) => setCodeLanguage(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="javascript">JavaScript</option>
-              <option value="typescript">TypeScript</option>
-              <option value="python">Python</option>
-              <option value="java">Java</option>
-              <option value="cpp">C++</option>
-              <option value="html">HTML</option>
-              <option value="css">CSS</option>
-              <option value="json">JSON</option>
-              <option value="markdown">Markdown</option>
-              <option value="bash">Bash</option>
-            </select>
+              onChange={e => {
+                const val = e.target.value.trim().toLowerCase();
+                setCodeLanguage(val);
+                if (!val.match(/^[a-zA-Z0-9+#-]+$/)) {
+                  setCodeLangError('Only programming language names are allowed (letters, numbers, +, #, -)');
+                } else if (!PROGRAMMING_LANGUAGES.includes(val)) {
+                  setCodeLangError('Please enter a valid programming language.');
+                } else {
+                  setCodeLangError('');
+                }
+              }}
+              autoFocus
+              maxLength={32}
+            />
+            {codeLangError && <div className="text-red-500 text-xs">{codeLangError}</div>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCodeDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={() => {
-              insertCodeBlock(editor, codeLanguage);
-              setShowCodeDialog(false);
-            }}>
+            <Button
+              onClick={() => {
+                const val = codeLanguage.trim().toLowerCase();
+                if (!val || codeLangError || !PROGRAMMING_LANGUAGES.includes(val)) {
+                  setCodeLangError('Please enter a valid programming language.');
+                  return;
+                }
+                insertCodeBlock(editor, val);
+                setShowCodeDialog(false);
+                setCodeLanguage('');
+                setCodeLangError('');
+              }}
+              disabled={!codeLanguage.trim() || !!codeLangError || !PROGRAMMING_LANGUAGES.includes(codeLanguage.trim().toLowerCase())}
+            >
               Insert Code Block
             </Button>
           </DialogFooter>
@@ -657,8 +831,8 @@ const editorConfig = {
     TableRowNode,
     ImageNode,
     VideoNode,
-    CodeNode,
     BlockquoteNode,
+    CodeBlockNode,
   ],
 };
 

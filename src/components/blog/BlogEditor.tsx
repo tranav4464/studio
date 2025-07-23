@@ -136,7 +136,21 @@ function SectionView({ node, getPos, editor }: SectionViewProps) {
   );
 }
 
-export default function BlogEditor() {
+interface HeroImage {
+  id: string;
+  url: string;
+  caption: string;
+  altText: string;
+}
+
+interface BlogEditorProps {
+  content?: string;
+  title?: string;
+  onSave?: (content: string, heroImage?: HeroImage) => Promise<void>;
+  isLoading?: boolean;
+}
+
+export default function BlogEditor({ content: initialContent, title, onSave, isLoading }: BlogEditorProps) {
   // DnD sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -153,7 +167,7 @@ export default function BlogEditor() {
       }),
       Section,
     ],
-    content: `<section><h2>Introduction</h2><p></p></section><section><h2>Body</h2><p></p></section>`,
+    content: initialContent || `<section><h2>Introduction</h2><p></p></section><section><h2>Body</h2><p></p></section>`,
     autofocus: true,
     editable: true,
   });

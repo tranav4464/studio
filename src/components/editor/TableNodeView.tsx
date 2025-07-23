@@ -1,7 +1,7 @@
 import React from 'react';
 import { NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 
-export default function TableNodeView({ node }) {
+export default function TableNodeView({ node }: { node: any }) {
   // Get the number of columns from the first row
   const columns = node.firstChild ? node.firstChild.childCount : 1;
 

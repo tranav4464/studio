@@ -22,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { generateBlogOutlineAction, generateFullBlogAction, generateTopicIdeasAction, summarizeReferenceTextAction } from '@/actions/ai';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { BlogCreationForm, BlogCreationData } from '@/components/blog/BlogCreationForm';
+import { BlogCreationForm } from '@/components/blog/BlogCreationForm';
 import { OutlineEditor } from '@/components/blog/OutlineEditor';
 import Link from "next/link";
 import { ArrowRight, FileText, Sparkles, Zap } from "lucide-react";

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { BlogEditor } from '@/components/blog/BlogEditor';
+import BlogEditor from '@/components/blog/BlogEditor';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, AlertCircle } from 'lucide-react';
 
