@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { 
   Bold, Italic, Underline, List, ListOrdered, CheckSquare, 
   AlignLeft, AlignCenter, AlignRight, AlignJustify, 
@@ -23,7 +24,8 @@ import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { $patchStyleText } from '@lexical/selection';
-import { $getSelection, $isRangeSelection, $createParagraphNode, $createTextNode, $insertNodes } from 'lexical';
+import { $getSelection, $isRangeSelection, $createParagraphNode, $createTextNode, $insertNodes, SELECTION_CHANGE_COMMAND } from 'lexical';
+import { INSERT_TABLE_COMMAND, INSERT_TABLE_ROW_COMMAND, INSERT_TABLE_COLUMN_COMMAND, REMOVE_TABLE_ROW_COMMAND, REMOVE_TABLE_COLUMN_COMMAND, MERGE_TABLE_CELLS_COMMAND, SPLIT_TABLE_CELL_COMMAND } from '@lexical/table';
 import {
   FORMAT_TEXT_COMMAND,
   FORMAT_ELEMENT_COMMAND,
@@ -43,6 +45,7 @@ import { $createCodeNode, CodeNode } from '@lexical/code';
 import { HorizontalRuleNode, $createHorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import { $insertTableRowAtSelection, $deleteTableRowAtSelection, $insertTableColumnAtSelection, $deleteTableColumnAtSelection, $mergeCells, $unmergeCell } from '@lexical/table';
 
 // List of valid programming languages for code block validation
 const PROGRAMMING_LANGUAGES = [
@@ -552,7 +555,7 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
-  const [showTableDialog, setShowTableDialog] = useState(false);
+  const [showTableGrid, setShowTableGrid] = useState(false);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [showCtaDialog, setShowCtaDialog] = useState(false);
   // Form states
@@ -562,8 +565,8 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
   const [videoTitle, setVideoTitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('');
-  const [tableRows, setTableRows] = useState(2);
-  const [tableCols, setTableCols] = useState(2);
+  const [tableGridRows, setTableGridRows] = useState(0);
+  const [tableGridCols, setTableGridCols] = useState(0);
   const [codeLanguage, setCodeLanguage] = useState('');
   const [codeLangError, setCodeLangError] = useState('');
   const [ctaText, setCtaText] = useState('');
@@ -629,12 +632,16 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
     setVideoTitle('');
   };
 
-  const insertTable = () => {
+  const handleTableGridHover = (row: number, col: number) => {
+    setTableGridRows(row + 1);
+    setTableGridCols(col + 1);
+  };
+  const handleTableGridClick = (row: number, col: number) => {
     editor.update(() => {
       const tableNode = $createTableNode();
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i <= row; i++) {
         const rowNode = $createTableRowNode();
-        for (let j = 0; j < 3; j++) {
+        for (let j = 0; j <= col; j++) {
           const cellNode = $createTableCellNode();
           cellNode.append($createParagraphNode());
           rowNode.append(cellNode);
@@ -643,6 +650,13 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
       }
       $insertNodes([tableNode, $createParagraphNode()]);
     });
+    setShowTableGrid(false);
+    setTableGridRows(0);
+    setTableGridCols(0);
+  };
+
+  const insertTable = () => {
+    setShowTableGrid(true);
   };
 
   const ToolbarButton = ({ 
@@ -690,6 +704,7 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
     </button>
   );
 
+  const maxTableSize = 15;
   return (
     <>
       <div style={{ padding: '8px 16px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'center' }}>
@@ -732,7 +747,7 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
               {/* Content Group */}
               <div style={toolbarGroupStyle}>
                 <button className="p-1.5 mx-0.5 rounded" title="Insert Link" onMouseDown={e => { e.preventDefault(); setShowLinkDialog(true); }}><LinkIcon size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Insert Table" onMouseDown={e => { e.preventDefault(); setShowTableDialog(true); }}><Table size={20} /></button>
+                <button className="p-1.5 mx-0.5 rounded" title="Insert Table" onMouseDown={e => { e.preventDefault(); setShowTableGrid(true); }}><Table size={20} /></button>
               </div>
               <div style={dividerStyle}></div>
               {/* Formatting Group */}
@@ -790,21 +805,15 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={async () => {
+                onClick={() => {
                   const input = document.createElement('input');
                   input.type = 'file';
                   input.accept = 'image/*';
-                  input.onchange = async (e: any) => {
+                  input.onchange = (e: any) => {
                     const file = e.target.files[0];
                     if (file) {
-                      setImageUrl('Uploading...');
-                      try {
-                        const url = await uploadFile(file, 'image');
-                        setImageUrl(url);
-                      } catch {
-                        setImageUrl('');
-                        alert('Upload failed.');
-                      }
+                      const localUrl = URL.createObjectURL(file);
+                      setImageUrl(localUrl);
                     }
                   };
                   input.click();
@@ -846,21 +855,15 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={async () => {
+                onClick={() => {
                   const input = document.createElement('input');
                   input.type = 'file';
                   input.accept = 'video/*';
-                  input.onchange = async (e: any) => {
+                  input.onchange = (e: any) => {
                     const file = e.target.files[0];
                     if (file) {
-                      setVideoUrl('Uploading...');
-                      try {
-                        const url = await uploadFile(file, 'video');
-                        setVideoUrl(url);
-                      } catch {
-                        setVideoUrl('');
-                        alert('Upload failed.');
-                      }
+                      const localUrl = URL.createObjectURL(file);
+                      setVideoUrl(localUrl);
                     }
                   };
                   input.click();
@@ -1002,7 +1005,126 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Table Grid Picker */}
+      {showTableGrid && (
+        <div
+          style={{
+            position: 'absolute',
+            zIndex: 1000,
+            background: '#fff',
+            border: '1px solid #e5e7eb',
+            borderRadius: 8,
+            boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+            padding: 16,
+            left: 220,
+            top: 60,
+            minWidth: 260,
+            minHeight: 220,
+            userSelect: 'none',
+          }}
+          onMouseLeave={() => { setTableGridRows(0); setTableGridCols(0); }}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${maxTableSize}, 20px)`, gap: 2 }}>
+            {Array.from({ length: maxTableSize * maxTableSize }).map((_, idx) => {
+              const row = Math.floor(idx / maxTableSize);
+              const col = idx % maxTableSize;
+              const selected = row < tableGridRows && col < tableGridCols;
+              return (
+                <div
+                  key={idx}
+                  onMouseOver={() => handleTableGridHover(row, col)}
+                  onClick={() => handleTableGridClick(row, col)}
+                  style={{
+                    width: 20,
+                    height: 20,
+                    background: selected ? '#1C8C8C' : '#f3f4f6',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 2,
+                    cursor: 'pointer',
+                    transition: 'background 0.1s',
+                  }}
+                />
+              );
+            })}
+          </div>
+          <div style={{ marginTop: 12, textAlign: 'center', color: '#1C8C8C', fontWeight: 500, fontSize: 15 }}>
+            {tableGridRows > 0 && tableGridCols > 0 ? `${tableGridRows} x ${tableGridCols}` : 'Select size'}
+          </div>
+        </div>
+      )}
     </>
+  );
+}
+
+// Add TableToolbar component
+function TableToolbarPortal({ editor }: { editor: any }) {
+  const [show, setShow] = useState(false);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!editor) return;
+    return editor.registerUpdateListener(({ editorState }) => {
+      editorState.read(() => {
+        const selection = $getSelection();
+        let foundTable = false;
+        let tableElement: HTMLElement | null = null;
+        if ($isRangeSelection(selection)) {
+          const anchorNode = selection.anchor.getNode();
+          let node = anchorNode;
+          while (node) {
+            if (node.getType && node.getType() === 'table') {
+              foundTable = true;
+              // Find the DOM element for the table
+              const dom = editor.getElementByKey(node.getKey());
+              if (dom) tableElement = dom as HTMLElement;
+              break;
+            }
+            node = node.getParent && node.getParent();
+          }
+        }
+        setShow(foundTable && !!tableElement);
+        if (foundTable && tableElement) {
+          const rect = tableElement.getBoundingClientRect();
+          setPosition({
+            top: rect.top + window.scrollY - 48, // 48px above the table
+            left: rect.left + window.scrollX,
+          });
+        } else {
+          setPosition(null);
+        }
+      });
+    });
+  }, [editor]);
+
+  if (!editor || !show || !position) return null;
+
+  return ReactDOM.createPortal(
+    <div
+      ref={toolbarRef}
+      style={{
+        position: 'absolute',
+        left: position.left,
+        top: position.top,
+        zIndex: 1001,
+        background: '#fff',
+        border: '1px solid #e5e7eb',
+        borderRadius: 8,
+        boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+        padding: 8,
+        display: 'flex',
+        gap: 8,
+        alignItems: 'center',
+      }}
+    >
+      <Button size="sm" variant="outline" onClick={() => editor.update(() => $insertTableRowAtSelection(true))}>Add Row</Button>
+      <Button size="sm" variant="outline" onClick={() => editor.update(() => $deleteTableRowAtSelection())}>Remove Row</Button>
+      <Button size="sm" variant="outline" onClick={() => editor.update(() => $insertTableColumnAtSelection(true))}>Add Col</Button>
+      <Button size="sm" variant="outline" onClick={() => editor.update(() => $deleteTableColumnAtSelection())}>Remove Col</Button>
+      <Button size="sm" variant="outline" onClick={() => editor.update(() => $mergeCells([]))}>Merge</Button>
+      <Button size="sm" variant="outline" onClick={() => editor.update(() => $unmergeCell())}>Split</Button>
+    </div>,
+    document.body
   );
 }
 
@@ -1044,6 +1166,7 @@ export function LexicalRichBlogEditor({
   const [activeTab, setActiveTab] = useState<'home' | 'insert'>('home');
   const [fontSize, setFontSize] = useState('16px');
   const [fontColor, setFontColor] = useState('#000000');
+  const editorRef = useRef<any>(null);
 
   useEffect(() => {
     // Add CSS styles for links
@@ -1104,6 +1227,36 @@ export function LexicalRichBlogEditor({
     };
   }, []);
 
+  // In useEffect of LexicalRichBlogEditor, add table styles
+  useEffect(() => {
+    const tableStyle = document.createElement('style');
+    tableStyle.textContent = `
+      .rich-editor table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin: 16px 0;
+      }
+      .rich-editor td, .rich-editor th {
+        min-width: 80px;
+        padding: 8px;
+        border: 1px solid #e5e7eb;
+        background: #fcfcfc;
+        text-align: left;
+      }
+      .rich-editor th {
+        background: #f3f4f6;
+        font-weight: 600;
+      }
+    `;
+    document.head.appendChild(tableStyle);
+
+    return () => {
+      if (document.head.contains(tableStyle)) {
+        document.head.removeChild(tableStyle);
+      }
+    };
+  }, []);
+
   const toolbarGroupStyle = {
     display: 'flex',
     alignItems: 'center',
@@ -1122,7 +1275,7 @@ export function LexicalRichBlogEditor({
   };
     
   return (
-    <LexicalComposer initialConfig={editorConfig}>
+    <LexicalComposer initialConfig={{ ...editorConfig, editorRef }}>
       <div style={{ borderRadius: 8, background: '#fff', minHeight: '500px', position: 'relative' }}>
         {/* Tab Navigation */}
         <div style={{ padding: '8px 16px', borderTopLeftRadius: 8, borderTopRightRadius: 8, display: 'flex', justifyContent: 'center' }}>
@@ -1202,6 +1355,8 @@ export function LexicalRichBlogEditor({
             // onUpdate?.(htmlOrJson);
           }} />
         </div>
+        {/* Render TableToolbarPortal above the editor */}
+        {editorRef.current && <TableToolbarPortal editor={editorRef.current} />}
       </div>
     </LexicalComposer>
   );
