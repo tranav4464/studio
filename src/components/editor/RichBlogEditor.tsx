@@ -3,49 +3,49 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { 
-  Bold, Italic, Underline, List, ListOrdered, CheckSquare, 
+  Bold, Italic, Underline, List, ListOrdered, 
   AlignLeft, AlignCenter, AlignRight, AlignJustify, 
-  Video, Quote, Code as CodeIcon, Minus, ArrowRight, Table, Link2 as LinkIcon, 
-  Image, Upload, FolderOpen, Globe, Play
+  Video, Quote, Code as CodeIcon, Minus, ArrowRight, Link2 as LinkIcon, 
+  Image, Upload, FolderOpen, Globe, Play, Undo2, Redo2, Type, Hash, Highlighter, Palette
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-
-// Import Lexical and @lexical/react
-import { LexicalComposer } from '@lexical/react/LexicalComposer';
-import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
-import { ContentEditable } from '@lexical/react/LexicalContentEditable';
-import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
-import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { ListPlugin } from '@lexical/react/LexicalListPlugin';
-import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
-import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
-import { $patchStyleText } from '@lexical/selection';
-import { $getSelection, $isRangeSelection, $createParagraphNode, $createTextNode, $insertNodes, SELECTION_CHANGE_COMMAND } from 'lexical';
-import { INSERT_TABLE_COMMAND, INSERT_TABLE_ROW_COMMAND, INSERT_TABLE_COLUMN_COMMAND, REMOVE_TABLE_ROW_COMMAND, REMOVE_TABLE_COLUMN_COMMAND, MERGE_TABLE_CELLS_COMMAND, SPLIT_TABLE_CELL_COMMAND } from '@lexical/table';
-import {
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { 
   FORMAT_TEXT_COMMAND,
   FORMAT_ELEMENT_COMMAND,
   DecoratorNode,
-  $applyNodeReplacement
+  $applyNodeReplacement,
+  $getSelection,
+  $isRangeSelection,
+  $createParagraphNode,
+  $insertNodes,
+  $createTextNode,
+  $patchStyleText,
+  SELECTION_CHANGE_COMMAND,
+  COMMAND_PRIORITY_LOW
 } from 'lexical';
-import {
-  INSERT_UNORDERED_LIST_COMMAND,
-  INSERT_ORDERED_LIST_COMMAND,
-  INSERT_CHECK_LIST_COMMAND,
-  ListNode,
-  ListItemNode,
-} from '@lexical/list';
+import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND, ListNode, ListItemNode, REMOVE_LIST_COMMAND, $createListItemNode, $createListNode, $isListNode } from '@lexical/list';
 import { $createLinkNode, LinkNode } from '@lexical/link';
-import { $createTableNode, $createTableCellNode, $createTableRowNode, TableNode, TableCellNode, TableRowNode } from '@lexical/table';
 import { $createCodeNode, CodeNode } from '@lexical/code';
 import { HorizontalRuleNode, $createHorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import { $insertTableRowAtSelection, $deleteTableRowAtSelection, $insertTableColumnAtSelection, $deleteTableColumnAtSelection, $mergeCells, $unmergeCell } from '@lexical/table';
+import { UNDO_COMMAND, REDO_COMMAND } from 'lexical';
+import { $createHeadingNode, HeadingNode } from '@lexical/rich-text';
+import { registerRichText } from '@lexical/rich-text';
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue
+} from '@/components/ui/select';
+import type { EditorState, ElementNode, TextNode } from 'lexical';
+import { TextNode as LexicalTextNode } from 'lexical';
 
 // List of valid programming languages for code block validation
 const PROGRAMMING_LANGUAGES = [
@@ -256,6 +256,32 @@ class VideoNode extends DecoratorNode<JSX.Element> {
     return { ...super.exportJSON(), type: 'video', src: this.__src, title: this.__title, version: 1 };
   }
 }
+
+// Add missing Lexical imports
+import { 
+  LexicalComposer 
+} from '@lexical/react/LexicalComposer';
+import { 
+  RichTextPlugin 
+} from '@lexical/react/LexicalRichTextPlugin';
+import { 
+  ContentEditable 
+} from '@lexical/react/LexicalContentEditable';
+import { 
+  HistoryPlugin 
+} from '@lexical/react/LexicalHistoryPlugin';
+import { 
+  OnChangePlugin 
+} from '@lexical/react/LexicalOnChangePlugin';
+import { 
+  useLexicalComposerContext 
+} from '@lexical/react/LexicalComposerContext';
+import { 
+  ListPlugin 
+} from '@lexical/react/LexicalListPlugin';
+import { 
+  LinkPlugin 
+} from '@lexical/react/LexicalLinkPlugin';
 
 // 1. BlockquoteNode and component
 import { $getNodeByKey } from 'lexical';
@@ -548,14 +574,44 @@ async function uploadFile(file: File, type: 'image' | 'video'): Promise<string> 
   });
 }
 
+// Add these helper functions above the Toolbar component
+function insertTag(editor: any) {
+  editor.update(() => {
+    const tagNode = $createTextNode('#tag');
+    $insertNodes([tagNode, $createParagraphNode()]);
+  });
+}
+
 // Toolbar component
-function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, setFontColor, toolbarGroupStyle, dividerStyle }) {
+import type { CSSProperties, Dispatch, SetStateAction } from 'react';
+import type { TextFormatType, ElementFormatType } from 'lexical';
+
+const COLOR_PALETTE: string[] = [
+  '#000000', '#434343', '#666666', '#999999', '#b7b7b7', '#cccccc', '#d9d9d9', '#efefef', '#ffffff',
+  '#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#4a86e8', '#0000ff', '#9900ff', '#ff00ff',
+  '#e06666', '#f6b26b', '#ffd966', '#93c47d', '#76a5af', '#6fa8dc', '#3d85c6', '#674ea7', '#a64d79',
+  '#cc0000', '#e69138', '#f1c232', '#6aa84f', '#45818e', '#3d85c6', '#073763', '#20124d', '#4c1130',
+  '#990000', '#b45f06', '#bf9000', '#38761d', '#134f5c', '#0b5394', '#073763', '#20124d', '#4c1130',
+  '#660000', '#783f04', '#7f6000', '#274e13', '#0c343d', '#073763', '#20124d', '#4c1130', '#1c4587',
+];
+
+function Toolbar({
+  activeTab,
+  setActiveTab,
+  toolbarGroupStyle,
+  dividerStyle
+}: {
+  activeTab: 'home' | 'insert';
+  setActiveTab: Dispatch<SetStateAction<'home' | 'insert'>>;
+  toolbarGroupStyle: CSSProperties;
+  dividerStyle: CSSProperties;
+}) {
   const [editor] = useLexicalComposerContext();
+  
   // Dialog states
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
-  const [showTableGrid, setShowTableGrid] = useState(false);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [showCtaDialog, setShowCtaDialog] = useState(false);
   // Form states
@@ -565,98 +621,27 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
   const [videoTitle, setVideoTitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('');
-  const [tableGridRows, setTableGridRows] = useState(0);
-  const [tableGridCols, setTableGridCols] = useState(0);
   const [codeLanguage, setCodeLanguage] = useState('');
   const [codeLangError, setCodeLangError] = useState('');
   const [ctaText, setCtaText] = useState('');
   const [ctaUrl, setCtaUrl] = useState('');
   const [ctaVariant, setCtaVariant] = useState('primary');
-  // Insert helpers (use the insertBlockquote and insertCodeBlock from above)
-  const formatText = (format: string) => {
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
-  };
 
-  const formatElement = (format: string) => {
-    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, format);
-  };
-
-  const insertList = (type: 'bullet' | 'number' | 'check') => {
-    if (type === 'bullet') {
-      editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
-    } else if (type === 'number') {
-      editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
-    } else if (type === 'check') {
-      editor.dispatchCommand(INSERT_CHECK_LIST_COMMAND, undefined);
+  // Selection ref for restoring selection after dropdown
+  const selectionRef = useRef<Range | null>(null);
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      selectionRef.current = sel.getRangeAt(0).cloneRange();
     }
   };
-
-  const insertHorizontalRule = () => {
-    editor.update(() => {
-      const hrNode = $createHorizontalRuleNode();
-      $insertNodes([hrNode, $createParagraphNode()]);
-    });
-  };
-
-  const insertLink = () => {
-    if (!linkUrl || !linkText) return;
-    editor.update(() => {
-      const linkNode = $createLinkNode(linkUrl);
-      linkNode.append($createTextNode(linkText));
-      $insertNodes([linkNode]);
-    });
-    setShowLinkDialog(false);
-    setLinkUrl('');
-    setLinkText('');
-  };
-
-  const insertImage = () => {
-    if (!imageUrl) return;
-    editor.update(() => {
-      const imageNode = new ImageNode(imageUrl, imageAlt);
-      $insertNodes([imageNode, $createParagraphNode()]);
-    });
-    setShowImageDialog(false);
-    setImageUrl('');
-    setImageAlt('');
-  };
-
-  const insertVideo = () => {
-    if (!videoUrl) return;
-    editor.update(() => {
-      const videoNode = new VideoNode(videoUrl, videoTitle);
-      $insertNodes([videoNode, $createParagraphNode()]);
-    });
-    setShowVideoDialog(false);
-    setVideoUrl('');
-    setVideoTitle('');
-  };
-
-  const handleTableGridHover = (row: number, col: number) => {
-    setTableGridRows(row + 1);
-    setTableGridCols(col + 1);
-  };
-  const handleTableGridClick = (row: number, col: number) => {
-    editor.update(() => {
-      const tableNode = $createTableNode();
-      for (let i = 0; i <= row; i++) {
-        const rowNode = $createTableRowNode();
-        for (let j = 0; j <= col; j++) {
-          const cellNode = $createTableCellNode();
-          cellNode.append($createParagraphNode());
-          rowNode.append(cellNode);
-        }
-        tableNode.append(rowNode);
-      }
-      $insertNodes([tableNode, $createParagraphNode()]);
-    });
-    setShowTableGrid(false);
-    setTableGridRows(0);
-    setTableGridCols(0);
-  };
-
-  const insertTable = () => {
-    setShowTableGrid(true);
+  const restoreSelection = () => {
+    const sel = window.getSelection();
+    if (sel && selectionRef.current) {
+      sel.removeAllRanges();
+      sel.addRange(selectionRef.current);
+    }
+    editor.focus();
   };
 
   const ToolbarButton = ({ 
@@ -674,10 +659,11 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
       type="button"
       onClick={onClick}
       title={title}
+      onMouseDown={e => e.preventDefault()}
       style={{
         padding: '6px',
         border: 'none',
-        background: active ? '#e6f9f9' : 'transparent',
+        background: active ? '#FFC107' : 'transparent',
         color: '#1C8C8C',
         borderRadius: '4px',
         cursor: 'pointer',
@@ -691,7 +677,7 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
       }}
       onMouseEnter={(e) => {
         if (!active) {
-          e.currentTarget.style.background = '#f0f9ff';
+          e.currentTarget.style.background = '#FFC107';
         }
       }}
       onMouseLeave={(e) => {
@@ -704,7 +690,159 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
     </button>
   );
 
-  const maxTableSize = 15;
+  // Remove the current heading dropdown tool from the toolbar and rewrite it:
+  const [headingValue, setHeadingValue] = useState('');
+
+  // Listen for selection changes to update heading dropdown
+  useEffect(() => {
+    return editor.registerUpdateListener(({ editorState }) => {
+      editorState.read(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          let foundHeading = null;
+          let mixed = false;
+          const nodes = selection.getNodes();
+          for (const node of nodes) {
+            if (node.getType && node.getType().startsWith('heading') && typeof HeadingNode !== 'undefined' && node instanceof HeadingNode) {
+              let level = null;
+              if (typeof node.getTag === 'function') {
+                const tag = node.getTag();
+                if (tag && tag.startsWith('h')) level = tag.replace('h', '');
+              }
+              if (level) {
+                if (foundHeading === null) foundHeading = level;
+                else if (foundHeading !== level) { mixed = true; break; }
+              }
+            } else if (node.getType && node.getType() === 'paragraph') {
+              if (foundHeading === null) foundHeading = 'normal';
+              else if (foundHeading !== 'normal') { mixed = true; break; }
+            }
+          }
+          if (mixed) setHeadingValue('');
+          else setHeadingValue(foundHeading || '');
+        } else {
+          setHeadingValue('');
+        }
+      });
+    });
+  }, [editor]);
+
+  const FONT_SIZES = ['8', '9', '10', '11', '12', '14', '16', '18', '20', '24', '28', '32', '36', '48', '60', '72', '96'];
+  const [fontSize, setFontSize] = useState('');
+
+  // Update font size state on selection change
+  useEffect(() => {
+    return editor.registerUpdateListener(({ editorState }) => {
+      editorState.read(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          let foundSize = null;
+          let mixed = false;
+          for (const node of selection.getNodes()) {
+            if (node instanceof LexicalTextNode) {
+              const style = node.getStyle();
+              const match = style && style.match(/font-size:\s*([^;]+)px?/);
+              const size = match ? match[1] : null;
+              if (size) {
+                if (foundSize === null) foundSize = size;
+                else if (foundSize !== size) { mixed = true; break; }
+              }
+            }
+          }
+          if (mixed) setFontSize('');
+          else setFontSize(foundSize || '');
+        } else {
+          setFontSize('');
+        }
+      });
+    });
+  }, [editor]);
+
+  // In the toolbar state:
+  const [fontColor, setFontColor] = useState('#000000');
+  const [colorPopoverOpen, setColorPopoverOpen] = useState(false);
+
+  // Listen for selection changes to update font color input
+  useEffect(() => {
+    return editor.registerUpdateListener(({ editorState }) => {
+      editorState.read(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          let foundColor = null;
+          let mixed = false;
+          const nodes = selection.getNodes();
+          for (const node of nodes) {
+            if (node instanceof LexicalTextNode) {
+              const style = node.getStyle();
+              const match = style && style.match(/color:\s*([^;]+);?/);
+              const color = match ? match[1] : null;
+              if (color) {
+                if (foundColor === null) foundColor = color;
+                else if (foundColor !== color) { mixed = true; break; }
+              }
+            }
+          }
+          if (mixed) setFontColor('#000000');
+          else setFontColor(foundColor || '#000000');
+        } else {
+          setFontColor('#000000');
+        }
+      });
+    });
+  }, [editor]);
+
+  // Listen for selection changes to update highlight button state
+  const [isHighlight, setIsHighlight] = useState(false);
+  useEffect(() => {
+    return editor.registerUpdateListener(({ editorState }) => {
+      editorState.read(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          setIsHighlight(selection.hasFormat && selection.hasFormat('highlight'));
+        } else {
+          setIsHighlight(false);
+        }
+      });
+    });
+  }, [editor]);
+
+  const HIGHLIGHT_PALETTE: string[] = [
+    '#ffffff', '#ffff00', '#ffd966', '#f6b26b', '#f4cccc', '#d9ead3', '#d0e0e3', '#cfe2f3', '#c9daf8',
+    '#f9cb9c', '#ffe599', '#b6d7a8', '#a2c4c9', '#a4c2f4', '#b4a7d6', '#d5a6bd', '#ead1dc', '#fff2cc',
+    '#fce5cd', '#d9ead3', '#d0e0e3', '#cfe2f3', '#c9daf8', '#b4a7d6', '#d5a6bd', '#ead1dc', '#fff2cc',
+    '#fce5cd', '#d9ead3', '#d0e0e3', '#cfe2f3', '#c9daf8', '#b4a7d6', '#d5a6bd', '#ead1dc', '#fff2cc',
+  ];
+  const [highlightPopoverOpen, setHighlightPopoverOpen] = useState(false);
+  const [highlightColor, setHighlightColor] = useState('');
+  // Listen for selection changes to update highlight color
+  useEffect(() => {
+    return editor.registerUpdateListener(({ editorState }) => {
+      editorState.read(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          let foundColor = null;
+          let mixed = false;
+          const nodes = selection.getNodes();
+          for (const node of nodes) {
+            if (node instanceof LexicalTextNode) {
+              const style = node.getStyle();
+              const match = style && style.match(/background-color:\s*([^;]+);?/);
+              const color = match ? match[1] : null;
+              if (color) {
+                if (foundColor === null) foundColor = color;
+                else if (foundColor !== color) { mixed = true; break; }
+              }
+            }
+          }
+          if (mixed) setHighlightColor('');
+          else setHighlightColor(foundColor || '');
+        } else {
+          setHighlightColor('');
+        }
+      });
+    });
+  }, [editor]);
+
   return (
     <>
       <div style={{ padding: '8px 16px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'center' }}>
@@ -713,26 +851,47 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
             <>
               {/* Formatting Group */}
               <div style={toolbarGroupStyle}>
-                <button className="p-1.5 mx-0.5 rounded" title="Bold" onMouseDown={e => { e.preventDefault(); editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold'); }}><Bold size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Italic" onMouseDown={e => { e.preventDefault(); editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic'); }}><Italic size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Underline" onMouseDown={e => { e.preventDefault(); editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline'); }}><Underline size={20} /></button>
-                <select value={fontSize} onChange={e => { setFontSize(e.target.value); editor.update(() => { const selection = $getSelection(); if ($isRangeSelection(selection)) { $patchStyleText(selection, { fontSize: e.target.value }); } }); }} style={{ marginLeft: 8, borderRadius: 4, border: '1px solid #e5e7eb', padding: '2px 6px' }}>{[12, 14, 16, 18, 20, 24, 28, 32].map(size => (<option key={size} value={`${size}px`}>{size}px</option>))}</select>
-                <input type="color" value={fontColor} onChange={e => { setFontColor(e.target.value); editor.update(() => { const selection = $getSelection(); if ($isRangeSelection(selection)) { $patchStyleText(selection, { color: e.target.value }); } }); }} style={{ marginLeft: 8, width: 28, height: 28, border: 'none', background: 'none' }} />
+                <ToolbarButton active={false} onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')} title="Bold"><Bold size={20} /></ToolbarButton>
+                <ToolbarButton active={false} onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')} title="Italic"><Italic size={20} /></ToolbarButton>
+                <ToolbarButton active={false} onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')} title="Underline"><Underline size={20} /></ToolbarButton>
+                {/* Font Size Dropdown */}
+                <Select
+                  value={fontSize}
+                  onValueChange={val => {
+                    setFontSize(val);
+                    // Apply font size synchronously and immediately
+                    editor.update(() => {
+                      const selection = $getSelection();
+                      if ($isRangeSelection(selection)) {
+                        $patchStyleText(selection, { 'font-size': val + 'px' });
+                      }
+                    }, { discrete: true }); // Use discrete update for instant effect
+                  }}
+                  className="ml-2 w-[90px]"
+                >
+                  <SelectTrigger className="ml-2 w-[90px]" onMouseDown={e => e.preventDefault()} style={{ color: '#000' }}>
+                    <SelectValue placeholder="Font size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FONT_SIZES.map(size => (
+                      <SelectItem key={size} value={size} className="focus:bg-[#FFC107] data-[state=checked]:bg-[#FFC107]" style={{ color: '#000' }}>{size}px</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div style={dividerStyle}></div>
               {/* Alignment Group */}
               <div style={toolbarGroupStyle}>
-                <button className="p-1.5 mx-0.5 rounded" title="Align Left" onMouseDown={e => { e.preventDefault(); editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left'); }}><AlignLeft size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Align Center" onMouseDown={e => { e.preventDefault(); editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center'); }}><AlignCenter size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Align Right" onMouseDown={e => { e.preventDefault(); editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right'); }}><AlignRight size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Align Justify" onMouseDown={e => { e.preventDefault(); editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'justify'); }}><AlignJustify size={20} /></button>
+                <ToolbarButton active={false} onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left')} title="Align Left"><AlignLeft size={20} /></ToolbarButton>
+                <ToolbarButton active={false} onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center')} title="Align Center"><AlignCenter size={20} /></ToolbarButton>
+                <ToolbarButton active={false} onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')} title="Align Right"><AlignRight size={20} /></ToolbarButton>
+                <ToolbarButton active={false} onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'justify')} title="Align Justify"><AlignJustify size={20} /></ToolbarButton>
               </div>
               <div style={dividerStyle}></div>
               {/* List Group */}
               <div style={toolbarGroupStyle}>
-                <button className="p-1.5 mx-0.5 rounded" title="Bulleted List" onMouseDown={e => { e.preventDefault(); editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined); }}><List size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Numbered List" onMouseDown={e => { e.preventDefault(); editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined); }}><ListOrdered size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Checklist" onMouseDown={e => { e.preventDefault(); editor.dispatchCommand(INSERT_CHECK_LIST_COMMAND, undefined); }}><CheckSquare size={20} /></button>
+                <ToolbarButton active={false} onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)} title="Bulleted List"><List size={20} /></ToolbarButton>
+                <ToolbarButton active={false} onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)} title="Numbered List"><ListOrdered size={20} /></ToolbarButton>
               </div>
             </>
           )}
@@ -740,29 +899,100 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
             <>
               {/* Media Group */}
               <div style={toolbarGroupStyle}>
-                <button className="p-1.5 mx-0.5 rounded" title="Insert Image" onMouseDown={e => { e.preventDefault(); setShowImageDialog(true); }}><Image size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Insert Video" onMouseDown={e => { e.preventDefault(); setShowVideoDialog(true); }}><Video size={20} /></button>
+                <ToolbarButton onClick={() => setShowImageDialog(true)} title="Insert Image"><Image size={20} /></ToolbarButton>
+                <ToolbarButton onClick={() => setShowVideoDialog(true)} title="Insert Video"><Video size={20} /></ToolbarButton>
               </div>
               <div style={dividerStyle}></div>
               {/* Content Group */}
               <div style={toolbarGroupStyle}>
-                <button className="p-1.5 mx-0.5 rounded" title="Insert Link" onMouseDown={e => { e.preventDefault(); setShowLinkDialog(true); }}><LinkIcon size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Insert Table" onMouseDown={e => { e.preventDefault(); setShowTableGrid(true); }}><Table size={20} /></button>
+                <ToolbarButton onClick={() => setShowLinkDialog(true)} title="Insert Link"><LinkIcon size={20} /></ToolbarButton>
+                <ToolbarButton onClick={() => insertTag(editor)} title="Insert Tag"><Hash size={20} /></ToolbarButton>
               </div>
               <div style={dividerStyle}></div>
               {/* Formatting Group */}
               <div style={toolbarGroupStyle}>
-                <button className="p-1.5 mx-0.5 rounded" title="Insert Blockquote" onMouseDown={e => { e.preventDefault(); insertBlockquote(editor); }}><Quote size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Insert Code Block" onMouseDown={e => { e.preventDefault(); setShowCodeDialog(true); }}><CodeIcon size={20} /></button>
-                <button className="p-1.5 mx-0.5 rounded" title="Insert Divider" onMouseDown={e => { e.preventDefault(); insertHorizontalRule(); }}><Minus size={20} /></button>
+                <ToolbarButton onClick={() => insertBlockquote(editor)} title="Insert Blockquote"><Quote size={20} /></ToolbarButton>
+                <ToolbarButton onClick={() => setShowCodeDialog(true)} title="Insert Code Block"><CodeIcon size={20} /></ToolbarButton>
+                <ToolbarButton onClick={() => editor.update(() => { const hrNode = $createHorizontalRuleNode(); $insertNodes([hrNode, $createParagraphNode()]); })} title="Insert Divider"><Minus size={20} /></ToolbarButton>
               </div>
               <div style={dividerStyle}></div>
               {/* Action Group */}
               <div style={toolbarGroupStyle}>
-                <button className="p-1.5 mx-0.5 rounded" title="Insert CTA Button" onMouseDown={e => { e.preventDefault(); setShowCtaDialog(true); }}><ArrowRight size={20} /></button>
+                <ToolbarButton onClick={() => setShowCtaDialog(true)} title="Insert CTA Button"><ArrowRight size={20} /></ToolbarButton>
               </div>
             </>
           )}
+          <div style={toolbarGroupStyle}>
+            <ToolbarButton onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)} title="Undo"><Undo2 size={20} /></ToolbarButton>
+            <ToolbarButton onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)} title="Redo"><Redo2 size={20} /></ToolbarButton>
+          </div>
+          <div style={toolbarGroupStyle}>
+            <ToolbarButton
+              active={isHighlight}
+              onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'highlight')}
+              title="Highlight"
+            >
+              <Highlighter size={20} />
+            </ToolbarButton>
+          </div>
+          {/* For the highlight tool, only render the button. Remove any circle indicator element entirely. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: 4 }}>
+              <Popover open={colorPopoverOpen} onOpenChange={setColorPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    style={{
+                      width: 32, height: 32, borderRadius: '50%', border: '1.5px solid #ccc', background: fontColor,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative',
+                    }}
+                    title="Font Color"
+                  />
+                </PopoverTrigger>
+                <PopoverContent align="start" style={{ padding: 16, background: '#fff', borderRadius: 8, boxShadow: '0 2px 16px rgba(0,0,0,0.12)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 20px)', gap: 8, marginBottom: 12 }}>
+                    {COLOR_PALETTE.map((color: string) => (
+                      <button
+                        key={color}
+                        onClick={() => {
+                          setFontColor(color);
+                          setColorPopoverOpen(false);
+                          editor.update(() => {
+                            const selection = $getSelection();
+                            if ($isRangeSelection(selection)) {
+                              $patchStyleText(selection, { color });
+                            }
+                          }, { discrete: true });
+                        }}
+                        style={{
+                          width: 20, height: 20, borderRadius: '50%', border: color === fontColor ? '2px solid #1C8C8C' : '1.5px solid #ccc', background: color,
+                          cursor: 'pointer', outline: 'none', margin: 0, padding: 0,
+                        }}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 12, color: '#888' }}>Custom</span>
+                    <input
+                      type="color"
+                      value={fontColor}
+                      onChange={e => {
+                        const color = e.target.value;
+                        setFontColor(color);
+                        editor.update(() => {
+                          const selection = $getSelection();
+                          if ($isRangeSelection(selection)) {
+                            $patchStyleText(selection, { color });
+                          }
+                        }, { discrete: true });
+                      }}
+                      style={{ width: 28, height: 28, border: 'none', background: 'none', borderRadius: '50%', cursor: 'pointer' }}
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
         </div>
       </div>
       {/* All dialogs for insert tools go here, as previously implemented */}
@@ -789,7 +1019,14 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
             <Button variant="outline" onClick={() => setShowLinkDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={insertLink}>Insert Link</Button>
+            <Button onClick={() => {
+              if (!linkText.trim() || !linkUrl.trim()) return;
+              const linkNode = $createLinkNode(linkUrl);
+              $insertNodes([linkNode, $createTextNode(linkText)]);
+              setShowLinkDialog(false);
+              setLinkText('');
+              setLinkUrl('');
+            }}>Insert Link</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -839,7 +1076,14 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
             <Button variant="outline" onClick={() => setShowImageDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={insertImage}>Insert Image</Button>
+            <Button onClick={() => {
+              if (!imageUrl.trim()) return;
+              const imageNode = new ImageNode(imageUrl, imageAlt);
+              $insertNodes([imageNode, $createParagraphNode()]);
+              setShowImageDialog(false);
+              setImageUrl('');
+              setImageAlt('');
+            }}>Insert Image</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -889,7 +1133,14 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
             <Button variant="outline" onClick={() => setShowVideoDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={insertVideo}>Insert Video</Button>
+            <Button onClick={() => {
+              if (!videoUrl.trim()) return;
+              const videoNode = new VideoNode(videoUrl, videoTitle);
+              $insertNodes([videoNode, $createParagraphNode()]);
+              setShowVideoDialog(false);
+              setVideoUrl('');
+              setVideoTitle('');
+            }}>Insert Video</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1005,53 +1256,6 @@ function Toolbar({ activeTab, setActiveTab, fontSize, setFontSize, fontColor, se
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Table Grid Picker */}
-      {showTableGrid && (
-        <div
-          style={{
-            position: 'absolute',
-            zIndex: 1000,
-            background: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: 8,
-            boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-            padding: 16,
-            left: 220,
-            top: 60,
-            minWidth: 260,
-            minHeight: 220,
-            userSelect: 'none',
-          }}
-          onMouseLeave={() => { setTableGridRows(0); setTableGridCols(0); }}
-        >
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${maxTableSize}, 20px)`, gap: 2 }}>
-            {Array.from({ length: maxTableSize * maxTableSize }).map((_, idx) => {
-              const row = Math.floor(idx / maxTableSize);
-              const col = idx % maxTableSize;
-              const selected = row < tableGridRows && col < tableGridCols;
-              return (
-                <div
-                  key={idx}
-                  onMouseOver={() => handleTableGridHover(row, col)}
-                  onClick={() => handleTableGridClick(row, col)}
-                  style={{
-                    width: 20,
-                    height: 20,
-                    background: selected ? '#1C8C8C' : '#f3f4f6',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: 2,
-                    cursor: 'pointer',
-                    transition: 'background 0.1s',
-                  }}
-                />
-              );
-            })}
-          </div>
-          <div style={{ marginTop: 12, textAlign: 'center', color: '#1C8C8C', fontWeight: 500, fontSize: 15 }}>
-            {tableGridRows > 0 && tableGridCols > 0 ? `${tableGridRows} x ${tableGridCols}` : 'Select size'}
-          </div>
-        </div>
-      )}
     </>
   );
 }
@@ -1064,7 +1268,7 @@ function TableToolbarPortal({ editor }: { editor: any }) {
 
   useEffect(() => {
     if (!editor) return;
-    return editor.registerUpdateListener(({ editorState }) => {
+    return editor.registerUpdateListener(({ editorState }: { editorState: EditorState }) => {
       editorState.read(() => {
         const selection = $getSelection();
         let foundTable = false;
@@ -1080,7 +1284,16 @@ function TableToolbarPortal({ editor }: { editor: any }) {
               if (dom) tableElement = dom as HTMLElement;
               break;
             }
-            node = node.getParent && node.getParent();
+            if (typeof node.getParent === 'function') {
+              const parent = node.getParent();
+              if (parent) {
+                node = parent as ElementNode | TextNode;
+              } else {
+                break;
+              }
+            } else {
+              break;
+            }
           }
         }
         setShow(foundTable && !!tableElement);
@@ -1147,29 +1360,93 @@ const editorConfig = {
     LinkNode,
     ListNode,
     ListItemNode,
-    TableNode,
-    TableCellNode,
-    TableRowNode,
+    LexicalTextNode,
     ImageNode,
     VideoNode,
     BlockquoteNode,
     CodeBlockNode,
     CtaButtonNode,
+    HeadingNode,
   ],
 };
 
-export function LexicalRichBlogEditor({ 
+// Plugin to register rich text features (headings, font size, color, etc.)
+function RegisterRichTextPlugin() {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    return registerRichText(editor);
+  }, [editor]);
+  return null;
+}
+
+// Create a wrapper component that uses the context
+function EditorContent({ 
   onUpdate, 
   initialContent = '',
-  className = '' 
-}: { onUpdate?: (content: string) => void, initialContent?: string, className?: string }) {
-  const [activeTab, setActiveTab] = useState<'home' | 'insert'>('home');
-  const [fontSize, setFontSize] = useState('16px');
-  const [fontColor, setFontColor] = useState('#000000');
+  className = '',
+  activeTab,
+  setActiveTab,
+  toolbarGroupStyle,
+  dividerStyle
+}: { 
+  onUpdate?: (content: string) => void, 
+  initialContent?: string, 
+  className?: string,
+  activeTab: 'home' | 'insert',
+  setActiveTab: React.Dispatch<React.SetStateAction<'home' | 'insert'>>,
+  toolbarGroupStyle: any,
+  dividerStyle: any
+}) {
+  const [editor] = useLexicalComposerContext();
   const editorRef = useRef<any>(null);
 
   useEffect(() => {
-    // Add CSS styles for links
+    editorRef.current = editor;
+  }, [editor]);
+
+  useEffect(() => {
+    // Listen for selection changes to update font size dropdown
+    return editor.registerCommand(
+      SELECTION_CHANGE_COMMAND,
+      () => {
+        editor.getEditorState().read(() => {
+          const selection = $getSelection();
+          if ($isRangeSelection(selection)) {
+            let fontSize: string | null = null;
+            let foundDifferent = false;
+            const nodes = selection.getNodes();
+            for (const node of nodes) {
+              if (node instanceof LexicalTextNode) {
+                const styleStr = node.getStyle();
+                let size: string | null = null;
+                if (styleStr) {
+                  // Parse CSS string for font-size
+                  const match = styleStr.match(/font-size:\s*([^;]+);?/);
+                  if (match) {
+                    size = match[1];
+                  }
+                }
+                if (size) {
+                  if (fontSize === null) {
+                    fontSize = size;
+                  } else if (fontSize !== size) {
+                    foundDifferent = true;
+                    break;
+                  }
+                }
+              }
+            }
+            // setFontSize(foundDifferent || fontSize === null ? '16px' : fontSize); // Removed
+          }
+        });
+        return false;
+      },
+      COMMAND_PRIORITY_LOW
+    );
+  }, [editor]);
+
+  useEffect(() => {
+    // Add CSS styles for links and lists
     const style = document.createElement('style');
     style.textContent = `
       .editor-link {
@@ -1190,12 +1467,84 @@ export function LexicalRichBlogEditor({
       .editor-text-underline {
         text-decoration: underline !important;
       }
+      
+      /* List styles */
+      .rich-editor ul {
+        list-style-type: disc !important;
+        margin-left: 20px !important;
+        padding-left: 0 !important;
+      }
+      .rich-editor ol {
+        list-style-type: decimal !important;
+        margin-left: 20px !important;
+        padding-left: 0 !important;
+      }
+      .rich-editor li {
+        margin: 4px 0 !important;
+        padding-left: 8px !important;
+      }
+      .rich-editor ul ul {
+        list-style-type: circle !important;
+      }
+      .rich-editor ul ul ul {
+        list-style-type: square !important;
+      }
+      .rich-editor ol ol {
+        list-style-type: lower-alpha !important;
+      }
+      .rich-editor ol ol ol {
+        list-style-type: lower-roman !important;
+      }
+      
+      /* Do not override inline font-size styles so $patchStyleText works */
+      .rich-editor {
+        font-size: 16px;
+      }
+      .rich-editor * {
+        font-size: inherit; /* Ensure child elements inherit font size */
+      }
+      /* Heading styles */
+      .rich-editor h1 {
+        font-size: 2.25rem !important;
+        font-weight: 700 !important;
+        line-height: 1.2 !important;
+        margin: 1rem 0 !important;
+      }
+      .rich-editor h2 {
+        font-size: 1.875rem !important;
+        font-weight: 600 !important;
+        line-height: 1.3 !important;
+        margin: 0.875rem 0 !important;
+      }
+      .rich-editor h3 {
+        font-size: 1.5rem !important;
+        font-weight: 600 !important;
+        line-height: 1.4 !important;
+        margin: 0.75rem 0 !important;
+      }
+      .rich-editor h4 {
+        font-size: 1.25rem !important;
+        font-weight: 600 !important;
+        line-height: 1.4 !important;
+        margin: 0.625rem 0 !important;
+      }
+      .rich-editor h5 {
+        font-size: 1.125rem !important;
+        font-weight: 600 !important;
+        line-height: 1.4 !important;
+        margin: 0.5rem 0 !important;
+      }
+      .rich-editor h6 {
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+        line-height: 1.4 !important;
+        margin: 0.5rem 0 !important;
+      }
     `;
     document.head.appendChild(style);
 
     const handleClick = (e: Event) => {
       const target = e.target as HTMLElement;
-      console.log('Click detected on:', target.tagName, target);
       
       // Check if the clicked element is a link or inside a link
       let linkElement = target;
@@ -1206,7 +1555,6 @@ export function LexicalRichBlogEditor({
       
       if (linkElement && linkElement.tagName === 'A') {
         const href = (linkElement as HTMLAnchorElement).href;
-        console.log('Link found with href:', href);
         if (href) {
           e.preventDefault();
           e.stopPropagation();
@@ -1257,6 +1605,56 @@ export function LexicalRichBlogEditor({
     };
   }, []);
 
+  return (
+    <>
+      {/* Toolbar */}
+      <Toolbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        toolbarGroupStyle={toolbarGroupStyle}
+        dividerStyle={dividerStyle}
+      />
+      
+      {/* Editor */}
+      <div style={{ padding: '16px' }}>
+        <RichTextPlugin
+          contentEditable={<ContentEditable className="min-h-[200px] p-8 focus:outline-none rich-editor" />}
+          placeholder={<div className="text-gray-400">Start writing your blog post...</div>}
+          ErrorBoundary={LexicalErrorBoundary}
+        />
+        <HistoryPlugin />
+        <ListPlugin />
+        <LinkPlugin 
+          validateUrl={(url) => {
+            // Basic URL validation
+            try {
+              new URL(url);
+              return true;
+            } catch {
+              return /^https?:\/\//.test(url);
+            }
+          }}
+        />
+        <OnChangePlugin onChange={(editorState: EditorState) => {
+          // Convert editorState to HTML or JSON as needed
+          // onUpdate?.(htmlOrJson);
+        }} />
+        {/* Register rich text features (headings, font size, color, etc.) */}
+        <RegisterRichTextPlugin />
+      </div>
+      {/* Render TableToolbarPortal above the editor */}
+      {editorRef.current && <TableToolbarPortal editor={editorRef.current} />}
+    </>
+  );
+}
+
+export function LexicalRichBlogEditor({ 
+  onUpdate, 
+  initialContent = '',
+  className = '' 
+}: { onUpdate?: (content: string) => void, initialContent?: string, className?: string }) {
+  const [activeTab, setActiveTab] = useState<'home' | 'insert'>('home');
+
   const toolbarGroupStyle = {
     display: 'flex',
     alignItems: 'center',
@@ -1275,7 +1673,7 @@ export function LexicalRichBlogEditor({
   };
     
   return (
-    <LexicalComposer initialConfig={{ ...editorConfig, editorRef }}>
+    <LexicalComposer initialConfig={editorConfig}>
       <div style={{ borderRadius: 8, background: '#fff', minHeight: '500px', position: 'relative' }}>
         {/* Tab Navigation */}
         <div style={{ padding: '8px 16px', borderTopLeftRadius: 8, borderTopRightRadius: 8, display: 'flex', justifyContent: 'center' }}>
@@ -1317,46 +1715,15 @@ export function LexicalRichBlogEditor({
           </div>
         </div>
         
-        {/* Toolbar */}
-        <Toolbar
+        <EditorContent
+          onUpdate={onUpdate}
+          initialContent={initialContent}
+          className={className}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          fontSize={fontSize}
-          setFontSize={setFontSize}
-          fontColor={fontColor}
-          setFontColor={setFontColor}
           toolbarGroupStyle={toolbarGroupStyle}
           dividerStyle={dividerStyle}
         />
-        
-        {/* Editor */}
-        <div style={{ padding: '16px' }}>
-          <RichTextPlugin
-            contentEditable={<ContentEditable className="min-h-[200px] p-8 focus:outline-none rich-editor" />}
-            placeholder={<div className="text-gray-400">Start writing your blog post...</div>}
-            ErrorBoundary={LexicalErrorBoundary}
-          />
-          <HistoryPlugin />
-          <ListPlugin />
-          <LinkPlugin 
-            validateUrl={(url) => {
-              // Basic URL validation
-              try {
-                new URL(url);
-                return true;
-              } catch {
-                return /^https?:\/\//.test(url);
-              }
-            }}
-          />
-          <TablePlugin />
-          <OnChangePlugin onChange={editorState => {
-            // Convert editorState to HTML or JSON as needed
-            // onUpdate?.(htmlOrJson);
-          }} />
-        </div>
-        {/* Render TableToolbarPortal above the editor */}
-        {editorRef.current && <TableToolbarPortal editor={editorRef.current} />}
       </div>
     </LexicalComposer>
   );

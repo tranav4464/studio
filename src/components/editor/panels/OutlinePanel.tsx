@@ -149,40 +149,7 @@ export function OutlinePanel({
         </div>
       </ScrollArea>
       
-      <div className="border-t">
-        <div 
-          className="p-3 font-medium flex items-center cursor-pointer hover:bg-accent"
-          onClick={() => setExpandedSEO(!expandedSEO)}
-        >
-          <ListChecks className="h-4 w-4 mr-2" />
-          <span>SEO Checklist</span>
-          {expandedSEO ? (
-            <ChevronDown className="ml-auto h-4 w-4" />
-          ) : (
-            <ChevronRight className="ml-auto h-4 w-4" />
-          )}
-        </div>
-        
-        {expandedSEO && (
-          <div className="p-3 pt-0 space-y-2">
-            <div className="flex items-center text-sm">
-              <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
-              <span>Title contains focus keyword</span>
-            </div>
-            <div className="flex items-center text-sm">
-              <div className="h-2 w-2 rounded-full bg-yellow-500 mr-2"></div>
-              <span>Meta description could be improved</span>
-            </div>
-            <div className="flex items-center text-sm">
-              <div className="h-2 w-2 rounded-full bg-red-500 mr-2"></div>
-              <span>Add internal links (recommended: 2-3)</span>
-            </div>
-            <Button variant="outline" size="sm" className="w-full mt-2">
-              Fix All Issues
-            </Button>
-          </div>
-        )}
-      </div>
+      {/* Remove SEO Checklist section and related UI */}
     </div>
   );
 }

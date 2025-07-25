@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Save, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import ImageInsertTool from "@/components/editor/ImageInsertTool";
+import { LexicalComposer } from '@lexical/react/LexicalComposer';
 
 interface Comment {
   id: string;
@@ -216,11 +217,17 @@ export default function EditorPage() {
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-            <RichBlogEditor
-              initialContent={content}
-              onUpdate={setContent}
-              className="min-h-[300px]"
-            />
+            <LexicalComposer initialConfig={{
+              namespace: 'RichBlogEditor',
+              theme: {},
+              onError: (e) => { throw e; },
+            }}>
+              <RichBlogEditor
+                initialContent={content}
+                onUpdate={setContent}
+                className="min-h-[300px]"
+              />
+            </LexicalComposer>
             <AIInlineTools
               onAction={handleAIAction}
               visible={aiToolsVisible}

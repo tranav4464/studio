@@ -4,10 +4,6 @@ export default function SidebarPanels() {
   return (
     <aside className="w-[340px] border-l bg-zinc-50 dark:bg-zinc-950 p-4 hidden lg:block">
       <div className="mb-6">
-        <div className="font-semibold mb-2">SEO Checklist</div>
-        <div className="text-muted-foreground">SEO checklist placeholder</div>
-      </div>
-      <div className="mb-6">
         <div className="font-semibold mb-2">Tone Analyzer</div>
         <div className="text-muted-foreground">Tone analyzer placeholder</div>
       </div>
