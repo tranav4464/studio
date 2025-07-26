@@ -22,6 +22,68 @@ interface Suggestion {
   action?: () => void;
 }
 
+const RichBlogEditor = dynamic(() => import('@/components/editor/RichBlogEditor'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-96"><Loader2 className="w-8 h-8 animate-spin" /></div>
+});
+
+export default function EditorPage() {
+  const params = useParams();
+  const router = useRouter();
+  const [content, setContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSave = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Save logic here
+      toast.success('Blog saved successfully');
+    } catch (error) {
+      toast.error('Failed to save blog');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [content]);
+
+  return (
+    <div className="flex h-screen bg-background">
+      <div className="flex-1 flex flex-col">
+        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto">
+          <RichBlogEditor
+            content={content}
+            onChange={setContent}
+            placeholder="Start writing your blog post..."
+          />
+        </div>
+      </div>
+      <div className="w-80 border-l bg-muted/50">
+        <div className="p-4">
+          <OutlinePanel />
+          <InsightsPanel />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface BlogPost {
   id: string;
   title: string;
