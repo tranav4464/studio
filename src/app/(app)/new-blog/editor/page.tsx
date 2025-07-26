@@ -4,9 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import dynamic from 'next/dynamic';
 const RichBlogEditor = dynamic(() => import('@/components/editor/RichBlogEditor'), { ssr: false });
 import AIInlineTools from "@/components/editor/AIInlineTools";
-import CommentSidebar from "@/components/editor/CommentSidebar";
 import VersionHistoryModal from "@/components/editor/VersionHistoryModal";
-import SidebarPanels from "@/components/editor/SidebarPanels";
 import OutlinePanel from "@/components/editor/OutlinePanel";
 import OptimizeCTA from "@/components/editor/OptimizeCTA";
 import { Button } from "@/components/ui/button";
@@ -15,12 +13,7 @@ import { toast } from "@/components/ui/use-toast";
 import ImageInsertTool from "@/components/editor/ImageInsertTool";
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 
-interface Comment {
-  id: string;
-  text: string;
-  selection: string;
-  author: string;
-}
+
 
 interface Version {
   id: string;
@@ -35,8 +28,7 @@ export default function EditorPage() {
   const [isSaving, setIsSaving] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   
-  // Comments and versions
-  const [comments, setComments] = useState<Comment[]>([]);
+  // Versions
   const [versions, setVersions] = useState<Version[]>([]);
   const [versionModalOpen, setVersionModalOpen] = useState(false);
   
@@ -54,7 +46,7 @@ export default function EditorPage() {
   ]);
   
   // Collapsible state: only one open at a time
-  const [openSection, setOpenSection] = useState<'editor' | 'seo' | 'comments' | null>('editor');
+  const [openSection, setOpenSection] = useState<'editor' | null>('editor');
   
   // Track text selection for AI tools
   useEffect(() => {
@@ -131,13 +123,7 @@ export default function EditorPage() {
     }
   };
 
-  const handleAddComment = (comment: Comment) => {
-    setComments((prev: Comment[]) => [...prev, comment]);
-  };
 
-  const handleDeleteComment = (id: string) => {
-    setComments((prev: Comment[]) => prev.filter((c) => c.id !== id));
-  };
 
   const handleRestoreVersion = (id: string) => {
     toast({
@@ -176,7 +162,7 @@ export default function EditorPage() {
     className = ''
   }: {
     title: string;
-    section: 'editor' | 'seo' | 'comments';
+    section: 'editor';
     children: React.ReactNode;
     defaultOpen?: boolean;
     className?: string;
@@ -236,14 +222,7 @@ export default function EditorPage() {
               onClose={() => setAIToolsVisible(false)}
             />
           </CollapsibleCard>
-          {/* SEO, Stats, Fixes Section */}
-          <CollapsibleCard title="SEO & Blog Stats" section="seo" className="mt-6">
-            <SidebarPanels />
-          </CollapsibleCard>
-          {/* Comments Section */}
-          <CollapsibleCard title="Comments" section="comments" className="mt-6">
-            <CommentSidebar comments={comments} onDelete={handleDeleteComment} />
-          </CollapsibleCard>
+
         </div>
         {/* Optimize CTA */}
         <OptimizeCTA enabled={optimizeEnabled} onClick={handleOptimize} />

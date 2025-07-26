@@ -276,12 +276,6 @@ tr:hover {
   font-family: var(--font-family) !important;
 }
 
-/* Font sizes */
-.ProseMirror [style*="font-size"] {
-  font-size: var(--font-size) !important;
-  line-height: 1.5;
-}
-
 /* Text colors */
 .ProseMirror [style*="color"] {
   color: var(--color) !important;
