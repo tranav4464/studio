@@ -76,36 +76,6 @@ function LexicalErrorBoundary({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Portal component for rendering popups outside editor DOM
-function Portal({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    
-    // Add click outside handler to close popups
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.list-dialog') && !target.closest('.font-color-dropdown') && !target.closest('.highlight-dropdown')) {
-        // Close any open popups
-        const event = new CustomEvent('closePopups');
-        document.dispatchEvent(event);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    
-    return () => {
-      setMounted(false);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  if (!mounted) return null;
-
-  return ReactDOM.createPortal(children, document.body);
-}
-
 // Enhanced Image Component
 function ImageComponent({ nodeKey, src, alt }: { nodeKey: string, src: string, alt: string }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -680,11 +650,6 @@ const Toolbar = ({
   const [showListDialog, setShowListDialog] = useState(false);
   const fontColorPaletteRef = useRef<HTMLDivElement>(null);
 
-  // Add state for tracking button positions for portal positioning
-  const [listButtonPosition, setListButtonPosition] = useState({ top: 0, left: 0 });
-  const [fontColorButtonPosition, setFontColorButtonPosition] = useState({ top: 0, left: 0 });
-  const [highlightButtonPosition, setHighlightButtonPosition] = useState({ top: 0, left: 0 });
-
   // Premium/classy color palette: fewer, harmonious colors
   const colorPalette = [
     // Grays
@@ -744,37 +709,24 @@ const Toolbar = ({
   // Handle click outside to close palettes
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      
-      // Check if click is outside all popups
-      if (!target.closest('.list-dialog') && !target.closest('.font-color-dropdown') && !target.closest('.highlight-dropdown')) {
-        if (showListDialog) {
-          setShowListDialog(false);
-        }
-        if (showHighlightPalette || showFontColorPalette) {
-          setShowHighlightPalette(false);
-          setShowFontColorPalette(false);
-        }
+      if (highlightPaletteRef.current && !highlightPaletteRef.current.contains(event.target as Node)) {
+        setShowHighlightPalette(false);
+      }
+      if (fontColorPaletteRef.current && !fontColorPaletteRef.current.contains(event.target as Node)) {
+        setShowFontColorPalette(false);
+      }
+      // Close list dialog when clicking outside
+      if (showListDialog) {
+        setShowListDialog(false);
       }
     };
 
-    // Handle custom close popups event
-    const handleClosePopups = () => {
-      setShowListDialog(false);
-      setShowHighlightPalette(false);
-      setShowFontColorPalette(false);
-      // Ensure editor maintains focus
-      setTimeout(() => {
-        editor.focus();
-      }, 10);
-    };
+    if (showHighlightPalette || showFontColorPalette || showListDialog) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('closePopups', handleClosePopups);
-    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('closePopups', handleClosePopups);
     };
   }, [showHighlightPalette, showFontColorPalette, showListDialog]);
 
@@ -850,131 +802,114 @@ const Toolbar = ({
     setMediaTitle('');
   };
 
-  // Helper function to apply list styling with proper font size scaling
-  const applyListStyling = (listType: string, listStyle: string, customClass?: string) => {
-    // Save current selection before applying list
-    const currentSelection = window.getSelection();
-    const range = currentSelection?.getRangeAt(0);
-    
-    editor.dispatchCommand(
-      listType === 'ordered' ? INSERT_ORDERED_LIST_COMMAND : INSERT_UNORDERED_LIST_COMMAND, 
-      undefined
-    );
-    setShowListDialog(false);
-    
-    // Use a shorter timeout and ensure focus is maintained
-    setTimeout(() => {
-      const editorElement = document.querySelector('[contenteditable="true"]');
-      if (editorElement) {
-        const selector = listType === 'ordered' ? 'ol' : 'ul';
-        const lists = editorElement.querySelectorAll(selector);
-        if (lists.length > 0) {
-          const lastList = lists[lists.length - 1] as HTMLElement;
-          
-          // Apply the list style
-          lastList.style.listStyleType = listStyle;
-          
-          // Add custom class if provided
-          if (customClass) {
-            lastList.classList.add(customClass);
-          }
-          
-          // Ensure proper positioning and font size scaling
-          lastList.style.position = 'relative';
-          lastList.style.paddingLeft = '2em';
-          lastList.style.marginLeft = '1em';
-          
-          // Get the current font size from the selection or editor
-          let currentFontSize = '16px';
-          if (currentSelection && currentSelection.rangeCount > 0) {
-            const selectedElement = currentSelection.getRangeAt(0).startContainer.parentElement;
-            if (selectedElement) {
-              const computedStyle = getComputedStyle(selectedElement);
-              currentFontSize = computedStyle.fontSize || '16px';
-            }
-          }
-          
-          // If no font size found, get from editor element
-          if (currentFontSize === '16px') {
-            const computedStyle = getComputedStyle(editorElement);
-            currentFontSize = computedStyle.fontSize || '16px';
-          }
-          
-          // Set CSS custom property for font size scaling
-          lastList.style.setProperty('--list-font-size', currentFontSize);
-          lastList.style.fontSize = currentFontSize;
-          
-          // Apply font size to list items and ensure bullets scale
-          const listItems = lastList.querySelectorAll('li');
-          listItems.forEach(item => {
-            const itemElement = item as HTMLElement;
-            itemElement.style.position = 'relative';
-            itemElement.style.fontSize = currentFontSize;
-            
-            // Force bullet scaling by setting the font size on the marker
-            if (listType === 'unordered') {
-              // For unordered lists, ensure the bullet scales
-              itemElement.style.setProperty('--list-font-size', currentFontSize);
-            }
-          });
-          
-          // Additional scaling for different bullet types
-          if (listStyle === 'disc') {
-            lastList.style.setProperty('--bullet-size', currentFontSize);
-          } else if (listStyle === 'circle') {
-            lastList.style.setProperty('--bullet-size', currentFontSize);
-          } else if (listStyle === 'square') {
-            lastList.style.setProperty('--bullet-size', currentFontSize);
-          }
-        }
-      }
-      
-      // Ensure editor maintains focus
-      editor.focus();
-      
-      // Restore selection if possible
-      if (currentSelection && range) {
-        try {
-          currentSelection.removeAllRanges();
-          currentSelection.addRange(range);
-        } catch (e) {
-          // If selection restoration fails, just ensure editor is focused
-          editor.focus();
-        }
-      }
-    }, 100);
-  };
-
   const insertBulletList = () => {
-    applyListStyling('unordered', 'disc');
+    editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+    setShowListDialog(false);
+    editor.focus();
   };
 
   const insertNumberedList = () => {
-    applyListStyling('ordered', 'decimal');
+    editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+    setShowListDialog(false);
+    editor.focus();
   };
 
   const insertCircleList = () => {
-    applyListStyling('unordered', 'circle');
+    editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+    setTimeout(() => {
+      const editorElement = document.querySelector('[contenteditable="true"]');
+      if (editorElement) {
+        const lists = editorElement.querySelectorAll('ul');
+        if (lists.length > 0) {
+          const lastList = lists[lists.length - 1];
+          lastList.style.listStyleType = 'circle';
+        }
+      }
+    }, 50);
+    setShowListDialog(false);
+    editor.focus();
   };
 
   const insertSquareList = () => {
-    applyListStyling('unordered', 'square');
+    editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+    setTimeout(() => {
+      const editorElement = document.querySelector('[contenteditable="true"]');
+      if (editorElement) {
+        const lists = editorElement.querySelectorAll('ul');
+        if (lists.length > 0) {
+          const lastList = lists[lists.length - 1];
+          lastList.style.listStyleType = 'square';
+        }
+      }
+    }, 50);
+    setShowListDialog(false);
+    editor.focus();
   };
 
   const insertArrowList = () => {
-    applyListStyling('unordered', 'none', 'arrow-list');
+    editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+    setTimeout(() => {
+      const editorElement = document.querySelector('[contenteditable="true"]');
+      if (editorElement) {
+        const lists = editorElement.querySelectorAll('ul');
+        if (lists.length > 0) {
+          const lastList = lists[lists.length - 1];
+          lastList.style.listStyleType = 'none';
+          lastList.classList.add('arrow-list');
+        }
+      }
+    }, 50);
+    setShowListDialog(false);
+    editor.focus();
   };
 
   const insertStarList = () => {
-    applyListStyling('unordered', 'none', 'star-list');
+    editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+    setTimeout(() => {
+      const editorElement = document.querySelector('[contenteditable="true"]');
+      if (editorElement) {
+        const lists = editorElement.querySelectorAll('ul');
+        if (lists.length > 0) {
+          const lastList = lists[lists.length - 1];
+          lastList.style.listStyleType = 'none';
+          lastList.classList.add('star-list');
+        }
+      }
+    }, 50);
+    setShowListDialog(false);
+    editor.focus();
   };
 
   const insertLetterList = () => {
-    applyListStyling('ordered', 'lower-alpha');
+    editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+    setTimeout(() => {
+      const editorElement = document.querySelector('[contenteditable="true"]');
+      if (editorElement) {
+        const lists = editorElement.querySelectorAll('ol');
+        if (lists.length > 0) {
+          const lastList = lists[lists.length - 1];
+          lastList.style.listStyleType = 'lower-alpha';
+        }
+      }
+    }, 50);
+    setShowListDialog(false);
+    editor.focus();
   };
 
   const insertRomanList = () => {
-    applyListStyling('ordered', 'lower-roman');
+    editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+    setTimeout(() => {
+      const editorElement = document.querySelector('[contenteditable="true"]');
+      if (editorElement) {
+        const lists = editorElement.querySelectorAll('ol');
+        if (lists.length > 0) {
+          const lastList = lists[lists.length - 1];
+          lastList.style.listStyleType = 'lower-roman';
+        }
+      }
+    }, 50);
+    setShowListDialog(false);
+    editor.focus();
   };
 
   const ToolbarButton = ({ 
@@ -983,17 +918,19 @@ const Toolbar = ({
     title, 
     active = false 
   }: { 
-    onClick: (e: React.MouseEvent) => void; 
+    onClick: () => void; 
     children: React.ReactNode; 
     title: string; 
     active?: boolean; 
   }) => {
     const handleClick = (e: React.MouseEvent) => {
-      onClick(e);
+      e.preventDefault();
+      e.stopPropagation();
+      onClick();
       // Restore focus to editor after a short delay
       setTimeout(() => {
         editor.focus();
-      }, 50);
+      }, 10);
     };
 
         return (
@@ -1088,38 +1025,12 @@ const Toolbar = ({
 
   // Helper to set font size for current selection
   function setFontSizeForSelection(editor: any, fontSize: string) {
-    editor.update(() => {
-      const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
+                      editor.update(() => {
+                        const selection = $getSelection();
+                        if ($isRangeSelection(selection)) {
         $patchStyleText(selection, { 'font-size': fontSize });
       }
     });
-    
-    // Update existing lists to match the new font size
-    updateExistingListsFontSize(fontSize);
-  }
-
-  // Function to update existing lists with new font size
-  function updateExistingListsFontSize(fontSize: string) {
-    setTimeout(() => {
-      const editorElement = document.querySelector('[contenteditable="true"]');
-      if (editorElement) {
-        const lists = editorElement.querySelectorAll('ul, ol');
-        lists.forEach(list => {
-          const listElement = list as HTMLElement;
-          listElement.style.setProperty('--list-font-size', fontSize);
-          listElement.style.fontSize = fontSize;
-          
-          // Update list items
-          const listItems = listElement.querySelectorAll('li');
-          listItems.forEach(item => {
-            const itemElement = item as HTMLElement;
-            itemElement.style.fontSize = fontSize;
-            itemElement.style.setProperty('--list-font-size', fontSize);
-          });
-        });
-      }
-    }, 50);
   }
 
   // Track current font size from selection
@@ -1247,345 +1158,89 @@ const Toolbar = ({
                 {/* Font Color Tool */}
                 <div style={{ position: 'relative', marginLeft: 8 }}>
                   <ToolbarButton 
-                    active={showFontColorPalette}
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setFontColorButtonPosition({
-                        top: rect.bottom + window.scrollY,
-                        left: rect.left + window.scrollX
-                      });
-                      setShowFontColorPalette(!showFontColorPalette);
-                    }}
-                    title="Text Color"
+                    active={showFontColorPalette} 
+                    onClick={() => setShowFontColorPalette(!showFontColorPalette)} 
+                    title="Font Color"
                   >
-                    <Type size={20} />
+                    <div style={{ position: 'relative' }}>
+                      <Type size={20} />
+                      <div style={{
+                        position: 'absolute',
+                        bottom: -2,
+                        left: 0,
+                        right: 0,
+                        height: 3,
+                        background: fontColor,
+                        borderRadius: '1px'
+                      }} />
+                    </div>
                   </ToolbarButton>
                   
-                  {/* Font Color Palette Popup - Now using Portal */}
+                  {/* Font Color Palette Popup */}
                   {showFontColorPalette && (
-                    <Portal>
-                      <div
-                        ref={fontColorPaletteRef}
-                        className="font-color-dropdown"
+                    <div
+                      ref={fontColorPaletteRef}
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        zIndex: 99999999999,
+                        background: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '14px',
+                        padding: '20px 24px 16px 24px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                        minWidth: 320,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                      }}
+                    >
+                      {/* Reset option */}
+                      <button
+                        onClick={() => applyFontColor('default')}
+                        title="Reset"
                         style={{
-                          position: 'absolute',
-                          top: fontColorButtonPosition.top,
-                          left: fontColorButtonPosition.left,
-                          zIndex: 999999999999,
-                          background: 'white',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '14px',
-                          padding: '20px 24px 16px 24px',
-                          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                          minWidth: 320,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
+                          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer', color: '#3c4043', fontWeight: 500, fontSize: 14, fontFamily: 'Google Sans, Roboto, Arial, sans-serif'
                         }}
                       >
-                        {/* Reset option */}
-                        <button
-                          onClick={() => applyFontColor('default')}
-                          title="Reset"
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer', color: '#3c4043', fontWeight: 500, fontSize: 14, fontFamily: 'Google Sans, Roboto, Arial, sans-serif'
-                          }}
-                        >
-                          <div style={{
-                            width: 20,
-                            height: 20,
-                            background: '#fce8e6',
-                            border: '1px solid #fad2cf',
-                            borderRadius: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#d93025',
-                            fontSize: 12,
-                            fontWeight: 'bold'
-                          }}>
-                            ✕
-                          </div>
-                          Reset
-                        </button>
-                        {/* Color grid */}
-                        <div
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: `repeat(${colorPalette.length}, 1fr)`,
-                            gap: 12,
-                            marginBottom: 18,
-                          }}
-                        >
-                          {colorPalette.map((col, colIdx) =>
-                            col.map((color, rowIdx) => (
-                              <button
-                                key={`font-${colIdx}-${rowIdx}`}
-                                onClick={() => applyFontColor(color)}
-                                title={color}
-                                style={{
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: '4px',
-                                  border: fontColor === color ? '2px solid #1a73e8' : '1px solid #dadce0',
-                                  background: color,
-                                  margin: 0,
-                                  padding: 0,
-                                  cursor: 'pointer',
-                                  outline: 'none',
-                                  transition: 'all 0.1s ease',
-                                  position: 'relative'
-                                }}
-                                onMouseEnter={e => { 
-                                  if (fontColor !== color) {
-                                    e.currentTarget.style.transform = 'scale(1.1)';
-                                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-                                  }
-                                }}
-                                onMouseLeave={e => { 
-                                  e.currentTarget.style.transform = 'scale(1)';
-                                  e.currentTarget.style.boxShadow = 'none';
-                                }}
-                              >
-                                {fontColor === color && (
-                                  <div style={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    width: 12,
-                                    height: 8,
-                                    border: '2px solid white',
-                                    borderTop: 'none',
-                                    borderRight: 'none',
-                                    transform: 'translate(-50%, -60%) rotate(-45deg)',
-                                  }} />
-                                )}
-                              </button>
-                            ))
-                          )}
-                        </div>
-                        {/* Custom color section */}
-                        <div style={{ 
-                          borderTop: '1px solid #dadce0', 
-                          marginTop: '8px', 
-                          paddingTop: '8px' 
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-                            <div style={{
-                              width: 20,
-                              height: 20,
-                              border: '1px solid #dadce0',
-                              borderRadius: '2px',
-                              background: `linear-gradient(45deg, 
-                                #ff0000 0%, #ff0000 14.28%, 
-                                #ff8000 14.28%, #ff8000 28.56%, 
-                                #ffff00 28.56%, #ffff00 42.84%, 
-                                #00ff00 42.84%, #00ff00 57.12%, 
-                                #0000ff 57.12%, #0000ff 71.4%, 
-                                #8000ff 71.4%, #8000ff 85.68%, 
-                                #ff00ff 85.68%, #ff00ff 100%)`,
-                              position: 'relative',
-                              cursor: 'pointer'
-                            }} 
-                            onClick={() => setShowCustomFontColorPicker(!showCustomFontColorPicker)}
-                            />
-                            <span style={{ fontSize: '14px', color: '#3c4043', fontFamily: 'Google Sans, Roboto, Arial, sans-serif' }}>
-                              Custom
-                            </span>
-                          </div>
-                          
-                          {showCustomFontColorPicker && (
-                            <div style={{
-                              position: 'absolute',
-                              top: '100%',
-                              left: 0,
-                              background: 'white',
-                              border: '1px solid #dadce0',
-                              borderRadius: '8px',
-                              padding: '12px',
-                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                              zIndex: 99999999999,
-                              minWidth: '200px'
-                            }}>
-                              <input
-                                type="color"
-                                value={customFontColor}
-                                onChange={(e) => setCustomFontColor(e.target.value)}
-                                style={{
-                                  width: '100%',
-                                  height: '40px',
-                                  border: '1px solid #dadce0',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
-                                }}
-                              />
-                              <div style={{ display: 'flex', gap: 8, marginTop: '8px' }}>
-                                <button
-                                  onClick={() => {
-                                    applyFontColor(customFontColor);
-                                    setShowCustomFontColorPicker(false);
-                                  }}
-                                  style={{
-                                    padding: '6px 12px',
-                                    background: '#1a73e8',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px'
-                                  }}
-                                >
-                                  Apply
-                                </button>
-                                <button
-                                  onClick={() => setShowCustomFontColorPicker(false)}
-                                  style={{
-                                    padding: '6px 12px',
-                                    background: '#f1f3f4',
-                                    color: '#3c4043',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px'
-                                  }}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Portal>
-                  )}
-                </div>
-
-                {/* Highlight Tool */}
-                <div style={{ position: 'relative' }}>
-                  <ToolbarButton 
-                    active={showHighlightPalette}
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setHighlightButtonPosition({
-                        top: rect.bottom + window.scrollY,
-                        left: rect.left + window.scrollX
-                      });
-                      setShowHighlightPalette(!showHighlightPalette);
-                    }}
-                    title="Highlight Text"
-                  >
-                    <Highlighter size={20} />
-                  </ToolbarButton>
-                  
-                  {/* Google Docs Style Highlight Palette - Now using Portal */}
-                  {showHighlightPalette && (
-                    <Portal>
-                      <div
-                        ref={highlightPaletteRef}
-                        className="highlight-dropdown"
-                        style={{
-                          position: 'absolute',
-                          top: highlightButtonPosition.top,
-                          left: highlightButtonPosition.left,
-                          zIndex: 999999999999,
-                          background: 'white',
-                          border: '1px solid #dadce0',
-                          borderRadius: '8px',
-                          padding: '8px',
-                          boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-                          minWidth: 240,
-                        }}
-                      >
-                        {/* Reset option */}
-                        <div style={{ marginBottom: '8px' }}>
-                          <button
-                            onClick={() => applyHighlight('transparent')}
-                            title="Reset"
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              width: '100%',
-                              padding: '6px 8px',
-                              background: 'none',
-                              border: 'none',
-                              cursor: 'pointer',
-                              borderRadius: '4px',
-                              fontSize: '14px',
-                              color: '#3c4043',
-                              fontFamily: 'Google Sans, Roboto, Arial, sans-serif',
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.background = '#f1f3f4'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
-                          >
-                            <div style={{
-                              width: 20,
-                              height: 20,
-                              border: '1px solid #dadce0',
-                              borderRadius: '2px',
-                              background: 'white',
-                              position: 'relative',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}>
-                              <div style={{
-                                width: 14,
-                                height: 1,
-                                background: '#ea4335',
-                                transform: 'rotate(45deg)',
-                                position: 'absolute'
-                              }} />
-                              <div style={{
-                                width: 14,
-                                height: 1,
-                                background: '#ea4335',
-                                transform: 'rotate(-45deg)',
-                                position: 'absolute'
-                              }} />
-                            </div>
-                            Reset
-                          </button>
-                        </div>
-                        
-                        {/* Google Docs highlight colors */}
                         <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(5, 1fr)',
-                          gap: '4px',
-                          padding: '4px 0'
+                          width: 20,
+                          height: 20,
+                          background: '#fce8e6',
+                          border: '1px solid #fad2cf',
+                          borderRadius: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#d93025',
+                          fontSize: 12,
+                          fontWeight: 'bold'
                         }}>
-                          {[
-                            '#ffff00', // Yellow
-                            '#00ff00', // Lime
-                            '#00ffff', // Cyan
-                            '#ff00ff', // Magenta
-                            '#ff0000', // Red
-                            '#0000ff', // Blue
-                            '#00ff80', // Spring Green
-                            '#8000ff', // Purple
-                            '#ff8000', // Orange
-                            '#ff0080', // Deep Pink
-                            '#80ff00', // Chartreuse
-                            '#0080ff', // Dodger Blue
-                            '#ff8080', // Light Red
-                            '#8080ff', // Light Blue
-                            '#80ff80', // Light Green
-                            '#ffff80', // Light Yellow
-                            '#ff80ff', // Light Magenta
-                            '#80ffff', // Light Cyan
-                            '#ffc080', // Peach
-                            '#c080ff', // Light Purple
-                          ].map((color, index) => (
+                          ✕
+                        </div>
+                        Reset
+                      </button>
+                      {/* Color grid */}
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: `repeat(${colorPalette.length}, 1fr)`,
+                          gap: 12,
+                          marginBottom: 18,
+                        }}
+                      >
+                        {colorPalette.map((col, colIdx) =>
+                          col.map((color, rowIdx) => (
                             <button
-                              key={index}
-                              onClick={() => applyHighlight(color)}
-                              title={`Highlight color ${index + 1}`}
+                              key={`font-${colIdx}-${rowIdx}`}
+                              onClick={() => applyFontColor(color)}
+                              title={color}
                               style={{
                                 width: 32,
                                 height: 32,
-                                border: highlightColor === color ? '2px solid #1a73e8' : '1px solid #dadce0',
                                 borderRadius: '4px',
+                                border: fontColor === color ? '2px solid #1a73e8' : '1px solid #dadce0',
                                 background: color,
                                 margin: 0,
                                 padding: 0,
@@ -1595,7 +1250,7 @@ const Toolbar = ({
                                 position: 'relative'
                               }}
                               onMouseEnter={e => { 
-                                if (highlightColor !== color) {
+                                if (fontColor !== color) {
                                   e.currentTarget.style.transform = 'scale(1.1)';
                                   e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
                                 }
@@ -1605,7 +1260,7 @@ const Toolbar = ({
                                 e.currentTarget.style.boxShadow = 'none';
                               }}
                             >
-                              {highlightColor === color && (
+                              {fontColor === color && (
                                 <div style={{
                                   position: 'absolute',
                                   top: '50%',
@@ -1619,102 +1274,360 @@ const Toolbar = ({
                                 }} />
                               )}
                             </button>
-                          ))}
+                          ))
+                        )}
+                      </div>
+                      {/* Custom color section */}
+                      <div style={{ 
+                        borderTop: '1px solid #dadce0', 
+                        marginTop: '8px', 
+                        paddingTop: '8px' 
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                          <div style={{
+                            width: 20,
+                            height: 20,
+                            border: '1px solid #dadce0',
+                            borderRadius: '2px',
+                            background: `linear-gradient(45deg, 
+                              #ff0000 0%, #ff0000 14.28%, 
+                              #ff8000 14.28%, #ff8000 28.56%, 
+                              #ffff00 28.56%, #ffff00 42.84%, 
+                              #00ff00 42.84%, #00ff00 57.12%, 
+                              #0000ff 57.12%, #0000ff 71.4%, 
+                              #8000ff 71.4%, #8000ff 85.68%, 
+                              #ff00ff 85.68%, #ff00ff 100%)`,
+                            position: 'relative',
+                            cursor: 'pointer'
+                          }} 
+                          onClick={() => setShowCustomFontColorPicker(!showCustomFontColorPicker)}
+                          />
+                          <span style={{ fontSize: '14px', color: '#3c4043', fontFamily: 'Google Sans, Roboto, Arial, sans-serif' }}>
+                            Custom
+                          </span>
                         </div>
                         
-                        {/* Custom color section */}
-                        <div style={{ 
-                          borderTop: '1px solid #dadce0', 
-                          marginTop: '8px', 
-                          paddingTop: '8px' 
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-                            <div style={{
-                              width: 20,
-                              height: 20,
-                              border: '1px solid #dadce0',
-                              borderRadius: '2px',
-                              background: `linear-gradient(45deg, 
-                                #ff0000 0%, #ff0000 14.28%, 
-                                #ff8000 14.28%, #ff8000 28.56%, 
-                                #ffff00 28.56%, #ffff00 42.84%, 
-                                #00ff00 42.84%, #00ff00 57.12%, 
-                                #0000ff 57.12%, #0000ff 71.4%, 
-                                #8000ff 71.4%, #8000ff 85.68%, 
-                                #ff00ff 85.68%, #ff00ff 100%)`,
-                              position: 'relative',
-                              cursor: 'pointer'
-                            }} 
-                            onClick={() => setShowCustomHighlightColorPicker(!showCustomHighlightColorPicker)}
+                        {showCustomFontColorPicker && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            background: 'white',
+                            border: '1px solid #dadce0',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            zIndex: 99999999999,
+                            minWidth: '200px'
+                          }}>
+                            <input
+                              type="color"
+                              value={customFontColor}
+                              onChange={(e) => setCustomFontColor(e.target.value)}
+                              style={{
+                                width: '100%',
+                                height: '40px',
+                                border: '1px solid #dadce0',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
                             />
-                            <span style={{ fontSize: '14px', color: '#3c4043', fontFamily: 'Google Sans, Roboto, Arial, sans-serif' }}>
-                              Custom
-                            </span>
-                          </div>
-                          
-                          {showCustomHighlightColorPicker && (
-                            <div style={{
-                              position: 'absolute',
-                              top: '100%',
-                              left: 0,
-                              background: 'white',
-                              border: '1px solid #dadce0',
-                              borderRadius: '8px',
-                              padding: '12px',
-                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                              zIndex: 99999999999,
-                              minWidth: '200px'
-                            }}>
-                              <input
-                                type="color"
-                                value={customHighlightColor}
-                                onChange={(e) => setCustomHighlightColor(e.target.value)}
-                                style={{
-                                  width: '100%',
-                                  height: '40px',
-                                  border: '1px solid #dadce0',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
+                            <div style={{ display: 'flex', gap: 8, marginTop: '8px' }}>
+                              <button
+                                onClick={() => {
+                                  applyFontColor(customFontColor);
+                                  setShowCustomFontColorPicker(false);
                                 }}
-                              />
-                              <div style={{ display: 'flex', gap: 8, marginTop: '8px' }}>
-                                <button
-                                  onClick={() => {
-                                    applyHighlight(customHighlightColor);
-                                    setShowCustomHighlightColorPicker(false);
-                                  }}
-                                  style={{
-                                    padding: '6px 12px',
-                                    background: '#1a73e8',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px'
-                                  }}
-                                >
-                                  Apply
-                                </button>
-                                <button
-                                  onClick={() => setShowCustomHighlightColorPicker(false)}
-                                  style={{
-                                    padding: '6px 12px',
-                                    background: '#f1f3f4',
-                                    color: '#3c4043',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px'
-                                  }}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
+                                style={{
+                                  padding: '6px 12px',
+                                  background: '#1a73e8',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px'
+                                }}
+                              >
+                                Apply
+                              </button>
+                              <button
+                                onClick={() => setShowCustomFontColorPicker(false)}
+                                style={{
+                                  padding: '6px 12px',
+                                  background: '#f1f3f4',
+                                  color: '#3c4043',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px'
+                                }}
+                              >
+                                Cancel
+                              </button>
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
-                    </Portal>
+                    </div>
+                  )}
+                </div>
+
+                {/* Highlight Tool */}
+                <div style={{ position: 'relative' }}>
+                  <ToolbarButton 
+                    active={showHighlightPalette} 
+                    onClick={() => setShowHighlightPalette(!showHighlightPalette)} 
+                    title="Text highlight color"
+                  >
+                    <div style={{ position: 'relative' }}>
+                      <Highlighter size={20} />
+                      <div style={{
+                        position: 'absolute',
+                        bottom: -2,
+                        left: 2,
+                        right: 2,
+                        height: 3,
+                        background: highlightColor === 'transparent' ? '#ffff00' : highlightColor,
+                        borderRadius: '1px'
+                      }} />
+                    </div>
+                  </ToolbarButton>
+                  
+                  {/* Google Docs Style Highlight Palette */}
+                  {showHighlightPalette && (
+                    <div
+                      ref={highlightPaletteRef}
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        zIndex: 99999999999,
+                        background: 'white',
+                        border: '1px solid #dadce0',
+                        borderRadius: '8px',
+                        padding: '8px',
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                        minWidth: 240,
+                      }}
+                    >
+                      {/* Reset option */}
+                      <div style={{ marginBottom: '8px' }}>
+                        <button
+                          onClick={() => applyHighlight('transparent')}
+                          title="Reset"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            width: '100%',
+                            padding: '6px 8px',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            color: '#3c4043',
+                            fontFamily: 'Google Sans, Roboto, Arial, sans-serif',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#f1f3f4'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                        >
+                          <div style={{
+                            width: 20,
+                            height: 20,
+                            border: '1px solid #dadce0',
+                            borderRadius: '2px',
+                            background: 'white',
+                            position: 'relative',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <div style={{
+                              width: 14,
+                              height: 1,
+                              background: '#ea4335',
+                              transform: 'rotate(45deg)',
+                              position: 'absolute'
+                            }} />
+                            <div style={{
+                              width: 14,
+                              height: 1,
+                              background: '#ea4335',
+                              transform: 'rotate(-45deg)',
+                              position: 'absolute'
+                            }} />
+                          </div>
+                          Reset
+                        </button>
+                      </div>
+                      
+                      {/* Google Docs highlight colors */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(5, 1fr)',
+                        gap: '4px',
+                        padding: '4px 0'
+                      }}>
+                        {[
+                          '#ffff00', // Yellow
+                          '#00ff00', // Lime
+                          '#00ffff', // Cyan
+                          '#ff00ff', // Magenta
+                          '#ff0000', // Red
+                          '#0000ff', // Blue
+                          '#00ff80', // Spring Green
+                          '#8000ff', // Purple
+                          '#ff8000', // Orange
+                          '#ff0080', // Deep Pink
+                          '#80ff00', // Chartreuse
+                          '#0080ff', // Dodger Blue
+                          '#ff8080', // Light Red
+                          '#8080ff', // Light Blue
+                          '#80ff80', // Light Green
+                          '#ffff80', // Light Yellow
+                          '#ff80ff', // Light Magenta
+                          '#80ffff', // Light Cyan
+                          '#ffc080', // Peach
+                          '#c080ff', // Light Purple
+                        ].map((color, index) => (
+                          <button
+                            key={index}
+                            onClick={() => applyHighlight(color)}
+                            title={`Highlight color ${index + 1}`}
+                            style={{
+                              width: 32,
+                              height: 32,
+                              border: highlightColor === color ? '2px solid #1a73e8' : '1px solid #dadce0',
+                              borderRadius: '4px',
+                              background: color,
+                              margin: 0,
+                              padding: 0,
+                              cursor: 'pointer',
+                              outline: 'none',
+                              transition: 'all 0.1s ease',
+                              position: 'relative'
+                            }}
+                            onMouseEnter={e => { 
+                              if (highlightColor !== color) {
+                                e.currentTarget.style.transform = 'scale(1.1)';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                              }
+                            }}
+                            onMouseLeave={e => { 
+                              e.currentTarget.style.transform = 'scale(1)';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                          >
+                            {highlightColor === color && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                width: 12,
+                                height: 8,
+                                border: '2px solid white',
+                                borderTop: 'none',
+                                borderRight: 'none',
+                                transform: 'translate(-50%, -60%) rotate(-45deg)',
+                              }} />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                      
+                      {/* Custom color section */}
+                      <div style={{ 
+                        borderTop: '1px solid #dadce0', 
+                        marginTop: '8px', 
+                        paddingTop: '8px' 
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                          <div style={{
+                            width: 20,
+                            height: 20,
+                            border: '1px solid #dadce0',
+                            borderRadius: '2px',
+                            background: `linear-gradient(45deg, 
+                              #ff0000 0%, #ff0000 14.28%, 
+                              #ff8000 14.28%, #ff8000 28.56%, 
+                              #ffff00 28.56%, #ffff00 42.84%, 
+                              #00ff00 42.84%, #00ff00 57.12%, 
+                              #0000ff 57.12%, #0000ff 71.4%, 
+                              #8000ff 71.4%, #8000ff 85.68%, 
+                              #ff00ff 85.68%, #ff00ff 100%)`,
+                            position: 'relative',
+                            cursor: 'pointer'
+                          }} 
+                          onClick={() => setShowCustomHighlightColorPicker(!showCustomHighlightColorPicker)}
+                          />
+                          <span style={{ fontSize: '14px', color: '#3c4043', fontFamily: 'Google Sans, Roboto, Arial, sans-serif' }}>
+                            Custom
+                          </span>
+                        </div>
+                        
+                        {showCustomHighlightColorPicker && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            background: 'white',
+                            border: '1px solid #dadce0',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            zIndex: 99999999999,
+                            minWidth: '200px'
+                          }}>
+                            <input
+                              type="color"
+                              value={customHighlightColor}
+                              onChange={(e) => setCustomHighlightColor(e.target.value)}
+                              style={{
+                                width: '100%',
+                                height: '40px',
+                                border: '1px solid #dadce0',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                            />
+                            <div style={{ display: 'flex', gap: 8, marginTop: '8px' }}>
+                              <button
+                                onClick={() => {
+                                  applyHighlight(customHighlightColor);
+                                  setShowCustomHighlightColorPicker(false);
+                                }}
+                                style={{
+                                  padding: '6px 12px',
+                                  background: '#1a73e8',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px'
+                                }}
+                              >
+                                Apply
+                              </button>
+                              <button
+                                onClick={() => setShowCustomHighlightColorPicker(false)}
+                                style={{
+                                  padding: '6px 12px',
+                                  background: '#f1f3f4',
+                                  color: '#3c4043',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px'
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1734,121 +1647,100 @@ const Toolbar = ({
                 <div style={{ position: 'relative' }}>
                   <ToolbarButton 
                     active={isBulletList || isNumberedList} 
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setListButtonPosition({
-                        top: rect.bottom + window.scrollY,
-                        left: rect.left + window.scrollX
-                      });
-                      setShowListDialog(!showListDialog);
-                    }} 
+                    onClick={() => setShowListDialog(!showListDialog)} 
                     title="Lists"
                   >
                     <List size={20} />
                   </ToolbarButton>
                   
-                  {/* List Type Dropdown - Now using Portal */}
+                  {/* List Type Dropdown */}
                   {showListDialog && (
-                    <Portal>
-                      <div
-                        className="list-dialog"
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        zIndex: 99999999999,
+                        background: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '12px',
+                        padding: '12px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                        minWidth: 200,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        marginTop: '8px'
+                      }}
+                    >
+                      <button
+                        onClick={insertBulletList}
                         style={{
-                          position: 'absolute',
-                          top: listButtonPosition.top,
-                          left: listButtonPosition.left,
-                          zIndex: 999999999999,
-                          background: 'white',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '12px',
-                          padding: '12px',
-                          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                          minWidth: 200,
                           display: 'flex',
-                          flexDirection: 'column',
-                          gap: '8px',
-                          marginTop: '8px'
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '8px 12px',
+                          background: 'none',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: '#374151',
+                          transition: 'background-color 0.2s'
                         }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                       >
-                                              <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            insertBulletList();
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '8px 12px',
-                            background: 'none',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            color: '#374151',
-                            transition: 'background-color 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <span style={{ fontSize: '16px' }}>•</span>
-                          <span>Bullet List</span>
-                        </button>
+                        <span style={{ fontSize: '16px' }}>•</span>
+                        <span>Bullet List</span>
+                      </button>
                       
-                                              <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            insertNumberedList();
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '8px 12px',
-                            background: 'none',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            color: '#374151',
-                            transition: 'background-color 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <span style={{ fontSize: '16px' }}>1.</span>
-                          <span>Numbered List</span>
-                        </button>
+                      <button
+                        onClick={insertNumberedList}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '8px 12px',
+                          background: 'none',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: '#374151',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <span style={{ fontSize: '16px' }}>1.</span>
+                        <span>Numbered List</span>
+                      </button>
                       
-                                              <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            insertCircleList();
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '8px 12px',
-                            background: 'none',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            color: '#374151',
-                            transition: 'background-color 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <span style={{ fontSize: '16px' }}>◦</span>
-                          <span>Circle List</span>
-                        </button>
+                      <button
+                        onClick={insertCircleList}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '8px 12px',
+                          background: 'none',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: '#374151',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <span style={{ fontSize: '16px' }}>◦</span>
+                        <span>Circle List</span>
+                      </button>
                       
-                                              <button
-                          onClick={insertSquareList}
+                      <button
+                        onClick={insertSquareList}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1869,8 +1761,8 @@ const Toolbar = ({
                         <span>Square List</span>
                       </button>
                       
-                                              <button
-                          onClick={insertArrowList}
+                      <button
+                        onClick={insertArrowList}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1891,8 +1783,8 @@ const Toolbar = ({
                         <span>Arrow List</span>
                       </button>
                       
-                                              <button
-                          onClick={insertStarList}
+                      <button
+                        onClick={insertStarList}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1915,8 +1807,8 @@ const Toolbar = ({
                       
                       <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
                       
-                                              <button
-                          onClick={insertLetterList}
+                      <button
+                        onClick={insertLetterList}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1937,8 +1829,8 @@ const Toolbar = ({
                         <span>Letter List</span>
                       </button>
                       
-                                              <button
-                          onClick={insertRomanList}
+                      <button
+                        onClick={insertRomanList}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1959,7 +1851,6 @@ const Toolbar = ({
                         <span>Roman List</span>
                       </button>
                     </div>
-                  </Portal>
                   )}
                 </div>
               </div>
@@ -2331,64 +2222,40 @@ export function LexicalRichBlogEditor({
         margin: 0.5rem 0 !important;
       }
       
-      /* Enhanced list styles with proper font size scaling */
-      .rich-editor ul,
-      .rich-editor ol {
-        position: relative !important;
-        padding-left: 2em !important;
-        margin-left: 1em !important;
-        margin-bottom: 0.5em !important;
-        font-size: var(--list-font-size, 16px) !important;
+      /* Custom list markers for arrow and star lists */
+      .rich-editor ul.arrow-list li::before {
+        content: "→";
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: #374151;
+        font-weight: bold;
+        font-size: var(--current-font-size, 16px);
+        line-height: 1.4;
+        width: 1em;
+        text-align: center;
       }
       
-      .rich-editor ul {
-        list-style-type: disc !important;
+      .rich-editor ul.star-list li::before {
+        content: "★";
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: #374151;
+        font-weight: bold;
+        font-size: var(--current-font-size, 16px);
+        line-height: 1.4;
+        width: 1em;
+        text-align: center;
       }
       
+      /* Ensure all list types are properly styled */
       .rich-editor ul[style*="circle"] {
         list-style-type: circle !important;
       }
       
       .rich-editor ul[style*="square"] {
         list-style-type: square !important;
-      }
-      
-      .rich-editor ul.arrow-list {
-        list-style-type: none !important;
-      }
-      
-      .rich-editor ul.arrow-list li::before {
-        content: "→";
-        position: absolute;
-        left: -1.5em;
-        top: 0;
-        color: #374151;
-        font-weight: bold;
-        font-size: var(--list-font-size, 16px) !important;
-        line-height: 1.4;
-        width: 1em;
-        text-align: center;
-      }
-      
-      .rich-editor ul.star-list {
-        list-style-type: none !important;
-      }
-      
-      .rich-editor ul.star-list li::before {
-        content: "★";
-        position: absolute;
-        left: -1.5em;
-        top: 0;
-        color: #374151;
-        font-weight: bold;
-        font-size: var(--list-font-size, 16px) !important;
-        line-height: 1.4;
-        width: 1em;
-        text-align: center;
-      }
-      
-      .rich-editor ol {
-        list-style-type: decimal !important;
       }
       
       .rich-editor ol[style*="lower-alpha"] {
@@ -2399,90 +2266,11 @@ export function LexicalRichBlogEditor({
         list-style-type: lower-roman !important;
       }
       
-      /* Ensure list items have proper positioning and font size */
-      .rich-editor ul li,
-      .rich-editor ol li {
-        position: relative !important;
-        margin-bottom: 0.25em !important;
-        font-size: var(--list-font-size, 16px) !important;
+      /* Ensure list markers scale with font size */
+      .rich-editor ul li::before,
+      .rich-editor ol li::before {
+        font-size: var(--current-font-size, 16px) !important;
         line-height: 1.4 !important;
-      }
-      
-      /* Scale list markers with font size - comprehensive approach */
-      .rich-editor ul li::marker,
-      .rich-editor ol li::marker {
-        font-size: var(--list-font-size, 16px) !important;
-        line-height: 1.4 !important;
-      }
-      
-      /* Additional scaling for different bullet types */
-      .rich-editor ul[style*="disc"] li::marker,
-      .rich-editor ul li::marker {
-        font-size: var(--list-font-size, 16px) !important;
-      }
-      
-      .rich-editor ul[style*="circle"] li::marker {
-        font-size: var(--list-font-size, 16px) !important;
-      }
-      
-      .rich-editor ul[style*="square"] li::marker {
-        font-size: var(--list-font-size, 16px) !important;
-      }
-      
-      /* Ensure custom markers scale properly */
-      .rich-editor ul.arrow-list li::before,
-      .rich-editor ul.star-list li::before {
-        font-size: var(--list-font-size, 16px) !important;
-        line-height: 1.4 !important;
-      }
-      
-      /* Force bullet scaling for all list types */
-      .rich-editor ul li,
-      .rich-editor ol li {
-        font-size: var(--list-font-size, 16px) !important;
-      }
-      
-      /* Ensure list containers inherit font size */
-      .rich-editor ul,
-      .rich-editor ol {
-        font-size: var(--list-font-size, 16px) !important;
-      }
-      
-      /* Additional bullet scaling using CSS custom properties */
-      .rich-editor ul li::marker {
-        font-size: var(--bullet-size, var(--list-font-size, 16px)) !important;
-      }
-      
-      .rich-editor ol li::marker {
-        font-size: var(--list-font-size, 16px) !important;
-      }
-      
-      /* Ensure bullets match text size exactly */
-      .rich-editor ul li,
-      .rich-editor ol li {
-        font-size: var(--list-font-size, 16px) !important;
-        line-height: 1.4 !important;
-      }
-      
-      /* Force marker scaling for all bullet types */
-      .rich-editor ul[style*="disc"] li::marker,
-      .rich-editor ul[style*="circle"] li::marker,
-      .rich-editor ul[style*="square"] li::marker,
-      .rich-editor ul li::marker {
-        font-size: var(--list-font-size, 16px) !important;
-        line-height: 1.4 !important;
-      }
-
-      /* Fix z-index issues for popup menus */
-      .rich-editor {
-        position: relative;
-        z-index: 1;
-      }
-
-      /* Ensure editor content doesn't interfere with portals */
-      .rich-editor [contenteditable="true"] {
-        position: relative;
-        z-index: 1;
       }
     `;
     document.head.appendChild(style);
@@ -2519,7 +2307,7 @@ export function LexicalRichBlogEditor({
     };
   }, []);
 
-  const toolbarGroupStyle: React.CSSProperties = {
+  const toolbarGroupStyle = {
     display: 'flex',
     alignItems: 'center',
     gap: '2px',
@@ -2530,17 +2318,17 @@ export function LexicalRichBlogEditor({
     border: '1px solid rgba(226, 232, 240, 0.8)',
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
     backdropFilter: 'blur(12px)',
-    position: 'relative' as const,
+    position: 'relative',
   };
   
-  const dividerStyle: React.CSSProperties = {
+  const dividerStyle = {
     width: '2px',
     height: '32px',
     background: 'linear-gradient(to bottom, transparent 0%, rgba(28, 140, 140, 0.15) 20%, rgba(28, 140, 140, 0.4) 50%, rgba(28, 140, 140, 0.15) 80%, transparent 100%)',
     margin: '0 12px',
     flexShrink: 0,
     borderRadius: '1px',
-    position: 'relative' as const,
+    position: 'relative',
   };
     
   return (
@@ -2679,9 +2467,7 @@ export function LexicalRichBlogEditor({
                   fontSize: '16px',
                   lineHeight: '1.7',
                   color: '#1f2937',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                  position: 'relative',
-                  zIndex: 1
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                 }}
                 onFocus={e => {
                   e.currentTarget.style.border = '1px solid rgba(28, 140, 140, 0.4)';
@@ -2735,8 +2521,3 @@ export function LexicalRichBlogEditor({
 }
 
 export default LexicalRichBlogEditor;
-
-
-
-
-

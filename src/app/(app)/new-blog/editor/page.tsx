@@ -1,254 +1,66 @@
-"use client";
+'use client';
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-const RichBlogEditor = dynamic(() => import('@/components/editor/RichBlogEditor'), { ssr: false });
-import AIInlineTools from "@/components/editor/AIInlineTools";
-import VersionHistoryModal from "@/components/editor/VersionHistoryModal";
-import OutlinePanel from "@/components/editor/OutlinePanel";
-import OptimizeCTA from "@/components/editor/OptimizeCTA";
-import { Button } from "@/components/ui/button";
-import { Loader2, Save, ChevronDown, ChevronRight } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
-import ImageInsertTool from "@/components/editor/ImageInsertTool";
-import { LexicalComposer } from '@lexical/react/LexicalComposer';
+import { toast } from 'sonner';
+import OptimizeCTA from '@/components/editor/OptimizeCTA';
 
+const RichBlogEditor = dynamic(() => import('@/components/editor/RichBlogEditor'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-96"><div className="w-8 h-8 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div></div>
+});
 
+export default function NewBlogEditorPage() {
+  const searchParams = useSearchParams();
+  const [content, setContent] = useState('');
+  const [optimizeEnabled, setOptimizeEnabled] = useState(true);
 
-interface Version {
-  id: string;
-  timestamp: string;
-  label?: string;
-  content: string;
-}
-
-export default function EditorPage() {
-  // Editor state
-  const [content, setContent] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const editorRef = useRef<HTMLDivElement>(null);
-  
-  // Versions
-  const [versions, setVersions] = useState<Version[]>([]);
-  const [versionModalOpen, setVersionModalOpen] = useState(false);
-  
-  // AI tools
-  const [aiToolsVisible, setAIToolsVisible] = useState(false);
-  const [aiToolsPosition, setAIToolsPosition] = useState({ top: 0, left: 0 });
-  const [selectedText, setSelectedText] = useState("");
-  
-  // Outline and optimization
-  const [optimizeEnabled, setOptimizeEnabled] = useState(false);
-  const [outline, setOutline] = useState([
-    { id: "intro", text: "Introduction" },
-    { id: "body", text: "Body" },
-    { id: "conclusion", text: "Conclusion" },
-  ]);
-  
-  // Collapsible state: only one open at a time
-  const [openSection, setOpenSection] = useState<'editor' | null>('editor');
-  
-  // Track text selection for AI tools
+  // Get initial content from URL params if available
   useEffect(() => {
-    const handleSelectionChange = () => {
-      const selection = window.getSelection();
-      if (!selection || selection.isCollapsed || !editorRef.current?.contains(selection.anchorNode)) {
-        setAIToolsVisible(false);
-        return;
-      }
-      
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      
-      setSelectedText(selection.toString().trim());
-      setAIToolsPosition({
-        top: rect.top + window.scrollY,
-        left: rect.left + rect.width / 2 + window.scrollX
-      });
-      setAIToolsVisible(true);
-    };
+    const initialContent = searchParams.get('content');
     
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+    if (initialContent) {
+      setContent(decodeURIComponent(initialContent));
+    }
+  }, [searchParams]);
+
+  const handleContentChange = useCallback((newContent: string) => {
+    setContent(newContent);
   }, []);
 
-  // Save content function
-  const saveContent = async (content: string) => {
-    setIsSaving(true);
-    try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Save silently without showing toast
-    } catch (error) {
-      console.error("Failed to save content:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Handle AI actions
-  const handleAIAction = async (action: string, text?: string) => {
-    try {
-      // Close the AI tools
-      setAIToolsVisible(false);
-      
-      // Show processing state
-      toast({
-        title: "Processing...",
-        description: `Applying ${action} to selected text`,
-      });
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In a real app, you would call your AI API here
-      // const result = await aiService.processAction(action, text);
-      
-      // For demo purposes, just show a success message
-      toast({
-        title: "Success",
-        description: `Applied ${action} to selected text`,
-      });
-      
-      // Update the editor content with the result
-      // setContent(updatedContent);
-      
-    } catch (error) {
-      console.error("AI Action failed:", error);
-      toast({
-        title: "Error",
-        description: `Failed to apply ${action}. Please try again.`,
-        variant: "destructive",
-      });
-    }
-  };
-
-
-
-  const handleRestoreVersion = (id: string) => {
-    toast({
-      title: "Version Restored",
-      description: `Version ${id} has been restored.`,
-    });
-  };
-
-  const handleJumpToSection = (id: string) => {
-    // TODO: Implement smooth scroll to section
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  const handleOptimize = () => {
-    setOptimizeEnabled(true);
-    // TODO: Implement optimization logic
-    toast({
-      title: "Optimization Started",
-      description: "Your blog post is being optimized...",
-    });
-  };
-
-  const handleSaveClick = () => {
-    saveContent(content);
-  };
-
-  // Card component
-  function CollapsibleCard({
-    title,
-    section,
-    children,
-    defaultOpen = false,
-    className = ''
-  }: {
-    title: string;
-    section: 'editor';
-    children: React.ReactNode;
-    defaultOpen?: boolean;
-    className?: string;
-  }) {
-    const open = openSection === section;
-    return (
-      <div className={`bg-white dark:bg-zinc-900 rounded-xl shadow-md mb-8 overflow-hidden border ${className}`}>
-        <button
-          className="w-full flex items-center justify-between px-6 py-4 text-lg font-semibold focus:outline-none hover:bg-muted/40 transition-colors"
-          onClick={() => setOpenSection(open ? null : section)}
-        >
-          <span>{title}</span>
-          {open ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-        </button>
-        <div
-          className={`transition-all duration-300 ${open ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden px-6 pb-6`}
-        >
-          {open && children}
-        </div>
-      </div>
-    );
-  }
+  const handleOptimize = useCallback(() => {
+    // Implement optimization logic
+    toast.info('Optimizing content...');
+  }, []);
 
   return (
-    <div className="flex h-full min-h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900">
+    <div className="flex flex-col h-screen bg-background">
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto">
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Editor Section */}
-          <CollapsibleCard title="Editor" section="editor">
-            {/* Top bar: Version history */}
-            <div className="flex justify-end mb-4">
-              <button 
-                className="text-sm text-blue-600 hover:underline flex items-center gap-1"
-                onClick={() => setVersionModalOpen(true)}
-              >
-                <span>History</span>
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-            <LexicalComposer initialConfig={{
-              namespace: 'RichBlogEditor',
-              theme: {},
-              onError: (e) => { throw e; },
-            }}>
-              <RichBlogEditor
-                initialContent={content}
-                onUpdate={setContent}
-                className="min-h-[300px]"
-              />
-            </LexicalComposer>
-            <AIInlineTools
-              onAction={handleAIAction}
-              visible={aiToolsVisible}
-              position={aiToolsPosition}
-              selectedText={selectedText}
-              onClose={() => setAIToolsVisible(false)}
+          <div className="py-8 px-4">
+            <RichBlogEditor 
+              initialContent={content} 
+              onUpdate={handleContentChange}
             />
-          </CollapsibleCard>
+          </div>
 
+          {/* Outline Panel (below editor) */}
+          <div className="mt-8">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-md border p-6">
+              <h3 className="text-lg font-semibold mb-4">Document Outline</h3>
+              <div className="text-muted-foreground text-sm">
+                Your document outline will appear here as you add headings to your content.
+              </div>
+            </div>
+          </div>
         </div>
+
         {/* Optimize CTA */}
         <OptimizeCTA enabled={optimizeEnabled} onClick={handleOptimize} />
       </main>
-      {/* Outline Panel (right) */}
-      <div className="w-72 flex-shrink-0 flex items-start justify-center p-6">
-        <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-md border p-6 min-w-[16rem] max-w-xs w-full">
-          <OutlinePanel 
-            headings={outline} 
-            onJumpToSection={(id) => {
-              // Implement jump to section logic
-              const element = document.getElementById(id);
-              if (element) {
-                element.scrollIntoView({ behavior: 'smooth' });
-              }
-            }} 
-          />
-        </div>
-      </div>
-      {/* Version History Modal */}
-      <VersionHistoryModal
-        open={versionModalOpen}
-        onClose={() => setVersionModalOpen(false)}
-        versions={versions}
-        onRestore={handleRestoreVersion}
-      />
     </div>
   );
-} 
+}
