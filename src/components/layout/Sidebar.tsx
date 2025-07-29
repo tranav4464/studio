@@ -96,6 +96,15 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
 
+  // Auto-collapse sidebar when on visualization page
+  useEffect(() => {
+    if (pathname === '/new-blog/visualization') {
+      if (!isCollapsed) {
+        onToggleCollapse();
+      }
+    }
+  }, [pathname, isCollapsed, onToggleCollapse]);
+
   // Ensure this only runs on client
   useEffect(() => {
     // Auto-expand the current section based on pathname
